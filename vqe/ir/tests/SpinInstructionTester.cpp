@@ -30,17 +30,18 @@
  *
  **********************************************************************************/
 #define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE QubitInstructionTester
+#define BOOST_TEST_MODULE SpinInstructionTester
 
 #include <boost/test/included/unit_test.hpp>
-#include "QubitInstruction.hpp"
+#include "SpinInstruction.hpp"
+#include <boost/algorithm/string.hpp>
 
 using namespace xacc::vqe;
 
 BOOST_AUTO_TEST_CASE(checkConstruction) {
 
 	// make a4dag a3dag a9 a1
-	QubitInstruction inst(std::vector<std::pair<int, std::string>> { { 4, "X" },
+	SpinInstruction inst(std::vector<std::pair<int, std::string>> { { 4, "X" },
 			{ 3, "Z" }, { 9, "Y" }, { 1, "Z" } });
 
 	BOOST_VERIFY(inst.bits().size() == 4);
@@ -52,8 +53,52 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 				xacc::InstructionParameter("X"), xacc::InstructionParameter("Z"),
 						xacc::InstructionParameter("Y"),
 						xacc::InstructionParameter("Z"),
-						xacc::InstructionParameter(1.0)}));
+						xacc::InstructionParameter(std::complex<double>(1.0, 0.0))}));
 
-	std::cout << "HEY:\n" << inst.toString("") << "\n";
+	SpinInstruction i2(std::vector<std::pair<int, std::string>> { { 4, "X" },
+			{ 3, "Z" } });
+	auto sumInst = inst + i2;
+	std::string expected = "(1,0) * X4 * Z3 * Y9 * Z1 + (1,0) * X4 * Z3";
+	BOOST_TEST(expected == sumInst.toString(""));
+
+	SpinInstruction i3(std::vector<std::pair<int, std::string>> { { 3, "X" } });
+	auto testPauliProducts = i2 * i3;
+	BOOST_VERIFY("(0,1) * X4 * Y3" == testPauliProducts.toString(""));
+
+	BOOST_VERIFY(inst == inst);
+
+	SpinInstruction testEqual(std::vector<std::pair<int, std::string>> { { 4, "X" },
+			{ 3, "Z" } }, std::complex<double>(33.3,0.0));
+
+	BOOST_VERIFY(i2 == testEqual);
+	BOOST_VERIFY(i2 != inst);
+
+	// Term * scalar multiple
+	auto multScalar = testPauliProducts * 3.3;
+	BOOST_VERIFY("(0,3.3) * X4 * Y3" == multScalar.toString(""));
+
+	testPauliProducts*=3.3;
+	BOOST_VERIFY(testPauliProducts == multScalar);
+
+	// Plus with same terms
+	sumInst = inst + 2.2 * inst;
+	BOOST_VERIFY("(3.2,0) * X4 * Z3 * Y9 * Z1" == sumInst.toString(""));
+
+	SpinInstruction i4(std::vector<std::pair<int, std::string>> { { 0, "Z" } });
+	SpinInstruction i5(std::vector<std::pair<int, std::string>> { { 1, "X" } });
+	SpinInstruction i6(std::vector<std::pair<int, std::string>> { { 1, "Y" } }, std::complex<double>(0,1));
+	SpinInstruction i7(std::vector<std::pair<int, std::string>> { { 1, "Z" } });
+
+	CompositeSpinInstruction compInst;
+	compInst.addInstruction(std::make_shared<SpinInstruction>(i5));
+	compInst.addInstruction(std::make_shared<SpinInstruction>(i6));
+
+	auto newMultByComp = i4 * compInst;
+	BOOST_VERIFY("(1,0) * Z0 * X1 + (0,1) * Z0 * Y1" == newMultByComp.toString(""));
+
+	// Z1 * X1 + i * Z1 * Y1 = i * Y1 + i * (-i * X1)
+	newMultByComp = i7 * compInst;
+	BOOST_VERIFY("(0,1) * Y1 + (1,0) * X1" == newMultByComp.toString(""));
+
 }
 

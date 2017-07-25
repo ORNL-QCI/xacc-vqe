@@ -138,7 +138,7 @@ public:
 		return ss.str().substr(0, ss.str().size() - 3);
 	}
 
-	virtual InstructionParameter getParameter(const int idx) {
+	virtual InstructionParameter getParameter(const int idx) const{
 		XACCError("FermionKernel does not contain runtime parameters.");
 	}
 
