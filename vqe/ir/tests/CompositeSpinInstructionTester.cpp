@@ -1,4 +1,3 @@
-
 /***********************************************************************************
  * Copyright (c) 2016, UT-Battelle
  * All rights reserved.
@@ -34,10 +33,60 @@
 
 #include <boost/test/included/unit_test.hpp>
 #include "CompositeSpinInstruction.hpp"
+#include "SpinInstruction.hpp"
 
 using namespace xacc::vqe;
 
 BOOST_AUTO_TEST_CASE(checkConstruction) {
+	SpinInstruction i1(std::vector<std::pair<int, std::string>> { { 0, "Z" } });
+	SpinInstruction i2(std::vector<std::pair<int, std::string>> { { 1, "X" } });
+	SpinInstruction i3(std::vector<std::pair<int, std::string>> { { 1, "Y" } }, std::complex<double>(0,1));
+	SpinInstruction i4(std::vector<std::pair<int, std::string>> { { 1, "Z" } });
+	SpinInstruction i5(std::vector<std::pair<int, std::string>> { { 1, "Y" } }, std::complex<double>(0,-1));
+
+	CompositeSpinInstruction compInst, compInst2, compInst3;
+	compInst.addInstruction(std::make_shared<SpinInstruction>(i2));
+	compInst.addInstruction(std::make_shared<SpinInstruction>(i3));
+
+	compInst3.addInstruction(std::make_shared<SpinInstruction>(i2));
+	compInst3.addInstruction(std::make_shared<SpinInstruction>(i1));
+
+	compInst2.addInstruction(std::make_shared<SpinInstruction>(i2));
+
+	BOOST_VERIFY(compInst == compInst);
+	BOOST_VERIFY(compInst != compInst2);
+	BOOST_VERIFY(compInst2 == i2);
+	BOOST_VERIFY(compInst2 != i1);
+
+	auto multBySpinInst = compInst * i4;
+
+	BOOST_VERIFY("(0,-1) * Y1 + (-1,0) * X1" == multBySpinInst.toString(""));
+	multBySpinInst = compInst * i1;
+	BOOST_VERIFY(
+			"(1,0) * X1 * Z0 + (0,1) * Y1 * Z0" == multBySpinInst.toString(""));
+
+	auto multByComposite = compInst * compInst;
+	BOOST_VERIFY("(0,0)" == multByComposite.toString(""));
+
+	BOOST_VERIFY(
+			"(2,0) * I + (1,0) * X1 * Z0 + (1,0) * Z0 * X1"
+					== (compInst3 * compInst3).toString(""));
+
+	auto test = compInst * 4.4;
+	BOOST_VERIFY("(4.4,0) * X1 + (0,4.4) * Y1" == test.toString(""));
+	BOOST_VERIFY(
+			"(4.4,0) * X1 + (0,4.4) * Y1" == (4.4 * compInst).toString(""));
+
+	test = compInst * std::complex<double>(4.4, 0);
+	BOOST_VERIFY("(4.4,0) * X1 + (0,4.4) * Y1" == test.toString(""));
+	BOOST_VERIFY(
+			"(4.4,0) * X1 + (0,4.4) * Y1"
+					== (std::complex<double>(4.4, 0) * compInst).toString(""));
+
+	// Test Addition now
+
+	auto added = compInst + compInst3;
+	BOOST_VERIFY("(2,0) * X1 + (0,1) * Y1 + (1,0) * Z0" == added.toString(""));
 
 }
 

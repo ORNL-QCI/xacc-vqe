@@ -1,3 +1,33 @@
+/***********************************************************************************
+ * Copyright (c) 2016, UT-Battelle
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *   * Neither the name of the xacc nor the
+ *     names of its contributors may be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Contributors:
+ *   Initial API and implementation - Alex McCaskey
+ *
+ **********************************************************************************/
 #ifndef VQE_IR_SPININSTRUCTION_HPP_
 #define VQE_IR_SPININSTRUCTION_HPP_
 
@@ -176,8 +206,12 @@ public:
 		std::stringstream ss;
 		ss << getParameter(qubits.size()) << " * ";
 		for (int i = 0; i < qubits.size(); i++) {
-			ss << boost::get<std::string>(getParameter(i)) << qubits[i]
-					<< " * ";
+			if ("I" == boost::get<std::string>(getParameter(i))) {
+				ss << "I * ";
+			} else {
+				ss << boost::get<std::string>(getParameter(i)) << qubits[i]
+						<< " * ";
+			}
 		}
 		auto r = ss.str().substr(0, ss.str().size() - 2);
 		boost::trim(r);
@@ -272,6 +306,19 @@ public:
 	virtual void enable() {
 	}
 
+	bool operator ==(CompositeSpinInstruction &b) const {
+		if (b.nInstructions() > 1) {
+			return false;
+		} else {
+			auto casted = std::dynamic_pointer_cast<SpinInstruction>(b.getInstruction(0));
+			return operator==(*casted.get());
+		}
+	}
+
+	bool operator !=(CompositeSpinInstruction &b) const {
+		return !operator==(b);
+	}
+
 	/**
 	 * Return true if the given SpinInstruction is equal to this one
 	 *
@@ -279,13 +326,25 @@ public:
 	 * @return equal
 	 */
 	bool operator ==(const SpinInstruction &b) const {
+//		std::cout << "\t" << b.qubits.size() << ", " << qubits.size() << "\n";
 		if (b.qubits.size() != qubits.size()) {
 			return false;
 		}
 
-		for (int i = 0; i < qubits.size() - 1; i++) {
+		for (int i = 0; i < qubits.size(); i++) {
 			if ((qubits[i] != b.qubits[i])
 					|| (getParameter(i) != b.getParameter(i))) {
+
+//				std::cout << "\t" << qubits[i] << ", " << b.qubits[i] << ", " <<
+//						getParameter(i) << ", " << b.getParameter(i) << "\n";
+
+				// If these two gates are both I's then we don't care about
+				// the qubits they operate on
+				if (boost::get<std::string>(getParameter(i)) == "I" &&
+						boost::get<std::string>(b.getParameter(i)) == "I") {
+					continue;
+				}
+
 				return false;
 			}
 		}
