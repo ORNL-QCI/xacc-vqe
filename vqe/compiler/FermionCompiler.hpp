@@ -75,11 +75,37 @@ public:
 	}
 
 	/**
+	 * Return the command line options for this compiler
+	 *
+	 * @return options Description of command line options.
+	 */
+	virtual std::shared_ptr<options_description> getOptions() {
+		auto desc = std::make_shared<options_description>(
+				"XACC Fermion Compiler Options");
+		desc->add_options()("fermion-transformation", value<std::string>(),
+				"Provide the name of Creation/Annihilation to Spin Transformation. Default is Jordan-Wigner.")(
+				"fermion-list-transformations",
+				"List all available fermion-to-spin transformations.");
+		return desc;
+	}
+
+
+	/**
 	 * Register this Compiler with the framework.
 	 */
 	static void registerCompiler() {
+		FermionCompiler c;
 		xacc::RegisterCompiler<xacc::vqe::FermionCompiler> FermionTEMP(
-				"fermion");
+				"fermion", c.getOptions(), [](variables_map& args) -> bool {
+			if(args.count("fermion-list-transformations")) {
+				auto ids = IRTransformationRegistry::instance()->getRegisteredIds();
+				for (auto i : ids) {
+					XACCInfo("Registered IR Transformation: " + i);
+				}
+				return true;
+			}
+			return false;
+		});
 	}
 
 	/**

@@ -427,6 +427,10 @@ public:
 		return ret;
 	}
 
+	std::vector<std::pair<int, std::string>> getTerms() {
+		return terms;
+	}
+
 	/**
 	 * We don't want this Instruction to be visitable
 	 * @param EMPTY_DEFINE_VISITABLE()

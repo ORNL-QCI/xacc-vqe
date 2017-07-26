@@ -37,7 +37,7 @@
 
 using namespace xacc::vqe;
 
-class FakeAcc : public xacc::Accelerator {
+class FakeAcc: public xacc::Accelerator {
 public:
 
 	virtual std::shared_ptr<xacc::AcceleratorGraph> getAcceleratorConnectivity() {
@@ -54,7 +54,8 @@ public:
 
 	virtual std::vector<xacc::IRTransformation> getIRTransformations() {
 
-	};
+	}
+	;
 
 	virtual std::shared_ptr<xacc::AcceleratorBuffer> createBuffer(
 			const std::string& varId) {
@@ -70,7 +71,7 @@ public:
 	}
 
 	virtual std::shared_ptr<xacc::AcceleratorBuffer> getBuffer(
-				const std::string& varid) {
+			const std::string& varid) {
 		return std::make_shared<xacc::AcceleratorBuffer>("hello", 1);
 	}
 
@@ -84,7 +85,7 @@ public:
 	 * @param function The kernel to execute.
 	 */
 	virtual void execute(std::shared_ptr<xacc::AcceleratorBuffer> buffer,
-				const std::shared_ptr<xacc::Function> function) {
+			const std::shared_ptr<xacc::Function> function) {
 	}
 
 	/**
@@ -110,8 +111,7 @@ BOOST_AUTO_TEST_CASE(checkSimpleCompile) {
 	auto compiler = std::make_shared<FermionCompiler>();
 
 	// 3.17 adag_2 a_0 + 3.17 adag_0 a2
-	const std::string simpleFermionHamiltonian =
-			"__qpu__ dwaveKernel() {\n"
+	const std::string simpleFermionHamiltonian = "__qpu__ dwaveKernel() {\n"
 			"   3.17 2 1 0 0\n"
 			"   3.17 0 1 2 0\n"
 			"}";
@@ -122,5 +122,101 @@ BOOST_AUTO_TEST_CASE(checkSimpleCompile) {
 
 	auto ir = compiler->compile(simpleFermionHamiltonian, acc);
 
+	auto expected =
+			R"expected({
+    "kernels": [
+        {
+            "function": "term0",
+            "instructions": [
+                {
+                    "gate": "H",
+                    "enabled": true,
+                    "qubits": [
+                        2
+                    ]
+                },
+                {
+                    "gate": "Measure",
+                    "enabled": true,
+                    "qubits": [
+                        2
+                    ],
+                    "classicalBitIdx": 2
+                },
+                {
+                    "gate": "Measure",
+                    "enabled": true,
+                    "qubits": [
+                        1
+                    ],
+                    "classicalBitIdx": 1
+                },
+                {
+                    "gate": "H",
+                    "enabled": true,
+                    "qubits": [
+                        0
+                    ]
+                },
+                {
+                    "gate": "Measure",
+                    "enabled": true,
+                    "qubits": [
+                        0
+                    ],
+                    "classicalBitIdx": 0
+                }
+            ]
+        },
+        {
+            "function": "term1",
+            "instructions": [
+                {
+                    "gate": "Rx",
+                    "enabled": true,
+                    "qubits": [
+                        2
+                    ],
+                    "angle": 1.5707963
+                },
+                {
+                    "gate": "Measure",
+                    "enabled": true,
+                    "qubits": [
+                        2
+                    ],
+                    "classicalBitIdx": 2
+                },
+                {
+                    "gate": "Measure",
+                    "enabled": true,
+                    "qubits": [
+                        1
+                    ],
+                    "classicalBitIdx": 1
+                },
+                {
+                    "gate": "Rx",
+                    "enabled": true,
+                    "qubits": [
+                        0
+                    ],
+                    "angle": 1.5707963
+                },
+                {
+                    "gate": "Measure",
+                    "enabled": true,
+                    "qubits": [
+                        0
+                    ],
+                    "classicalBitIdx": 0
+                }
+            ]
+        }
+    ]
+})expected";
 
+	std::stringstream ss;
+	ir->persist(ss);
+	BOOST_VERIFY(expected == ss.str());
 }

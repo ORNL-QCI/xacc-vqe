@@ -33,6 +33,7 @@
 #include "FermionCompiler.hpp"
 #include "RuntimeOptions.hpp"
 #include "GateQIR.hpp"
+#include "JordanWignerIRTransformation.hpp"
 
 #include "FermionKernel.hpp"
 
@@ -91,11 +92,24 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 		}
 	}
 
+	// Create the FermionIR to pass to our transformation.
+	auto fermionir = std::make_shared<FermionIR>();
+	fermionir->addKernel(fermionKernel);
+
+
 	// Now we have a Function IR instance that contains information
 	// about the fermion representation of the Hamiltonian
 	// we are compiling. We need to transform it to a spin
 	// hamiltonian.
+	std::shared_ptr<IRTransformation> transform;
+	if (runtimeOptions->exists("fermion-transformation")) {
+		auto transformStr = (*runtimeOptions)["fermion-transformation"];
+		transform =	IRTransformationRegistry::instance()->create(transformStr);
+	} else {
+		transform = IRTransformationRegistry::instance()->create("jordan-wigner");
+	}
 
+	return transform->transform(fermionir);
 
 
 }

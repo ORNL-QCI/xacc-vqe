@@ -1,4 +1,5 @@
 #include "JordanWignerIRTransformation.hpp"
+#include "GateFunction.hpp"
 
 namespace xacc {
 namespace vqe {
@@ -18,7 +19,7 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 
 	auto fermiKernel = ir->getKernels()[0];
 
-	int counter = 1;
+	int counter = 0;
 	CompositeSpinInstruction total;
 
 	// Loop over all Fermionic terms...
@@ -77,7 +78,56 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 
 	}
 
+	std::cout << "Transformed: " << result.toString("") << "\n";
 	// Populate GateQIR now...
+	for (auto inst : result.getInstructions()) {
+
+		// Cast to a Spin Instruction
+		auto spinInst = std::dynamic_pointer_cast<SpinInstruction>(inst);
+
+		// Create a GateFunction and specify that it has
+		// a parameter that is the Spin Instruction coefficient
+		// that will help us get it to the user for their purposes.
+		auto gateFunction = std::make_shared<xacc::quantum::GateFunction>(
+				"term" + std::to_string(counter),
+				std::vector<InstructionParameter> { InstructionParameter(
+						spinInst->coefficient) });
+
+		// Loop over all terms in the Spin Instruction
+		// and create instructions to run on the Gate QPU.
+		auto terms = spinInst->getTerms();
+		for (int i = terms.size()-1; i >= 0; i--) {
+			auto qbit = terms[i].first;
+			auto gateName = terms[i].second;
+			std::shared_ptr<xacc::quantum::GateInstruction> meas;
+			auto gateRegistry = xacc::quantum::GateInstructionRegistry::instance();
+
+			if (gateName != "I") {
+				meas = gateRegistry->create("Measure", std::vector<int>{qbit});
+				xacc::InstructionParameter classicalIdx(qbit);
+				meas->setParameter(0, classicalIdx);
+			} else {
+				// FIXME FIGURE THIS OUT....
+			}
+
+			// If its an X we have to add a Hadamard before the measure
+			// If its a Y we have to add a Rx(pi / 2) gate before the measure.
+			if (gateName == "X") {
+				gateFunction->addInstruction(gateRegistry->create("H", std::vector<int>{qbit}));
+			} else if (gateName == "Y") {
+				auto rx = gateRegistry->create("Rx", std::vector<int>{qbit});
+				InstructionParameter p(3.1415926 / 2.0);
+				rx->setParameter(0, p);
+				gateFunction->addInstruction(rx);
+			}
+
+			// Add the MeasureZ gate...
+			gateFunction->addInstruction(meas);
+		}
+
+		newIr->addKernel(gateFunction);
+		counter++;
+	}
 
 	return newIr;
 }
@@ -85,6 +135,8 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 CompositeSpinInstruction JordanWignerIRTransformation::getResult() {
 	return result;
 }
+
+RegisterIRTransformation<JordanWignerIRTransformation> JWIRTEMP("jordan-wigner");
 
 }
 }
