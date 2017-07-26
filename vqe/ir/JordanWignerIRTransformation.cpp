@@ -1,5 +1,6 @@
 #include "JordanWignerIRTransformation.hpp"
 #include "GateQIR.hpp"
+#include "SpinInstruction.hpp"
 
 namespace xacc {
 namespace vqe {
@@ -20,28 +21,72 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 	auto fermiKernel = ir->getKernels()[0];
 
 	int counter = 1;
+	CompositeSpinInstruction total;
+
+	// Loop over all Fermionic terms...
 	for (auto fermionInst : fermiKernel->getInstructions()) {
 
-		auto gateFunction = std::make_shared<xacc::quantum::GateFunction>(
-				"term" + std::to_string(counter));
-
+		// Get the creation or annihilation sites
 		auto termSites = fermionInst->bits();
+
+		// Get the params indicating if termSite is creation or annihilation
 		auto params = fermionInst->getParameters();
 
+		auto fermionCoeff = boost::get<std::complex<double>>(params[termSites.size()]);
+
+		CompositeSpinInstruction current;
 		for (int i = 0; i < termSites.size(); i++) {
-			std::cout << "ADDING SYMBOL " << termSites[i] << ", " << params[i] << "\n";
-			// here symbol 'd' is a creation operator
-			// and symbol 'a' is an anhililation operator
-			if (boost::get<int>(params[i])) { // If this is a creation operator
+			std::cout << "ADDING SYMBOL " << termSites[i] << ", " << params[i] << ": ";
 
-			} else {
-
+			// Create Zi's
+			std::vector<std::pair<int, std::string>> zs;
+			for (int j = 0; j <= termSites[i]-1; j++) {
+				zs.push_back({j, "Z"});
 			}
+
+			SpinInstruction zSpins(zs);
+			CompositeSpinInstruction sigPlusMinus;
+			auto xi = std::make_shared<SpinInstruction>(
+					std::vector<std::pair<int, std::string>> { { termSites[i],
+							"X" } });
+			sigPlusMinus.addInstruction(xi);
+
+			if (boost::get<int>(params[i])) { // If this is a creation operator
+				// Create sigmaPlus
+				auto iyi = std::make_shared<SpinInstruction>(
+						std::vector<std::pair<int, std::string>> { {
+								termSites[i], "Y" } },
+						std::complex<double>(0, -1));
+				sigPlusMinus.addInstruction(iyi);
+			} else {
+				auto negiyi = std::make_shared<SpinInstruction>(
+						std::vector<std::pair<int, std::string>> { {
+								termSites[i], "Y" } },
+						std::complex<double>(0, 1));
+				sigPlusMinus.addInstruction(negiyi);
+			}
+
+			std::cout << "SIGPLUSMINUS: " << sigPlusMinus.toString("") << "\n";
+			auto temp = 0.5 * sigPlusMinus;
+			temp = zSpins * temp;
+
+			if (i == 0) {
+				current = temp;
+			} else {
+				current = current * temp;
+			}
+
+			std::cout << current.toString("") << "\n";
 
 		}
 
+		auto temp = fermionCoeff * current;
+		total = total + temp;
 
 	}
+
+	std::cout << "FINAL RESULT:\n" << total.toString("") << "\n";
+
 
 	return newIr;
 }

@@ -40,10 +40,10 @@ public:
 			sites.push_back(p.first);
 			parameters.push_back(InstructionParameter(p.second));
 		}
-		parameters.push_back(InstructionParameter(1.0));
+		parameters.push_back(InstructionParameter(std::complex<double>(1.0)));
 	}
 
-	FermionInstruction(std::vector<std::pair<int,int>> operators, double coeff) {
+	FermionInstruction(std::vector<std::pair<int,int>> operators, std::complex<double> coeff) {
 		for (auto p : operators) {
 			sites.push_back(p.first);
 			parameters.push_back(InstructionParameter(p.second));

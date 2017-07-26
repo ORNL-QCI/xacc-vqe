@@ -44,6 +44,7 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 	SpinInstruction inst(std::vector<std::pair<int, std::string>> { { 4, "X" },
 			{ 3, "Z" }, { 9, "Y" }, { 1, "Z" } });
 
+	BOOST_VERIFY(inst.coefficient == std::complex<double>(1,0));
 	BOOST_VERIFY(inst.bits().size() == 4);
 	BOOST_VERIFY(inst.getParameters().size() == 5);
 
@@ -58,12 +59,14 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 	SpinInstruction i2(std::vector<std::pair<int, std::string>> { { 4, "X" },
 			{ 3, "Z" } });
 	auto sumInst = inst + i2;
-	std::string expected = "(1,0) * X4 * Z3 * Y9 * Z1 + (1,0) * X4 * Z3";
-	BOOST_TEST(expected == sumInst.toString(""));
+	std::cout << sumInst.toString("") << "\n";
+	std::string expected = "(1,0) * Z1 * Z3 * X4 * Y9 + (1,0) * Z3 * X4";
+	BOOST_VERIFY(expected == sumInst.toString(""));
 
 	SpinInstruction i3(std::vector<std::pair<int, std::string>> { { 3, "X" } });
 	auto testPauliProducts = i2 * i3;
-	BOOST_VERIFY("(0,1) * X4 * Y3" == testPauliProducts.toString(""));
+	std::cout << "Prod:\n" << testPauliProducts.toString("") << "\n";
+	BOOST_VERIFY("(0,1) * Y3 * X4" == testPauliProducts.toString(""));
 
 	BOOST_VERIFY(inst == inst);
 
@@ -75,14 +78,16 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 
 	// Term * scalar multiple
 	auto multScalar = testPauliProducts * 3.3;
-	BOOST_VERIFY("(0,3.3) * X4 * Y3" == multScalar.toString(""));
+	BOOST_VERIFY("(0,3.3) * Y3 * X4" == multScalar.toString(""));
 
 	testPauliProducts*=3.3;
 	BOOST_VERIFY(testPauliProducts == multScalar);
 
 	// Plus with same terms
 	sumInst = inst + 2.2 * inst;
-	BOOST_VERIFY("(3.2,0) * X4 * Z3 * Y9 * Z1" == sumInst.toString(""));
+	std::cout << "HI:\n" << (2.2*inst).toString("") << "\n";
+	std::cout << "HEY:\n" << sumInst.toString("") << "\n";
+	BOOST_VERIFY("(3.2,0) * Z1 * Z3 * X4 * Y9" == sumInst.toString(""));
 
 	SpinInstruction i4(std::vector<std::pair<int, std::string>> { { 0, "Z" } });
 	SpinInstruction i5(std::vector<std::pair<int, std::string>> { { 1, "X" } });
@@ -94,6 +99,7 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 	compInst.addInstruction(std::make_shared<SpinInstruction>(i6));
 
 	auto newMultByComp = i4 * compInst;
+	std::cout << "NEWMULT:\n" << newMultByComp.toString("") << "\n";
 	BOOST_VERIFY("(1,0) * Z0 * X1 + (0,1) * Z0 * Y1" == newMultByComp.toString(""));
 
 	// Z1 * X1 + i * Z1 * Y1 = i * Y1 + i * (-i * X1)

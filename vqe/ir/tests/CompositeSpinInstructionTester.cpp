@@ -63,13 +63,13 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 	BOOST_VERIFY("(0,-1) * Y1 + (-1,0) * X1" == multBySpinInst.toString(""));
 	multBySpinInst = compInst * i1;
 	BOOST_VERIFY(
-			"(1,0) * X1 * Z0 + (0,1) * Y1 * Z0" == multBySpinInst.toString(""));
+			"(1,0) * Z0 * X1 + (0,1) * Z0 * Y1" == multBySpinInst.toString(""));
 
 	auto multByComposite = compInst * compInst;
 	BOOST_VERIFY("(0,0)" == multByComposite.toString(""));
 
 	BOOST_VERIFY(
-			"(2,0) * I + (1,0) * X1 * Z0 + (1,0) * Z0 * X1"
+			"(2,0) * I + (2,0) * Z0 * X1"
 					== (compInst3 * compInst3).toString(""));
 
 	auto test = compInst * 4.4;
