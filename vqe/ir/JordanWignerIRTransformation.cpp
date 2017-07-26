@@ -1,6 +1,4 @@
 #include "JordanWignerIRTransformation.hpp"
-#include "GateQIR.hpp"
-#include "SpinInstruction.hpp"
 
 namespace xacc {
 namespace vqe {
@@ -36,8 +34,6 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 
 		CompositeSpinInstruction current;
 		for (int i = 0; i < termSites.size(); i++) {
-			std::cout << "ADDING SYMBOL " << termSites[i] << ", " << params[i] << ": ";
-
 			// Create Zi's
 			std::vector<std::pair<int, std::string>> zs;
 			for (int j = 0; j <= termSites[i]-1; j++) {
@@ -66,7 +62,6 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 				sigPlusMinus.addInstruction(negiyi);
 			}
 
-			std::cout << "SIGPLUSMINUS: " << sigPlusMinus.toString("") << "\n";
 			auto temp = 0.5 * sigPlusMinus;
 			temp = zSpins * temp;
 
@@ -75,20 +70,20 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 			} else {
 				current = current * temp;
 			}
-
-			std::cout << current.toString("") << "\n";
-
 		}
 
 		auto temp = fermionCoeff * current;
-		total = total + temp;
+		result = result + temp;
 
 	}
 
-	std::cout << "FINAL RESULT:\n" << total.toString("") << "\n";
-
+	// Populate GateQIR now...
 
 	return newIr;
+}
+
+CompositeSpinInstruction JordanWignerIRTransformation::getResult() {
+	return result;
 }
 
 }

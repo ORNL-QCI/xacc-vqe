@@ -33,168 +33,80 @@
 
 #include "Instruction.hpp"
 #include "CompositeSpinInstruction.hpp"
+#include "CommonPauliProducts.hpp"
 #include <map>
 
 namespace xacc {
 
 namespace vqe {
 
+/**
+ * The SpinInstruction is a realization of the XACC Instruction
+ * interface that models a single term in a spin-based
+ * Hamiltonian - a term of Pauli products. At its
+ * core it keeps track of a vector if int-string pairs
+ * that model the qubit operated on and the Pauli gate name,
+ * e.g. (0, Z) is a Z0 gate. It exposes overloaded
+ * operators to make composing complex algebraic
+ * composites of SpinInstructions is easier.
+ *
+ * Also, all SpinInstructions keep track of
+ * a complex<double> coefficient.
+ *
+ */
 class SpinInstruction: public Instruction {
 
 protected:
 
 	/**
-	 * The list of qubits this term operates on
+	 * The Pauli gates this SpinInstruction models.
 	 */
-	std::vector<int> qubits;
+	std::vector<std::pair<int, std::string>> terms;
 
 	/**
-	 * For the ith qubit, the ith InstructionParameter
-	 * is a string that is I, X, Y, or Z. The last
-	 * element of this list is the coefficient of this term
+	 * A convenience mapping for common
+	 * Pauli matrix products.
 	 */
-	std::vector<InstructionParameter> parameters;
-
-	std::map<std::pair<std::string, std::string>,
-			std::pair<std::complex<double>, std::string>> pauliProducts;
-
-	std::vector<std::pair<int, std::string>> terms;
+	CommonPauliProducts pauliProducts;
 
 public:
 
+	/**
+	 * The coefficient multiplying this SpinInstruction.
+	 */
 	std::complex<double> coefficient;
 
-	SpinInstruction(const SpinInstruction& i) :
-			qubits(i.qubits), parameters(i.parameters), pauliProducts(
-					i.pauliProducts), terms(i.terms), coefficient(i.coefficient) {
-	}
 	/**
-	 * The Constructor, takes one qubit
-	 * indicating this is a bias value, initialized to 0.0
+	 * The copy constructor
+	 * @param i
+	 */
+	SpinInstruction(const SpinInstruction& i) :
+			pauliProducts(i.pauliProducts), terms(i.terms), coefficient(
+					i.coefficient) {
+	}
+
+	/**
+	 * The Constructor, takes a vector of
+	 * qubit-gatename pairs. Initializes coefficient to 1
 	 *
-	 * @param qbit The bit index
+	 * @param operators The pauli operators making up this SpinInstruction
 	 */
 	SpinInstruction(std::vector<std::pair<int, std::string>> operators) : terms(operators), coefficient(std::complex<double>(1,0)) {
-		for (auto p : operators) {
-			qubits.push_back(p.first);
-			parameters.push_back(InstructionParameter(p.second));
-		}
-
 		std::sort(terms.begin(), terms.end(),
 				[](auto& left, auto& right) {return left.first < right.first;});
-
-		parameters.push_back(
-				InstructionParameter(std::complex<double>(1.0, 0.0)));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("I", "I"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "I")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("I", "X"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "X")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("X", "I"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "X")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("I", "Y"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "Y")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("Y", "I"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "Y")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("Z", "I"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "Z")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("I", "Z"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "Z")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("X", "X"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "I")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("Y", "Y"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "I")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("Z", "Z"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "I")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("X", "Y"),
-						std::make_pair(std::complex<double>(0.0, 1.0), "Z")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("X", "Z"),
-						std::make_pair(std::complex<double>(0.0, -1.0), "Y")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("Y", "X"),
-						std::make_pair(std::complex<double>(0.0, -1.0), "Z")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("Y", "Z"),
-						std::make_pair(std::complex<double>(0.0, 1.0), "X")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("Z", "X"),
-						std::make_pair(std::complex<double>(0.0, 1.0), "Y")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("Z", "Y"),
-						std::make_pair(std::complex<double>(0.0, -1.0), "X")));
 	}
 
+	/**
+	 * The Constructor, takes a vector of
+	 * qubit-gatename pairs and this instruction's coefficient
+	 *
+	 * @param operators
+	 * @param coeff
+	 */
 	SpinInstruction(std::vector<std::pair<int, std::string>> operators,
 			std::complex<double> coeff) : terms(operators), coefficient(coeff) {
-		for (auto p : operators) {
-			qubits.push_back(p.first);
-			parameters.push_back(InstructionParameter(p.second));
-		}
-		parameters.push_back(InstructionParameter(coeff));
-
 		std::sort(terms.begin(), terms.end(),
 						[](auto& left, auto& right) {return left.first < right.first;});
-
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("I", "I"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "I")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("I", "X"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "X")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("X", "I"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "X")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("I", "Y"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "Y")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("Y", "I"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "Y")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("Z", "I"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "Z")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("I", "Z"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "Z")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("X", "X"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "I")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("Y", "Y"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "I")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("Z", "Z"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "I")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("X", "Y"),
-						std::make_pair(std::complex<double>(0.0, 1.0), "Z")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("X", "Z"),
-						std::make_pair(std::complex<double>(0.0, -1.0), "Y")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("Y", "X"),
-						std::make_pair(std::complex<double>(0.0, -1.0), "Z")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("Y", "Z"),
-						std::make_pair(std::complex<double>(0.0, 1.0), "X")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("Z", "X"),
-						std::make_pair(std::complex<double>(0.0, 1.0), "Y")));
-		pauliProducts.insert(
-				std::make_pair(std::make_pair("Z", "Y"),
-						std::make_pair(std::complex<double>(0.0, -1.0), "X")));
-
 	}
 
 	/**
@@ -218,8 +130,7 @@ public:
 		std::stringstream ss;
 		ss << coefficient << " * ";
 		for (auto t : terms) {
-//		for (int i = 0; i < qubits.size(); i++) {
-			if ("I" == t.second) {//boost::get<std::string>(getParameter(i))) {
+			if ("I" == t.second) {
 				ss << "I * ";
 			} else {
 				ss << t.second << t.first
@@ -238,7 +149,11 @@ public:
 	 * @return bits The bits this Instruction operates on.
 	 */
 	virtual const std::vector<int> bits() {
-		return qubits;
+		std::vector<int> qbits;
+		for (auto t : terms) {
+			qbits.push_back(t.first);
+		}
+		return qbits;
 	}
 
 	/**
@@ -248,7 +163,13 @@ public:
 	 * @return param The InstructionParameter at the given index.
 	 */
 	virtual InstructionParameter getParameter(const int idx) const {
-		return parameters[idx];
+		if (idx != 0) {
+			XACCError("SpinInstruction keeps track of 1 parameter, the "
+					"term coefficient, its Instruction Parmater "
+					"index is 0. " + std::to_string(idx) + " is "
+							"an invalid index.");
+		}
+		return InstructionParameter(coefficient);
 	}
 
 	/**
@@ -257,7 +178,7 @@ public:
 	 * @return params This instructions parameters.
 	 */
 	virtual std::vector<InstructionParameter> getParameters() {
-		return parameters;
+		return std::vector<InstructionParameter>{InstructionParameter(coefficient)};
 	}
 
 	/**
@@ -267,7 +188,13 @@ public:
 	 * @param inst The instruction.
 	 */
 	virtual void setParameter(const int idx, InstructionParameter& inst) {
-		parameters[idx] = inst;
+		if (idx != 0) {
+			XACCError("SpinInstruction keeps track of 1 parameter, the "
+					"term coefficient, its Instruction Parmater "
+					"index is 0. " + std::to_string(idx) + " is "
+							"an invalid index.");
+		}
+		coefficient = boost::get<std::complex<double>>(inst);
 	}
 
 	/**
@@ -276,7 +203,7 @@ public:
 	 * @return nInsts The number of instructions.
 	 */
 	virtual const int nParameters() {
-		return parameters.size();
+		return 1;
 	}
 
 	/**
@@ -319,6 +246,12 @@ public:
 	virtual void enable() {
 	}
 
+	/**
+	 * Overloaded operator to check equality between this SpinInstruction
+	 * and CompositeSpinInstructions
+	 * @param b the composite spin instruction
+	 * @return equal
+	 */
 	bool operator ==(CompositeSpinInstruction &b) const {
 		if (b.nInstructions() > 1) {
 			return false;
@@ -328,6 +261,13 @@ public:
 		}
 	}
 
+	/**
+	 * Overloaded operator to check this SpinInstruction is not
+	 * equal to the given CompositeSpinInstruction
+	 *
+	 * @param b the composite spin instruction
+	 * @return notEqual
+	 */
 	bool operator !=(CompositeSpinInstruction &b) const {
 		return !operator==(b);
 	}
@@ -339,19 +279,13 @@ public:
 	 * @return equal
 	 */
 	bool operator ==(const SpinInstruction &b) const {
-//		std::cout << "\t" << b.qubits.size() << ", " << qubits.size() << "\n";
-		if (b.qubits.size() != qubits.size()) {
+		if (b.terms.size() != terms.size()) {
 			return false;
 		}
 
 		for (int i = 0; i < terms.size(); i++) {
-//			if ((qubits[i] != b.qubits[i])
-//					|| (getParameter(i) != b.getParameter(i))) {
 			if ((terms[i].first != b.terms[i].first)
 					|| (terms[i].second != b.terms[i].second)) {
-//				std::cout << "\t" << qubits[i] << ", " << b.qubits[i] << ", " <<
-//						getParameter(i) << ", " << b.getParameter(i) << "\n";
-
 				// If these two gates are both I's then we don't care about
 				// the qubits they operate on
 				if (terms[i].second == "I" &&
@@ -362,7 +296,6 @@ public:
 				return false;
 			}
 		}
-
 		return true;
 	}
 
@@ -385,17 +318,13 @@ public:
 	SpinInstruction operator*(const SpinInstruction &b) const {
 
 		auto newCoeff = coefficient * b.coefficient;
-//		boost::get<std::complex<double>>(
-//				getParameter(qubits.size()))
-//				* boost::get<std::complex<double>>(
-//						b.getParameter(b.qubits.size()));
 
 		std::vector<std::pair<int, std::string>> newTerms;
 		for (int i = 0; i < terms.size(); i++) {
 			newTerms.push_back(
 					std::make_pair(terms[i].first, terms[i].second));
 		}
-		for (int i = 0; i < b.qubits.size(); i++) {
+		for (int i = 0; i < b.terms.size(); i++) {
 			newTerms.push_back(
 					std::make_pair(b.terms[i].first,b.terms[i].second));
 		}
@@ -417,10 +346,6 @@ public:
 	SpinInstruction operator*(const std::complex<double> &b) const {
 		SpinInstruction ret(*this);
 		ret.coefficient = coefficient * b;
-//		InstructionParameter p(
-//				boost::get<std::complex<double>>(getParameter(qubits.size()))
-//						* b);
-//		ret.setParameter(qubits.size(), p);
 		return ret;
 	}
 
@@ -455,10 +380,6 @@ public:
 	 * @return multipliedInst
 	 */
 	SpinInstruction& operator*=(const std::complex<double> &d) {
-//		InstructionParameter p(
-//				boost::get<std::complex<double>>(getParameter(qubits.size()))
-//						* d);
-//		setParameter(qubits.size(), p);
 		coefficient *= d;
 		return *this;
 	}
@@ -496,14 +417,8 @@ public:
 
 		if (operator==(b)) {
 			auto newCoeff = coefficient + b.coefficient;
-//			boost::get<std::complex<double>>(
-//					getParameter(qubits.size()))
-//					+ boost::get<std::complex<double>>(
-//							b.getParameter(qubits.size()));
 			auto ptr = std::make_shared<SpinInstruction>(*this);
 			ptr->coefficient = newCoeff;
-//			InstructionParameter newparam(newCoeff);
-//			ptr->setParameter(qubits.size(), newparam);
 			ret.addInstruction(ptr);
 		} else {
 			ret.addInstruction(std::make_shared<SpinInstruction>(*this));
@@ -512,19 +427,26 @@ public:
 		return ret;
 	}
 
+	/**
+	 * We don't want this Instruction to be visitable
+	 * @param EMPTY_DEFINE_VISITABLE()
+	 */
 	EMPTY_DEFINE_VISITABLE()
 
 private:
 
+	/**
+	 * Replace Pauli products with equivalent single Pauli
+	 * as given in the CommonPauliProducts class
+	 * @param si The SpinInstruction to modify.
+	 * @return newInst A new SpinInstruction
+	 */
 	SpinInstruction replaceCommonPauliProducts(SpinInstruction& si) {
 		auto newCoeff = coefficient;
-//		boost::get<std::complex<double>>(
-//				getParameter(qubits.size()));
 		std::vector<std::pair<int, std::string>> newTerms;
-		for (int i = 0; i < si.qubits.size(); i++) {
+		for (int i = 0; i < si.terms.size(); i++) {
 			newTerms.push_back(
 					std::make_pair(si.terms[i].first,si.terms[i].second));
-//							boost::get<std::string>(getParameter(i))));
 		}
 
 		std::sort(newTerms.begin(), newTerms.end(),
@@ -533,6 +455,13 @@ private:
 		return replaceCommonPauliProducts(newTerms, newCoeff);
 	}
 
+	/**
+	 * Replace Pauli products with equivalent single Pauli
+	 * as given in the CommonPauliProducts class
+	 * @param newTerms
+	 * @param newCoeff
+	 * @return
+	 */
 	SpinInstruction replaceCommonPauliProducts(
 			std::vector<std::pair<int, std::string>>& newTerms,
 			std::complex<double> newCoeff) const {
@@ -561,7 +490,7 @@ private:
 }
 
 /**
- * Operator to enable lhs mutliplcation by scalar
+ * Operator to enable lhs multiplication by scalar
  * @param scalar
  * @param rhs
  * @return
@@ -572,4 +501,4 @@ xacc::vqe::SpinInstruction operator*(double const& scalar,
 xacc::vqe::SpinInstruction operator*(std::complex<double> const& scalar,
 		xacc::vqe::SpinInstruction rhs);
 
-#endif /* VQE_IR_SPININSTRUCTION_HPP_ */
+#endif

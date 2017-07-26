@@ -15,25 +15,41 @@ namespace xacc {
 
 namespace vqe {
 
+/**
+ * The FermionInstruction is a realization of the Instruction
+ * interface that models a fermionic creation/annihilation term
+ * in a second-quantized Hamiltonian. A FermionInstruction keeps
+ * track of a vector of operators, with each operator describing
+ * the site it operates on and whether it is a creation or
+ * annihilation operator on that site. FermionInstructions
+ * also keep track of a coefficient multiplying the term.
+ *
+ */
 class FermionInstruction : public Instruction {
 
 public:
 
 	/**
+	 * The individual operator sites. For example,
+	 * a^3 a0 - > (3, 0)
 	 */
 	std::vector<int> sites;
 
 	/**
+	 * A vector where the ith element represents
+	 * a 0 or 1 (annihilation or creation) for the ith
+	 * site in the sites vector. The sites.size() element
+	 * of this vector represents the term coefficient.
 	 */
 	std::vector<InstructionParameter> parameters;
 
 public:
 
 	/**
-	 * The Constructor, takes one qubit
-	 * indicating this is a bias value, initialized to 0.0
+	 * The constructor, takes the (site, creation/annihilation) pairs
+	 * that describe this term. Initializes coefficient to 1.0
 	 *
-	 * @param qbit The bit index
+	 * @param operators Pairs describing site and if creation or annihilation
 	 */
 	FermionInstruction(std::vector<std::pair<int,int>> operators) {
 		for (auto p : operators) {
@@ -43,6 +59,13 @@ public:
 		parameters.push_back(InstructionParameter(std::complex<double>(1.0)));
 	}
 
+	/**
+	 * The constructor, takes the (site, creation/annihilation) pairs
+	 * that describe this term and term coefficient
+	 *
+	 * @param operators Pairs describing site and if creation or annihilation
+	 * @param coeff The term coefficient
+	 */
 	FermionInstruction(std::vector<std::pair<int,int>> operators, std::complex<double> coeff) {
 		for (auto p : operators) {
 			sites.push_back(p.first);

@@ -121,6 +121,12 @@ CompositeSpinInstruction CompositeSpinInstruction::operator+(CompositeSpinInstru
 	return ret;
 }
 
+CompositeSpinInstruction CompositeSpinInstruction::operator+(SpinInstruction& b) {
+	CompositeSpinInstruction ret(*this);
+	ret.addInstruction(std::make_shared<SpinInstruction>(b));
+	ret.simplify();
+	return ret;
+}
 
 void CompositeSpinInstruction::simplify() {
 	for (int i = 0; i < nInstructions(); i++) {
@@ -134,9 +140,7 @@ void CompositeSpinInstruction::simplify() {
 				if (castedi->operator==(*castedj.get())) {
 
 					auto size = castedi->bits().size();
-//					auto coeffi = castedi->coefficient;
 					auto coeffj = castedj->coefficient;
-//					auto newParam = InstructionParameter(coeffi + coeffj);
 
 					castedi->coefficient += coeffj;
 					auto it = instructions.begin();
@@ -151,7 +155,7 @@ void CompositeSpinInstruction::simplify() {
 	for (int i = 0; i < nInstructions(); i++) {
 		auto inst = getInstruction(i);
 		auto casted = std::dynamic_pointer_cast<SpinInstruction>(inst);
-		auto coeff = casted->coefficient;//boost::get<std::complex<double>>(inst->getParameter(inst->bits().size()));
+		auto coeff = casted->coefficient;
 		if (std::complex<double>(0,0) == coeff) {
 			auto it = instructions.begin();
 			std::advance(it, i);
@@ -160,6 +164,7 @@ void CompositeSpinInstruction::simplify() {
 		}
 	}
 }
+
 }
 }
 

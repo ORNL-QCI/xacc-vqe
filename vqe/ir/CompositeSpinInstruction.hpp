@@ -34,38 +34,56 @@
 #include "Function.hpp"
 #include <boost/algorithm/string.hpp>
 
-
 namespace xacc {
 
 namespace vqe {
 
 class SpinInstruction;
 
+/**
+ * The CompositeSpinInstruction is an XACC Function realization
+ * that encapsulates a sum of SpinInstructions.
+ */
 class CompositeSpinInstruction: public Function {
 
 protected:
 
+	/**
+	 * List of SpinInstructions this CompositeSpinInstruction
+	 * is composed of.
+	 */
 	std::list<InstPtr> instructions;
 
 public:
 
 	/**
-	 * The constructor, takes the function unique id and its name.
-	 *
-	 * @param id
-	 * @param name
+	 * The nullary constructor.
 	 */
-	CompositeSpinInstruction() {
-	}
+	CompositeSpinInstruction() {}
 
+	/**
+	 * The Copy constructor
+	 * @param i
+	 */
 	CompositeSpinInstruction(const CompositeSpinInstruction& i) :
 			instructions(i.instructions) {
 	}
 
+	/**
+	 * Return the number of SpinInstructions in this sum.
+	 *
+	 * @return
+	 */
 	virtual const int nInstructions() {
 		return instructions.size();
 	}
 
+	/**
+	 * Return the SpinInstruction at the given index.
+	 *
+	 * @param idx The index of the SpinInstruction
+	 * @return instruction
+	 */
 	virtual InstPtr getInstruction(const int idx) {
 		if (instructions.size() > idx) {
 			return *std::next(instructions.begin(), idx);
@@ -74,10 +92,20 @@ public:
 		}
 	}
 
+	/**
+	 * Return all SpinInstructions
+	 *
+	 * @return instructions
+	 */
 	virtual std::list<InstPtr> getInstructions() {
 		return instructions;
 	}
 
+	/**
+	 * Remove the instruction at the given index.
+	 *
+	 * @param idx The index of the instruction to remove.
+	 */
 	virtual void removeInstruction(const int idx) {
 		instructions.remove(getInstruction(idx));
 	}
@@ -104,6 +132,12 @@ public:
 				getInstruction(idx), replacingInst);
 	}
 
+	/**
+	 * Insert the given SpinInstruction at the given index.
+	 *
+	 * @param idx The index of the new instruction
+	 * @param newInst
+	 */
 	virtual void insertInstruction(const int idx, InstPtr newInst) {
 		auto iter = std::next(instructions.begin(), idx);
 		instructions.insert(iter, newInst);
@@ -146,79 +180,184 @@ public:
 		return r;
 	}
 
+	/**
+	 * CompositeSpinInstructions do not contain parameters. This
+	 * method is not implmeneted. An error will be thrown if invoked.
+	 *
+	 * @param idx
+	 * @return
+	 */
 	virtual InstructionParameter getParameter(const int idx) const {
 		XACCError(
 				"CompositeSpinInstruction does not contain runtime parameters.");
 	}
 
+	/**
+	 * CompositeSpinInstructions do not contain parameters. This
+	 * method is not implmeneted. An error will be thrown if invoked.
+	 *
+	 * @param idx
+	 * @return
+	 */
 	virtual void setParameter(const int idx, InstructionParameter& p) {
 		XACCError(
 				"CompositeSpinInstruction does not contain runtime parameters.");
 	}
 
+	/**
+	 * CompositeSpinInstructions do not contain parameters. This
+	 * method is not implmeneted. An error will be thrown if invoked.
+	 *
+	 * @param idx
+	 * @return
+	 */
 	virtual std::vector<InstructionParameter> getParameters() {
 		XACCError(
 				"CompositeSpinInstruction does not contain runtime parameters.");
 	}
 
+	/**
+	 * CompositeSpinInstruction is not parameterized.
+	 *
+	 * @return
+	 */
 	virtual bool isParameterized() {
 		return false;
 	}
 
+	/**
+	 * There are 0 parameters.
+	 * @return
+	 */
 	virtual const int nParameters() {
 		return 0;
 	}
 
+	/**
+	 * CompositeSpinInstructions do not contain parameters. This
+	 * method is not implmeneted. An error will be thrown if invoked.
+	 *
+	 * @param idx
+	 * @return
+	 */
 	virtual void evaluateVariableParameters(
 			std::vector<InstructionParameter> parameters) {
 		XACCError(
 				"CompositeSpinInstruction does not contain runtime parameters.");
 	}
 
+	/**
+	 * Overloaded operator to check equality between this CompositeSpinInstruction
+	 * and SpinInstructions
+	 * @param b the spin instruction
+	 * @return equal
+	 */
 	bool operator==(SpinInstruction &b);
+
+	/**
+	 * Overloaded operator to check inequality between this CompositeSpinInstruction
+	 * and SpinInstructions
+	 * @param b the spin instruction
+	 * @return equal
+	 */
 	bool operator!=(SpinInstruction &b);
+
+	/**
+	 * Overloaded operator to check equality between this CompositeSpinInstruction
+	 * and CompositeSpinInstructions
+	 * @param b the composite spin instruction
+	 * @return equal
+	 */
 	bool operator ==(CompositeSpinInstruction &b);
+
+	/**
+	 * Overloaded operator to check inequality between this CompositeSpinInstruction
+	 * and CompositeSpinInstructions
+	 * @param b the composite spin instruction
+	 * @return equal
+	 */
 	bool operator!=(CompositeSpinInstruction & b);
+
+	/**
+	 * Multiply this CompositeSpinInstruction by the given SpinInstruction, and
+	 * return a new CompositeSpinInstruction instance.
+	 *
+	 * @param b The other SpinInstruciton
+	 * @return multSpinInstruction
+	 */
 	CompositeSpinInstruction operator*(SpinInstruction &b);
+
+	/**
+	 * Multiply this CompositeSpinInstruction by the given CompositeSpinInstruction, and
+	 * return a new CompositeSpinInstruction instance.
+	 *
+	 * @param b The other CompositeSpinInstruciton
+	 * @return multSpinInstruction
+	 */
 	CompositeSpinInstruction operator*(CompositeSpinInstruction &b);
 
+	/**
+	 * Multiply this CompositeSpinInstruction by the given scalar complex value
+	 * and return the result as a new CompositeSpinInstruction
+	 *
+	 * @param b the value
+	 * @return multipliedInst
+	 */
 	CompositeSpinInstruction operator*(const std::complex<double> &b);
+
+	/**
+	 * Multiply this CompositeSpinInstruction by the given scalar double value
+	 * and return the result as a new CompositeSpinInstruction
+	 *
+	 * @param b the value
+	 * @return multipliedInst
+	 */
 	CompositeSpinInstruction operator*(const double &b);
+
+	/**
+	 * Multiply this CompositeSpinInstruction by the given scalar complex value
+	 * and return a reference to this CompositeSpinInstruction
+	 *
+	 * @param b the value
+	 * @return multipliedInst
+	 */
 	CompositeSpinInstruction& operator*=(const std::complex<double> &b);
+
+	/**
+	 * Multiply this CompositeSpinInstruction by the given scalar double value
+	 * and return a reference to this CompositeSpinInstruction
+	 *
+	 * @param b the value
+	 * @return multipliedInst
+	 */
 	CompositeSpinInstruction& operator*=(const double &b);
 
+	/**
+	 * Add the given CompositeSpinInstruction to this CompositeSpinInstruction,
+	 * creating a new CompositeSpinInstruction.
+	 *
+	 * @param b The instruction to add to this one
+	 * @return addCompInst The sum result.
+	 */
 	CompositeSpinInstruction operator+(CompositeSpinInstruction& b);
 
-//	/**
-//	 * Add the given SpinInstruction to this SpinInstruction,
-//	 * creating a new CompositeSpinInstruction.
-//	 *
-//	 * @param b The instruction to add to this one
-//	 * @return addCompInst The sum result.
-//	 */
-//	CompositeSpinInstruction operator+(const SpinInstruction &b) const {
-//		CompositeSpinInstruction ret;
-//
-//		if (operator==(b)) {
-//			auto newCoeff = boost::get<std::complex<double>>(
-//					getParameter(qubits.size()))
-//					+ boost::get<std::complex<double>>(
-//							b.getParameter(qubits.size()));
-//			auto ptr = std::make_shared<SpinInstruction>(*this);
-//			InstructionParameter newparam(newCoeff);
-//			ptr->setParameter(qubits.size(), newparam);
-//			ret.addInstruction(ptr);
-//		} else {
-//			ret.addInstruction(std::make_shared<SpinInstruction>(*this));
-//			ret.addInstruction(std::make_shared<SpinInstruction>(b));
-//		}
-//		return ret;
-//	}
+	/**
+	 * Add the given SpinInstruction to this CompositeSpinInstruction,
+	 * creating a new CompositeSpinInstruction.
+	 *
+	 * @param b The instruction to add to this one
+	 * @return addCompInst The sum result.
+	 */
+	CompositeSpinInstruction operator+(SpinInstruction& b);
 
 	EMPTY_DEFINE_VISITABLE()
 
 private:
 
+	/**
+	 * This method simplifies the CompositeSpinInstruction by
+	 * adding like terms.
+	 */
 	void simplify();
 };
 

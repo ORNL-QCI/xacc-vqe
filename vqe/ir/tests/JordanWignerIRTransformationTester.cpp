@@ -37,7 +37,7 @@
 
 using namespace xacc::vqe;
 
-BOOST_AUTO_TEST_CASE(checkFermionKernelConstruction) {
+BOOST_AUTO_TEST_CASE(checkJWTransform) {
 
 	auto Instruction = std::make_shared<FermionInstruction>(
 			std::vector<std::pair<int, int>> { { 2, 1 }, { 0, 0 }}, 3.17);
@@ -55,7 +55,8 @@ BOOST_AUTO_TEST_CASE(checkFermionKernelConstruction) {
 
 	auto newIr = jwTransform.transform(ir);
 
-
-
+	BOOST_VERIFY(
+			"(1.585,0) * X0 * Z1 * X2 + (1.585,0) * Y0 * Z1 * Y2"
+					== jwTransform.getResult().toString(""));
 }
 

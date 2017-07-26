@@ -36,6 +36,11 @@
 namespace xacc {
 namespace vqe {
 
+/**
+ * The FermionIR is a realization of the XACC IR
+ * interface that contains FermionKernels.
+ *
+ */
 class FermionIR: public virtual IR {
 
 public:
@@ -70,7 +75,6 @@ public:
 
 	virtual void addKernel(std::shared_ptr<Function> kernel) {
 		kernels.push_back(kernel);
-
 	}
 
 	virtual bool kernelExists(const std::string& name) {
@@ -102,4 +106,4 @@ protected:
 }
 }
 
-#endif /* QUANTUM_AQC_IR_FermionIR_HPP_ */
+#endif
