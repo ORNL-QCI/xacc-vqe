@@ -91,9 +91,13 @@ public:
 	 *
 	 * @param operators The pauli operators making up this SpinInstruction
 	 */
-	SpinInstruction(std::vector<std::pair<int, std::string>> operators) : terms(operators), coefficient(std::complex<double>(1,0)) {
+	SpinInstruction(std::vector<std::pair<int, std::string>> operators) :
+			terms(operators), coefficient(std::complex<double>(1, 0)) {
 		std::sort(terms.begin(), terms.end(),
-				[](auto& left, auto& right) {return left.first < right.first;});
+				[](std::pair<int, std::string>& left,
+						std::pair<int, std::string>& right) {
+			return left.first < right.first;
+		});
 	}
 
 	/**
@@ -104,9 +108,13 @@ public:
 	 * @param coeff
 	 */
 	SpinInstruction(std::vector<std::pair<int, std::string>> operators,
-			std::complex<double> coeff) : terms(operators), coefficient(coeff) {
+			std::complex<double> coeff) :
+			terms(operators), coefficient(coeff) {
 		std::sort(terms.begin(), terms.end(),
-						[](auto& left, auto& right) {return left.first < right.first;});
+				[](std::pair<int, std::string>& left,
+						std::pair<int, std::string>& right) {
+			return left.first < right.first;
+		});
 	}
 
 	/**
@@ -330,7 +338,10 @@ public:
 		}
 
 		std::sort(newTerms.begin(), newTerms.end(),
-						[](auto& left, auto& right) {return left.first < right.first;});
+				[](std::pair<int, std::string>& left,
+						std::pair<int, std::string>& right) {
+			return left.first < right.first;
+		});
 
 		return replaceCommonPauliProducts(newTerms, newCoeff);
 
@@ -454,7 +465,10 @@ private:
 		}
 
 		std::sort(newTerms.begin(), newTerms.end(),
-						[](auto& left, auto& right) {return left.first < right.first;});
+				[](std::pair<int, std::string>& left,
+						std::pair<int, std::string>& right) {
+			return left.first < right.first;
+		});
 
 		return replaceCommonPauliProducts(newTerms, newCoeff);
 	}

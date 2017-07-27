@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE(checkSimpleCompile) {
 	auto compiler = std::make_shared<FermionCompiler>();
 
 	// 3.17 adag_2 a_0 + 3.17 adag_0 a2
-	const std::string simpleFermionHamiltonian = "__qpu__ dwaveKernel() {\n"
+	const std::string simpleFermionHamiltonian = "__qpu__ fermionKernel() {\n"
 			"   3.17 2 1 0 0\n"
 			"   3.17 0 1 2 0\n"
 			"}";
