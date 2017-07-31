@@ -11,17 +11,9 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules")
 include (tests)
 
-if (NOT SYMENGINE_ROOT) 
-   set (SYMENGINE_ROOT /usr/local)  
-endif()
-
-find_package(SymEngine 0.1.0 CONFIG PATHS ${SYMENGINE_ROOT}/lib/cmake/symengine)
-set(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} "-std=c++0x")
-
 find_package(Boost COMPONENTS filesystem program_options system REQUIRED)
 find_package(XACC REQUIRED)
 
-include_directories(${SYMENGINE_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${XACC_INCLUDE_DIRS})
 

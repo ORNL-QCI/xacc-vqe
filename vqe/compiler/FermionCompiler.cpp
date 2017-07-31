@@ -112,8 +112,18 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 				"jordan-wigner");
 	}
 
-	return transform->transform(fermionir);
+	// Create the Spin Hamiltonian
+	auto transformedIR = transform->transform(fermionir);
 
+	// Prepend State Preparation if requested.
+	if (runtimeOptions->exists("state-preparation")) {
+		auto statePrepIRTransformStr = (*runtimeOptions)["state-preparation"];
+		auto statePrepIRTransform = ServiceRegistry::instance()->getService<
+				IRTransformation>(statePrepIRTransformStr);
+		return statePrepIRTransform->transform(transformedIR);
+	} else {
+		return transformedIR;
+	}
 
 }
 

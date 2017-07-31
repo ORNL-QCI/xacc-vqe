@@ -34,6 +34,7 @@ public:
 	 * a^3 a0 - > (3, 0)
 	 */
 	std::vector<int> sites;
+	std::vector<std::pair<int, int>> terms;
 
 	/**
 	 * A vector where the ith element represents
@@ -45,13 +46,18 @@ public:
 
 public:
 
+	std::complex<double> coefficient;
+
+	std::string variable = "";
+
 	/**
 	 * The constructor, takes the (site, creation/annihilation) pairs
 	 * that describe this term. Initializes coefficient to 1.0
 	 *
 	 * @param operators Pairs describing site and if creation or annihilation
 	 */
-	FermionInstruction(std::vector<std::pair<int,int>> operators) {
+	FermionInstruction(std::vector<std::pair<int, int>> operators) :
+			terms(operators), coefficient(std::complex<double>(1.0)) {
 		for (auto p : operators) {
 			sites.push_back(p.first);
 			parameters.push_back(InstructionParameter(p.second));
@@ -66,12 +72,25 @@ public:
 	 * @param operators Pairs describing site and if creation or annihilation
 	 * @param coeff The term coefficient
 	 */
-	FermionInstruction(std::vector<std::pair<int,int>> operators, std::complex<double> coeff) {
+	FermionInstruction(std::vector<std::pair<int, int>> operators,
+			std::complex<double> coeff) :
+			coefficient(coeff), terms(operators) {
 		for (auto p : operators) {
 			sites.push_back(p.first);
 			parameters.push_back(InstructionParameter(p.second));
 		}
 		parameters.push_back(InstructionParameter(coeff));
+	}
+
+	FermionInstruction(std::vector<std::pair<int, int>> operators,
+			std::string var) :
+			terms(operators), coefficient(std::complex<double>(1.0)), variable(
+					var) {
+		for (auto p : operators) {
+			sites.push_back(p.first);
+			parameters.push_back(InstructionParameter(p.second));
+		}
+		parameters.push_back(InstructionParameter(coefficient));
 	}
 
 	/**
@@ -92,7 +111,10 @@ public:
 	 */
 	virtual const std::string toString(const std::string& bufferVarName) {
 		std::stringstream ss;
-		ss << getParameter(sites.size()) << " * ";
+		ss << coefficient << " * ";
+		if (!variable.empty()) {
+			ss << variable << " * ";
+		}
 		for (int i = 0; i < sites.size(); i++) {
 			ss << "a" << sites[i] << (boost::get<int>(getParameter(i)) ? "\u2020" : "") << " * ";
 		}

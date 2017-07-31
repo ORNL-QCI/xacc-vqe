@@ -23,7 +23,9 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 	CompositeSpinInstruction total;
 
 	// Loop over all Fermionic terms...
-	for (auto fermionInst : fermiKernel->getInstructions()) {
+	for (auto f : fermiKernel->getInstructions()) {
+
+		auto fermionInst = std::dynamic_pointer_cast<FermionInstruction>(f);
 
 		// Get the creation or annihilation sites
 		auto termSites = fermionInst->bits();
@@ -31,7 +33,8 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 		// Get the params indicating if termSite is creation or annihilation
 		auto params = fermionInst->getParameters();
 
-		auto fermionCoeff = boost::get<std::complex<double>>(params[termSites.size()]);
+		auto fermionCoeff = fermionInst->coefficient;
+		auto fermionVar = fermionInst->variable;
 
 		CompositeSpinInstruction current;
 		for (int i = 0; i < termSites.size(); i++) {
@@ -41,7 +44,7 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 				zs.push_back({j, "Z"});
 			}
 
-			SpinInstruction zSpins(zs);
+			SpinInstruction zSpins(zs, fermionVar);
 			CompositeSpinInstruction sigPlusMinus;
 			auto xi = std::make_shared<SpinInstruction>(
 					std::vector<std::pair<int, std::string>> { { termSites[i],

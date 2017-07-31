@@ -11,6 +11,8 @@ usFunctionGetResourceSource(TARGET ${LIBRARY_NAME} OUT SRC)
 # Generate bundle initialization code
 usFunctionGenerateBundleInit(TARGET ${LIBRARY_NAME} OUT SRC)
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 add_library(${LIBRARY_NAME} SHARED ${SRC})
 
 set(_bundle_name xacc_vqe_irtransformations)

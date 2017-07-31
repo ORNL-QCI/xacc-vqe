@@ -28,46 +28,44 @@
  *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
-#include "JordanWignerIRTransformation.hpp"
-#include "AddUCCSDStatePreparation.hpp"
+#ifndef VQE_IR_ADDUCCSDSTATEPREPARATION_HPP_
+#define VQE_IR_JORDANWIGNERIRTRANSFORMATION_HPP_
 
-#include "cppmicroservices/BundleActivator.h"
-#include "cppmicroservices/BundleContext.h"
-#include "cppmicroservices/ServiceProperties.h"
+#include "IRTransformation.hpp"
+#include "FermionKernel.hpp"
+#include "FermionIR.hpp"
+#include "GateQIR.hpp"
+#include "SpinInstruction.hpp"
 
-#include <memory>
-#include <set>
+namespace xacc {
 
-using namespace cppmicroservices;
-
-namespace {
+namespace vqe {
 
 /**
  */
-class US_ABI_LOCAL VQEIRTransformationActivator: public BundleActivator {
+class AddUCCSDStatePreparation: public xacc::IRTransformation {
 
 public:
 
-	VQEIRTransformationActivator() {
+	/**
+	 *
+	 * @param ir
+	 * @return
+	 */
+	virtual std::shared_ptr<IR> transform(std::shared_ptr<IR> ir);
+
+	virtual const std::string name() const {
+		return "uccsd";
 	}
 
-	/**
-	 */
-	void Start(BundleContext context) {
-		auto c = std::make_shared<xacc::vqe::JordanWignerIRTransformation>();
-		auto c2 = std::make_shared<xacc::vqe::AddUCCSDStatePreparation>();
-
-		context.RegisterService<xacc::IRTransformation>(c);
-		context.RegisterService<xacc::IRTransformation>(c2);
-	}
-
-	/**
-	 */
-	void Stop(BundleContext /*context*/) {
+	virtual const std::string description() const {
+		return "";
 	}
 
 };
 
 }
 
-CPPMICROSERVICES_EXPORT_BUNDLE_ACTIVATOR(VQEIRTransformationActivator)
+}
+
+#endif

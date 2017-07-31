@@ -1,5 +1,6 @@
+
 /***********************************************************************************
- * Copyright (c) 2017, UT-Battelle
+ * Copyright (c) 2016, UT-Battelle
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,46 +29,24 @@
  *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
-#include "JordanWignerIRTransformation.hpp"
+#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MODULE AddUCCSDStatePreparationTester
+
+#include <boost/test/included/unit_test.hpp>
 #include "AddUCCSDStatePreparation.hpp"
 
-#include "cppmicroservices/BundleActivator.h"
-#include "cppmicroservices/BundleContext.h"
-#include "cppmicroservices/ServiceProperties.h"
+using namespace xacc::vqe;
 
-#include <memory>
-#include <set>
+BOOST_AUTO_TEST_CASE(checkAddUCCSDStatePreparation) {
 
-using namespace cppmicroservices;
+	auto options = xacc::RuntimeOptions::instance();
+	options->insert(std::make_pair("n-qubits", "2"));
+	options->insert(std::make_pair("n-electrons", "2"));
 
-namespace {
 
-/**
- */
-class US_ABI_LOCAL VQEIRTransformationActivator: public BundleActivator {
-
-public:
-
-	VQEIRTransformationActivator() {
-	}
-
-	/**
-	 */
-	void Start(BundleContext context) {
-		auto c = std::make_shared<xacc::vqe::JordanWignerIRTransformation>();
-		auto c2 = std::make_shared<xacc::vqe::AddUCCSDStatePreparation>();
-
-		context.RegisterService<xacc::IRTransformation>(c);
-		context.RegisterService<xacc::IRTransformation>(c2);
-	}
-
-	/**
-	 */
-	void Stop(BundleContext /*context*/) {
-	}
-
-};
+	AddUCCSDStatePreparation transform;
+	auto ir = std::make_shared<xacc::quantum::GateQIR>();
+	auto newIr = transform.transform(ir);
 
 }
 
-CPPMICROSERVICES_EXPORT_BUNDLE_ACTIVATOR(VQEIRTransformationActivator)
