@@ -344,51 +344,6 @@ public:
 		return !operator==(b);
 	}
 
-
-	/**
-	 * Takes rhs InstructionParameter at construction, visits
-	 * lhs InstructionParameter
-	 */
-	class multiplication_visitor: public boost::static_visitor<
-			InstructionParameter> {
-	protected:
-		InstructionParameter rhs;
-	public:
-		multiplication_visitor(InstructionParameter other) :
-				rhs(other) {
-		}
-
-		InstructionParameter operator()(std::complex<double> i) const {
-			if (rhs.which() == 3) {
-				// rhs is string, this is complex
-				auto pStr = boost::get<std::string>(rhs);
-				std::stringstream ss;
-				ss << i << " * " << rhs;
-				return InstructionParameter(ss.str());
-			} else {
-				// Both are complex, so just multiply
-				return InstructionParameter(
-						boost::get<std::complex<double>>(rhs)
-								* i);
-			}
-		}
-
-		InstructionParameter operator()(const std::string & str) const {
-			std::stringstream ss;
-			// lhs is a string
-			if (rhs.which() == 3) {
-				auto rhsStr = boost::get<std::string>(rhs);
-				if (rhsStr == str) {
-					ss << str << " * " << str;
-				} else {
-					ss << str << " * " << rhsStr;
-				}
-			} else {
-				ss << rhs << " * " << str;
-			}
-			return InstructionParameter(ss.str());
-		}
-	};
 	/**
 	 * Multiply this SpinInstruction by the given one, and
 	 * return a new SpinInstruction instance.
@@ -397,9 +352,6 @@ public:
 	 * @return multSpinInstruction
 	 */
 	SpinInstruction operator*(const SpinInstruction &b) const {
-
-//		auto newCoeff = boost::apply_visitor(
-//				multiplication_visitor(b.coefficient), coefficient);
 
 		auto newCoeff = coefficient * b.coefficient;
 
@@ -528,34 +480,6 @@ public:
 			ret.addInstruction(std::make_shared<SpinInstruction>(b));
 		}
 		return ret;
-//		if (operator==(b)) {
-//			if (coefficient.which() == b.coefficient.which()) {
-//				InstructionParameter newCoeff;
-//				if (coefficient.which() == 3) {
-//					std::stringstream ss;
-//					ss << "2.0 * " << coefficient;
-//					InstructionParameter newCoeff(ss.str());
-//					auto ptr = std::make_shared<SpinInstruction>(*this);
-//					ptr->coefficient = newCoeff;
-//					ret.addInstruction(ptr);
-//				} else {
-//					InstructionParameter newCoeff(
-//							boost::get<std::complex<double>>(coefficient)
-//									+ boost::get<std::complex<double>>(
-//											b.coefficient));
-//					auto ptr = std::make_shared<SpinInstruction>(*this);
-//					ptr->coefficient = newCoeff;
-//					ret.addInstruction(ptr);
-//				}
-//			} else {
-//				ret.addInstruction(std::make_shared<SpinInstruction>(*this));
-//				ret.addInstruction(std::make_shared<SpinInstruction>(b));
-//			}
-//		} else {
-//			ret.addInstruction(std::make_shared<SpinInstruction>(*this));
-//			ret.addInstruction(std::make_shared<SpinInstruction>(b));
-//		}
-//		return ret;
 	}
 
 	std::vector<std::pair<int, std::string>> getTerms() {
