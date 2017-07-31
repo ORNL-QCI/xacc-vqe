@@ -76,13 +76,15 @@ public:
 	 */
 	std::complex<double> coefficient;
 
+	std::string variable = "";
+
 	/**
 	 * The copy constructor
 	 * @param i
 	 */
 	SpinInstruction(const SpinInstruction& i) :
 			pauliProducts(i.pauliProducts), terms(i.terms), coefficient(
-					i.coefficient) {
+					i.coefficient), variable(i.variable) {
 	}
 
 	/**
@@ -93,6 +95,15 @@ public:
 	 */
 	SpinInstruction(std::vector<std::pair<int, std::string>> operators) :
 			terms(operators), coefficient(std::complex<double>(1, 0)) {
+		std::sort(terms.begin(), terms.end(),
+				[](std::pair<int, std::string>& left,
+						std::pair<int, std::string>& right) {
+			return left.first < right.first;
+		});
+	}
+
+	SpinInstruction(std::vector<std::pair<int, std::string>> operators, std::string var) :
+			terms(operators), coefficient(std::complex<double>(1, 0)), variable(var) {
 		std::sort(terms.begin(), terms.end(),
 				[](std::pair<int, std::string>& left,
 						std::pair<int, std::string>& right) {
@@ -117,6 +128,16 @@ public:
 		});
 	}
 
+	SpinInstruction(std::vector<std::pair<int, std::string>> operators,
+			std::complex<double> coeff, std::string var) :
+			terms(operators), coefficient(coeff), variable(var) {
+		std::sort(terms.begin(), terms.end(),
+				[](std::pair<int, std::string>& left,
+						std::pair<int, std::string>& right) {
+			return left.first < right.first;
+		});
+	}
+
 	/**
 	 * Return the name of this Instruction
 	 *
@@ -125,7 +146,7 @@ public:
 	virtual const std::string getName() {
 		return "qubit-instruction";
 	}
-	;
+
 
 	/**
 	 * Persist this Instruction to an assembly-like
@@ -137,6 +158,9 @@ public:
 	virtual const std::string toString(const std::string& bufferVarName) {
 		std::stringstream ss;
 		ss << coefficient << " * ";
+		if (!variable.empty()) {
+			ss << variable << " * ";
+		}
 		for (auto t : terms) {
 			if ("I" == t.second) {
 				ss << "I * ";
@@ -173,7 +197,7 @@ public:
 	virtual InstructionParameter getParameter(const int idx) const {
 		if (idx != 0) {
 			XACCError("SpinInstruction keeps track of 1 parameter, the "
-					"term coefficient, its Instruction Parmater "
+					"term coefficient, its Instruction Parameter "
 					"index is 0. " + std::to_string(idx) + " is "
 							"an invalid index.");
 		}
@@ -291,6 +315,10 @@ public:
 			return false;
 		}
 
+		if (variable != b.variable) {
+			return false;
+		}
+
 		for (int i = 0; i < terms.size(); i++) {
 			if ((terms[i].first != b.terms[i].first)
 					|| (terms[i].second != b.terms[i].second)) {
@@ -316,6 +344,51 @@ public:
 		return !operator==(b);
 	}
 
+
+	/**
+	 * Takes rhs InstructionParameter at construction, visits
+	 * lhs InstructionParameter
+	 */
+	class multiplication_visitor: public boost::static_visitor<
+			InstructionParameter> {
+	protected:
+		InstructionParameter rhs;
+	public:
+		multiplication_visitor(InstructionParameter other) :
+				rhs(other) {
+		}
+
+		InstructionParameter operator()(std::complex<double> i) const {
+			if (rhs.which() == 3) {
+				// rhs is string, this is complex
+				auto pStr = boost::get<std::string>(rhs);
+				std::stringstream ss;
+				ss << i << " * " << rhs;
+				return InstructionParameter(ss.str());
+			} else {
+				// Both are complex, so just multiply
+				return InstructionParameter(
+						boost::get<std::complex<double>>(rhs)
+								* i);
+			}
+		}
+
+		InstructionParameter operator()(const std::string & str) const {
+			std::stringstream ss;
+			// lhs is a string
+			if (rhs.which() == 3) {
+				auto rhsStr = boost::get<std::string>(rhs);
+				if (rhsStr == str) {
+					ss << str << " * " << str;
+				} else {
+					ss << str << " * " << rhsStr;
+				}
+			} else {
+				ss << rhs << " * " << str;
+			}
+			return InstructionParameter(ss.str());
+		}
+	};
 	/**
 	 * Multiply this SpinInstruction by the given one, and
 	 * return a new SpinInstruction instance.
@@ -325,7 +398,25 @@ public:
 	 */
 	SpinInstruction operator*(const SpinInstruction &b) const {
 
+//		auto newCoeff = boost::apply_visitor(
+//				multiplication_visitor(b.coefficient), coefficient);
+
 		auto newCoeff = coefficient * b.coefficient;
+
+		std::stringstream ss;
+		if (!variable.empty()) {
+			if (!b.variable.empty()) {
+				ss << variable << " * " << b.variable;
+			} else {
+				ss << variable;
+			}
+		} else {
+			if(!b.variable.empty()) {
+				ss << b.variable;
+			}
+		}
+
+		auto newVar = ss.str();
 
 		std::vector<std::pair<int, std::string>> newTerms;
 		for (int i = 0; i < terms.size(); i++) {
@@ -343,7 +434,7 @@ public:
 			return left.first < right.first;
 		});
 
-		return replaceCommonPauliProducts(newTerms, newCoeff);
+		return replaceCommonPauliProducts(newTerms, newCoeff, newVar);
 
 	}
 
@@ -426,6 +517,7 @@ public:
 	CompositeSpinInstruction operator+(const SpinInstruction &b) const {
 		CompositeSpinInstruction ret;
 
+
 		if (operator==(b)) {
 			auto newCoeff = coefficient + b.coefficient;
 			auto ptr = std::make_shared<SpinInstruction>(*this);
@@ -436,6 +528,34 @@ public:
 			ret.addInstruction(std::make_shared<SpinInstruction>(b));
 		}
 		return ret;
+//		if (operator==(b)) {
+//			if (coefficient.which() == b.coefficient.which()) {
+//				InstructionParameter newCoeff;
+//				if (coefficient.which() == 3) {
+//					std::stringstream ss;
+//					ss << "2.0 * " << coefficient;
+//					InstructionParameter newCoeff(ss.str());
+//					auto ptr = std::make_shared<SpinInstruction>(*this);
+//					ptr->coefficient = newCoeff;
+//					ret.addInstruction(ptr);
+//				} else {
+//					InstructionParameter newCoeff(
+//							boost::get<std::complex<double>>(coefficient)
+//									+ boost::get<std::complex<double>>(
+//											b.coefficient));
+//					auto ptr = std::make_shared<SpinInstruction>(*this);
+//					ptr->coefficient = newCoeff;
+//					ret.addInstruction(ptr);
+//				}
+//			} else {
+//				ret.addInstruction(std::make_shared<SpinInstruction>(*this));
+//				ret.addInstruction(std::make_shared<SpinInstruction>(b));
+//			}
+//		} else {
+//			ret.addInstruction(std::make_shared<SpinInstruction>(*this));
+//			ret.addInstruction(std::make_shared<SpinInstruction>(b));
+//		}
+//		return ret;
 	}
 
 	std::vector<std::pair<int, std::string>> getTerms() {
@@ -458,6 +578,7 @@ private:
 	 */
 	SpinInstruction replaceCommonPauliProducts(SpinInstruction& si) {
 		auto newCoeff = coefficient;
+		auto newVar = variable;
 		std::vector<std::pair<int, std::string>> newTerms;
 		for (int i = 0; i < si.terms.size(); i++) {
 			newTerms.push_back(
@@ -470,7 +591,7 @@ private:
 			return left.first < right.first;
 		});
 
-		return replaceCommonPauliProducts(newTerms, newCoeff);
+		return replaceCommonPauliProducts(newTerms, newCoeff, newVar);
 	}
 
 	/**
@@ -482,7 +603,7 @@ private:
 	 */
 	SpinInstruction replaceCommonPauliProducts(
 			std::vector<std::pair<int, std::string>>& newTerms,
-			std::complex<double> newCoeff) const {
+			std::complex<double> newCoeff, std::string newVar = "") const {
 
 		for (int i = 0; i < newTerms.size() - 1; i++) {
 			auto qubit1 = newTerms[i].first;
@@ -501,7 +622,7 @@ private:
 			}
 		}
 
-		return SpinInstruction(newTerms, newCoeff);
+		return SpinInstruction(newTerms, newCoeff, newVar);
 	}
 };
 }

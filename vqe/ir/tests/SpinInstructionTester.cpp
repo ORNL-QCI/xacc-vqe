@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 	SpinInstruction inst(std::vector<std::pair<int, std::string>> { { 4, "X" },
 			{ 3, "Z" }, { 9, "Y" }, { 1, "Z" } });
 
-	BOOST_VERIFY(inst.coefficient == std::complex<double>(1,0));
+	BOOST_VERIFY(boost::get<std::complex<double>>(inst.coefficient) == std::complex<double>(1,0));
 	BOOST_VERIFY(inst.bits().size() == 4);
 	BOOST_VERIFY(inst.getParameters().size() == 1);
 
@@ -100,3 +100,19 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 
 }
 
+BOOST_AUTO_TEST_CASE(checkVariableCoefficient) {
+	// make a4dag a3dag a9 a1
+	SpinInstruction inst(std::vector<std::pair<int, std::string>> { { 4, "X" },
+			{ 3, "Z" }, }, "theta");
+	auto three = 3*inst;
+	auto sum = ((inst+inst) + three);
+	BOOST_VERIFY(sum.toString("") == "(5,0) * theta * Z3 * X4");
+
+	SpinInstruction i2(std::vector<std::pair<int, std::string>> { { 4, "X" },
+			{ 3, "Z" } }, "theta2");
+
+	BOOST_VERIFY(i2 != inst);
+	auto sumInst = inst + i2;
+	BOOST_VERIFY("(1,0) * theta * Z3 * X4 + (1,0) * theta2 * Z3 * X4" == sumInst.toString(""));
+
+}

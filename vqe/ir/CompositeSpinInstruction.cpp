@@ -139,6 +139,9 @@ void CompositeSpinInstruction::simplify() {
 
 				if (castedi->operator==(*castedj.get())) {
 
+					// At this point castedi and castedj both
+					// have either complex or string, not differing
+
 					auto size = castedi->bits().size();
 					auto coeffj = castedj->coefficient;
 

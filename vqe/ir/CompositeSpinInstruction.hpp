@@ -365,8 +365,11 @@ private:
 
 }
 
-xacc::vqe::CompositeSpinInstruction operator*(double const& scalar, xacc::vqe::CompositeSpinInstruction rhs);
-xacc::vqe::CompositeSpinInstruction operator*(std::complex<double> const& scalar, xacc::vqe::CompositeSpinInstruction rhs);
+xacc::vqe::CompositeSpinInstruction operator*(double const& scalar,
+		xacc::vqe::CompositeSpinInstruction rhs);
+xacc::vqe::CompositeSpinInstruction operator*(
+		std::complex<double> const& scalar,
+		xacc::vqe::CompositeSpinInstruction rhs);
 
 
-#endif /* VQE_IR_COMPOSITESPININSTRUCTION_HPP_ */
+#endif
