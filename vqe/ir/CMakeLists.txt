@@ -28,7 +28,52 @@
 #   Initial API and implementation - Alex McCaskey
 #
 #**********************************************************************************/
+
+set (PACKAGE_NAME "XACC VQE Runtime")
+set (PACKAGE_DESCIPTION "XACC Variational Quantum Eigensolver IR Support")
+
+set (IR_LIBRARY_NAME xacc-vqe-ir)
+
+file (GLOB_RECURSE HEADERS *.hpp)
+file (GLOB SRC *.cpp)
+
+# Set up dependencies to resources to track changes
+usFunctionGetResourceSource(TARGET ${IR_LIBRARY_NAME} OUT SRC)
+# Generate bundle initialization code
+usFunctionGenerateBundleInit(TARGET ${IR_LIBRARY_NAME} OUT SRC)
+
+add_library(${IR_LIBRARY_NAME} SHARED ${SRC})
+
+set(_bundle_name xacc_vqe_ir)
+
+set_target_properties(${IR_LIBRARY_NAME} PROPERTIES
+  # This is required for every bundle
+  COMPILE_DEFINITIONS US_BUNDLE_NAME=${_bundle_name}
+  # This is for convenience, used by other CMake functions
+  US_BUNDLE_NAME ${_bundle_name}
+  )
+
+if(BUILD_SHARED_LIBS)
+  set_target_properties(${IR_LIBRARY_NAME} PROPERTIES
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN 1
+    )
+endif()
+
+# Embed meta-data from a manifest.json file
+usFunctionEmbedResources(TARGET ${IR_LIBRARY_NAME}
+  WORKING_DIRECTORY
+    ${CMAKE_CURRENT_SOURCE_DIR}
+  FILES
+    manifest.json
+  )
+
+target_link_libraries(${IR_LIBRARY_NAME} ${Boost_LIBRARIES} ${XACC_LIBRARIES} ${SYMENGINE_LIBRARIES})
+
+install(TARGETS ${IR_LIBRARY_NAME} DESTINATION ${XACC_LIBRARY_DIR})
+
+
 # Gather tests
 file (GLOB test_files tests/*.cpp)
-add_tests("${test_files}" "${CMAKE_CURRENT_SOURCE_DIR}" "${Boost_LIBRARIES};xacc-vqe;pthread;dl")
+add_tests("${test_files}" "${CMAKE_CURRENT_SOURCE_DIR}" "${Boost_LIBRARIES};xacc-vqe-ir;pthread;dl")
 

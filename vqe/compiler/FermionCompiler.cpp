@@ -34,7 +34,7 @@
 #include "RuntimeOptions.hpp"
 #include "GateQIR.hpp"
 #include "JordanWignerIRTransformation.hpp"
-
+#include "ServiceRegistry.hpp"
 #include "FermionKernel.hpp"
 
 namespace xacc {
@@ -76,6 +76,7 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 			}
 			std::cout << "\n";
 
+
 			// We know first term is coefficient
 			// FIXME WHAT IF COMPLEX
 			auto coeff = std::stod(splitOnSpaces[0]);
@@ -104,18 +105,16 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 	std::shared_ptr<IRTransformation> transform;
 	if (runtimeOptions->exists("fermion-transformation")) {
 		auto transformStr = (*runtimeOptions)["fermion-transformation"];
-		transform =	IRTransformationRegistry::instance()->create(transformStr);
+		transform = ServiceRegistry::instance()->getService<IRTransformation>(
+				transformStr);
 	} else {
-		transform = IRTransformationRegistry::instance()->create("jordan-wigner");
+		transform = ServiceRegistry::instance()->getService<IRTransformation>(
+				"jordan-wigner");
 	}
 
 	return transform->transform(fermionir);
 
 
-}
-
-std::shared_ptr<IR> FermionCompiler::compile(const std::string& src) {
-	XACCError("Method not supported.");
 }
 
 }

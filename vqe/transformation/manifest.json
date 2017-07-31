@@ -1,0 +1,6 @@
+{
+  "bundle.symbolic_name" : "xacc_vqe_irtransformations",
+  "bundle.activator" : true,
+  "bundle.name" : "XACC VQE IR Transformations",
+  "bundle.description" : "This bundle provides IR Transformations that map fermionic code to spin code."
+}

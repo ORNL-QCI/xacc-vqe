@@ -68,6 +68,15 @@ public:
 	 */
 	virtual CompositeSpinInstruction getResult();
 
+	virtual const std::string name() const {
+		return "jordan-wigner";
+	}
+
+	virtual const std::string description() const {
+		return "The Jordan-Wigner IR Transformation uses the Jordan-Wigner "
+				"transformation to map fermionic instructions to spin-based instructions.";
+	}
+
 protected:
 
 	/**

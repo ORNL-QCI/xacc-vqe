@@ -64,7 +64,7 @@ public:
 	 *
 	 * @return
 	 */
-	virtual std::shared_ptr<xacc::IR> compile(const std::string& src);
+	virtual std::shared_ptr<xacc::IR> compile(const std::string& src) {}
 
 	/**
 	 * Return the name of this Compiler
@@ -90,22 +90,15 @@ public:
 	}
 
 
-	/**
-	 * Register this Compiler with the framework.
-	 */
-	static void registerCompiler() {
-		FermionCompiler c;
-		xacc::RegisterCompiler<xacc::vqe::FermionCompiler> FermionTEMP(
-				"fermion", c.getOptions(), [](variables_map& args) -> bool {
-			if(args.count("fermion-list-transformations")) {
-				auto ids = IRTransformationRegistry::instance()->getRegisteredIds();
-				for (auto i : ids) {
-					XACCInfo("Registered IR Transformation: " + i);
-				}
-				return true;
-			}
-			return false;
-		});
+	virtual bool handleOptions(variables_map& args) {
+		if (args.count("fermion-list-transformations")) {
+//			auto ids = IRTransformationRegistry::instance()->getRegisteredIds();
+//			for (auto i : ids) {
+//				XACCInfo("Registered IR Transformation: " + i);
+//			}
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -119,14 +112,22 @@ public:
 		XACCError("FermionCompiler::translate - Method not implemented");
 	};
 
+	virtual const std::string name() const {
+		return "fermion";
+	}
+
+	virtual const std::string description() const {
+		return "The Fermion Compiler compiles a high-level second-quantized "
+				"fermionic hamiltonian to a spin-hamiltonian amenable for execution "
+				"on a QPU.";
+	}
+
 	/**
 	 * The destructor
 	 */
 	virtual ~FermionCompiler() {}
 
 };
-
-RegisterCompiler(xacc::vqe::FermionCompiler)
 
 }
 

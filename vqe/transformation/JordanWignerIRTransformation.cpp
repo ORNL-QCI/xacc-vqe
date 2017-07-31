@@ -136,8 +136,6 @@ CompositeSpinInstruction JordanWignerIRTransformation::getResult() {
 	return result;
 }
 
-RegisterIRTransformation<JordanWignerIRTransformation> JWIRTEMP("jordan-wigner");
-
 }
 }
 

@@ -1,0 +1,6 @@
+{
+  "bundle.symbolic_name" : "xacc_vqe_fermion_compiler",
+  "bundle.activator" : true,
+  "bundle.name" : "XACC VQE Fermion Compiler",
+  "bundle.description" : "This bundle provides a Compiler that maps fermionic hamiltonians to spin hamiltonians."
+}

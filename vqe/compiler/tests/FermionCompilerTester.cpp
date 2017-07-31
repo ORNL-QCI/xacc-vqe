@@ -88,6 +88,14 @@ public:
 			const std::shared_ptr<xacc::Function> function) {
 	}
 
+	virtual const std::string name() const {
+		return "fake";
+	}
+
+	virtual const std::string description() const {
+		return "....";
+	}
+
 	/**
 	 * Create, store, and return an AcceleratorBuffer with the given
 	 * variable id string and of the given number of bits.

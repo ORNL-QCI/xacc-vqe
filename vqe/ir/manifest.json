@@ -1,0 +1,6 @@
+{
+  "bundle.symbolic_name" : "xacc_vqe_ir",
+  "bundle.activator" : true,
+  "bundle.name" : "XACC VQE Intermediate Representation",
+  "bundle.description" : "This bundle provides an IR for Fermion and Spin Hamiltonians."
+}
