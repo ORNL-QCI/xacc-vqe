@@ -1,6 +1,5 @@
-
 /***********************************************************************************
- * Copyright (c) 2016, UT-Battelle
+ * Copyright (c) 2017, UT-Battelle
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,24 +28,41 @@
  *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
-#define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE AddUCCSDStatePreparationTester
+#ifndef VQE_IR_FERMIONTOSPINTRANSFORMATION_HPP_
+#define VQE_IR_FERMIONTOSPINTRANSFORMATION_HPP_
 
-#include <boost/test/included/unit_test.hpp>
-#include "AddUCCSDStatePreparation.hpp"
+#include "IRTransformation.hpp"
+#include "FermionKernel.hpp"
+#include "FermionIR.hpp"
+#include "GateQIR.hpp"
+#include "SpinInstruction.hpp"
 
-using namespace xacc::vqe;
+namespace xacc {
 
-BOOST_AUTO_TEST_CASE(checkAddUCCSDStatePreparation) {
+namespace vqe {
 
-	auto options = xacc::RuntimeOptions::instance();
-	options->insert(std::make_pair("n-qubits", "4"));
-	options->insert(std::make_pair("n-electrons", "2"));
+/**
+ */
+class FermionToSpinTransformation: public xacc::IRTransformation {
 
+public:
 
-	AddUCCSDStatePreparation transform;
-	auto ir = std::make_shared<xacc::quantum::GateQIR>();
-	auto newIr = transform.transform(ir);
+	/**
+	 * Return the result of the Jordan Wigner transformation
+	 * @return
+	 */
+	virtual CompositeSpinInstruction getResult() = 0;
+
+protected:
+
+	/**
+	 * Reference to the JW result.
+	 */
+	CompositeSpinInstruction result;
+};
 
 }
 
+}
+
+#endif

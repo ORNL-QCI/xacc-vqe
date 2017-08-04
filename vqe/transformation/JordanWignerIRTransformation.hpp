@@ -31,7 +31,7 @@
 #ifndef VQE_IR_JORDANWIGNERIRTRANSFORMATION_HPP_
 #define VQE_IR_JORDANWIGNERIRTRANSFORMATION_HPP_
 
-#include "IRTransformation.hpp"
+#include "FermionToSpinTransformation.hpp"
 #include "FermionKernel.hpp"
 #include "FermionIR.hpp"
 #include "GateQIR.hpp"
@@ -50,7 +50,7 @@ namespace vqe {
  * Specifically, this transformation will generate N GateFunctions,
  * one for each term in the generated spin-based hamiltonian.
  */
-class JordanWignerIRTransformation: public xacc::IRTransformation {
+class JordanWignerIRTransformation: public FermionToSpinTransformation {
 
 public:
 
