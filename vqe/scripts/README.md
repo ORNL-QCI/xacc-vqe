@@ -1,6 +1,7 @@
 # How to use this script
 
-To run this script, you need Psi4 and Fermilib (which also gets you ProjectQ). For Psi4, 
+To run this script, you need Psi4 and Fermilib (which also gets you ProjectQ). For Psi4 (note I'm running this build 
+in the mccaskey/xacc-fc25-dev docker image, see xacc/docker/fedora/devel/fc25 for instructions on installing deps), 
 
 ```bash
 $ git clone https://github.com/psi4/psi4
