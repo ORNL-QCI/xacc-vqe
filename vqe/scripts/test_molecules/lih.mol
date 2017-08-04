@@ -1,0 +1,19 @@
+def generateMolecule(r):
+    """ LiH molecule as a function of interatomic distance r 
+    Parameters
+    ----------
+    r: interatomic distance in units of Angstroms
+    
+    Retruns
+    -------
+    mol: psi4.core.Molecule type representation of LiH
+    """
+    
+    mol = psi4.geometry("""
+    0 1
+    Li
+    H 1 {0}
+    """.format(r)
+    )
+    return mol
+

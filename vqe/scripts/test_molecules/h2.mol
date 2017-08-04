@@ -1,0 +1,20 @@
+def generateMolecule(r):  
+    """ di-hydrogen molecule with seperation length r 
+    
+    Parameters
+    ----------
+    r: interatomic distance in units of Angstroms
+    
+    Retruns
+    -------
+    mol: psi4.core.Molecule type representation of H2(r)
+    """
+    
+    mol = psi4.geometry("""
+    0 1
+    H
+    H 1 {0}
+    """.format(r)
+    )
+    return mol
+

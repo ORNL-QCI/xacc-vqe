@@ -1,0 +1,19 @@
+def generateMolecule(theta1, theta2):  
+    """ H2O molecule as a function of
+    Parameters
+    ----------
+    theta_i: bond angles between O and ith Hydrogen
+    
+    Returns
+    -------
+    mol: psi4.core.Molecule type representation of H2O
+    """
+    
+    mol = psi4.geometry("""
+    0 1
+    O 
+    H 1 {0}
+    H 1 {0} 2 {1}
+    """.format(theta1, theta2)
+    )
+    return mol

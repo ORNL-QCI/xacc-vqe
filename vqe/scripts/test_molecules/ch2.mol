@@ -1,0 +1,20 @@
+def generateMolecule(theta1, theta2):  
+    """ CH2 molecule as a function of
+    Parameters
+    ----------
+    theta_i: bond angles between C and ith Hydrogen
+    
+    Returns
+    -------
+    mol: psi4.core.Molecule type representation of CH2
+    """
+    
+    mol = psi4.geometry("""
+    0 1
+    C 
+    H 1 {0}
+    H 1 {0} 2 {1}
+
+    """.format(theta1, theta2)
+    )
+    return mol

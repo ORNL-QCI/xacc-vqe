@@ -3,6 +3,7 @@
 #include "RuntimeOptions.hpp"
 #include "FermionToSpinTransformation.hpp"
 #include "ServiceRegistry.hpp"
+#include "CommutingSetGenerator.hpp"
 
 namespace xacc {
 namespace vqe {
@@ -93,7 +94,6 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 									+ l, 0 } };
 
 							auto doubletIdx1 = nSingle + doubletIndex(i, j, i2, j2);
-							// FIXME THIS HAS TO BE NEGATIVE
 							auto doubletIdx2 = nSingle + doubletIndex(i, j, i2, j2);
 
 							auto fermiInstruction1 = std::make_shared<
@@ -138,106 +138,8 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 	auto compositeResult =
 			std::dynamic_pointer_cast<FermionToSpinTransformation>(transform)->getResult();
 
-	// Compute commuting sets...
-	auto supports = [](CompositeSpinInstruction& i, int idx) -> std::vector<std::pair<int, std::string>> {
-		auto spinInst = std::dynamic_pointer_cast<SpinInstruction>(i.getInstruction(idx));
-		return spinInst->getTerms();
-	};
-
-	auto commutator =
-			[](std::vector<std::pair<int, std::string>> support1,
-					std::vector<std::pair<int, std::string>> support2) -> bool {
-		std::vector<int> iqbits, jqbits;
-		std::vector<std::string> ips, jps;
-
-		for (auto t : support1) {
-			iqbits.push_back(t.first);
-			ips.push_back(t.second);
-		}
-		for (auto t : support2) {
-			jqbits.push_back(t.first);
-			jps.push_back(t.second);
-		}
-
-		std::vector<int> overlaps;
-		for (int i = 0; i < iqbits.size(); i++) {
-			auto site = iqbits[i];
-			auto itr = std::find(jqbits.begin(), jqbits.end(), site);
-			if (itr != jqbits.end()) {
-				auto ind2 = std::distance(jqbits.begin(), itr);
-				if (ips[i] != jps[ind2]) {
-					overlaps.push_back(site);
-				}
-			}
-		}
-		return (bool) (overlaps.size() + 1 % 2);
-	};
-/*
-	commuting_sets = [] # collect groups of commuting operators by thier indicies.
-	number_of_ops = len(tuple(composite_spin_operator.terms.keys()))
-
-	for i in range(number_of_ops):
-	    if i == 0:
-	        # first operator initilizes first set
-	        commuting_sets.append(set([i]))
-
-	    # check commutators with earlier terms
-	    for j in range(i):
-	        if commutator(supports(composite_spin_operator, i),
-	                      supports(composite_spin_operator, j)) == True:
-	            print('found commuting term -- existing set expanded to:')
-	            for s in commuting_sets:
-	                if j in s:
-	                    s.add(i)
-	                    print(s)
-	            break
-
-	    # if no commutators found
-	    if not any([i in cs for cs in commuting_sets]):
-	        commuting_sets.append(set([i]))
-
-
-	commuting_sets */
-	std::vector<std::vector<int>> commutingSets;
-	for (int i = 0; i < compositeResult.getInstructions().size(); i++) {
-		if (i == 0) {
-			commutingSets.push_back(std::vector<int>{i});
-		}
-
-		for (int j = 0 ; j < i; j++) {
-			if (commutator(supports(compositeResult, i), supports(compositeResult,j))) {
-				for (auto s : commutingSets) {
-					auto itr = std::find(s.begin(), s.end(), j);
-					if (itr != s.end()) {
-						s.push_back(i);
-					}
-				}
-				break;
-			}
-		}
-
-		bool found = false;
-		for (auto s : commutingSets) {
-			auto itr = std::find(s.begin(), s.end(), i);
-			if (itr != s.end()) {
-				found = true;
-				break;
-			}
-		}
-		if (!found) {
-			std::cout << "NOT FOUND\n";
-			commutingSets.push_back(std::vector<int>{i});
-		}
-	}
-
-	std::cout << "Commuting term indices:\n";
-	for (auto s : commutingSets) {
-		std::cout << "{ ";
-		for (auto si : s) {
-			std::cout << si << " ";
-		}
-		std::cout << "}";
-	}
+	CommutingSetGenerator gen;
+	auto commutingSets = gen.getCommutingSet(compositeResult);
 
 	// Perform Trotterization...
 
