@@ -2,16 +2,17 @@ set (PACKAGE_NAME "XACC VQE IR Transformations")
 set (PACKAGE_DESCIPTION "XACC Variational Quantum Eigensolver IR Transformations")
 
 set (LIBRARY_NAME xacc-vqe-irtransformations)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/jw)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/uccsd)
 
 file (GLOB_RECURSE HEADERS *.hpp)
-file (GLOB SRC *.cpp)
+file (GLOB SRC *.cpp jw/*.cpp uccsd/*.cpp)
 
 # Set up dependencies to resources to track changes
 usFunctionGetResourceSource(TARGET ${LIBRARY_NAME} OUT SRC)
 # Generate bundle initialization code
 usFunctionGenerateBundleInit(TARGET ${LIBRARY_NAME} OUT SRC)
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(${LIBRARY_NAME} SHARED ${SRC})
 

@@ -33,7 +33,6 @@
 #include "FermionCompiler.hpp"
 #include "RuntimeOptions.hpp"
 #include "GateQIR.hpp"
-#include "JordanWignerIRTransformation.hpp"
 #include "ServiceRegistry.hpp"
 #include "FermionKernel.hpp"
 

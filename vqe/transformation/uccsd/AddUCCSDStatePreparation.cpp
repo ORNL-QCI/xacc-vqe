@@ -14,7 +14,7 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 	auto runtimeOptions = RuntimeOptions::instance();
 
 	// Create a new GateQIR to hold the spin based terms
-	auto newIr = std::make_shared<xacc::quantum::GateQIR>();
+	auto castedIr = std::dynamic_pointer_cast<xacc::quantum::GateQIR>(ir);
 
 	if (!runtimeOptions->exists("n-electrons")) {
 		XACCError("To use this State Prep Transformation, you "
@@ -48,9 +48,11 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 				l);
 	};
 
+	std::vector<xacc::InstructionParameter> variables;
 	std::vector<std::string> params;
 	for (int i = 0; i < nParams; i++) {
 		params.push_back("theta"+std::to_string(i));
+		variables.push_back(InstructionParameter("theta"+std::to_string(i)));
 	}
 
 	std::cout << "HEY: " << nOccupied << ", " << nVirtual << ", " << nParams << "\n";
@@ -140,12 +142,117 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 
 	CommutingSetGenerator gen;
 	auto commutingSets = gen.getCommutingSet(compositeResult);
+	std::cout << "\n\n";
+	double pi = 3.1415926;
+	auto uccsdGateFunction = std::make_shared<xacc::quantum::GateFunction>(
+			"uccsdPrep", variables);
 
 	// Perform Trotterization...
+	for (auto s : commutingSets) {
+
+		for (auto instIdx : s) {
+			auto temp = compositeResult.getInstruction(instIdx);
+			auto spinInst = std::dynamic_pointer_cast<SpinInstruction>(temp);
+			std::cout << "Looking at " << spinInst->toString("") << "\n";
+			// Get the individual pauli terms
+			auto terms = spinInst->getTerms();
+
+			// The largest qubit index is on the last term
+			int largestQbitIdx = terms[terms.size()-1].first;
+			auto tempFunction = std::make_shared<xacc::quantum::GateFunction>("");
+			for (int i = 0; i < terms.size(); i++) {
+
+				auto qbitIdx = terms[i].first;
+				auto gateName = terms[i].second;
+
+				if (i < terms.size() - 1) {
+					std::cout << "Adding a CNot between " << qbitIdx << " and " << terms[i+1].first << "\n";
+					auto cnot =
+							xacc::quantum::GateInstructionRegistry::instance()->create(
+									"CNOT", std::vector<int> { qbitIdx,
+											terms[i+1].first });
+					tempFunction->addInstruction(cnot);
+				}
+
+				if (gateName == "X") {
+					std::cout << "Adding a H on " << qbitIdx << "\n";
+					auto hadamard = xacc::quantum::GateInstructionRegistry::instance()->create(
+							"H", std::vector<int> { qbitIdx });
+					tempFunction->insertInstruction(0, hadamard);
+				} else if (gateName == "Y") {
+					std::cout << "Adding a Rx on " << qbitIdx << "\n";
+					auto rx = xacc::quantum::GateInstructionRegistry::instance()->create(
+							"Rx", std::vector<int> { qbitIdx });
+					InstructionParameter p(pi / -2.0);
+					rx->setParameter(0, p);
+					tempFunction->insertInstruction(0, rx);
+				}
+
+				// Add the Rotation for the last term
+				if (i == terms.size() - 1) {
+					// FIXME DONT FORGET DIVIDE BY 2
+					std::stringstream ss;
+					ss << spinInst->coefficient << " * " << spinInst->variable;
+					std::cout << "ADDING AN RZ(" << ss.str() << ") on " << qbitIdx << "\n";
+					auto rz = xacc::quantum::GateInstructionRegistry::instance()->create(
+												"Rz", std::vector<int> { qbitIdx });
+
+					InstructionParameter p("0.5 * " + ss.str());
+					rz->setParameter(0, p);
+					tempFunction->addInstruction(rz);
+
+				}
+			}
+
+			int counter = tempFunction->nInstructions();
+			// Add the instruction on the backend of the circuit
+			for (int i = terms.size()-1; i >= 0; i--) {
+
+				auto qbitIdx = terms[i].first;
+				auto gateName = terms[i].second;
+
+				if (i < terms.size() - 1) {
+					std::cout << "Adding a Cnot at end of circuit for " << qbitIdx << " and " << terms[i+1].first << "\n";
+					auto cnot =
+							xacc::quantum::GateInstructionRegistry::instance()->create(
+									"CNOT", std::vector<int> { qbitIdx,
+											terms[i+1].first });
+					tempFunction->insertInstruction(counter, cnot);
+					counter++;
+				}
+
+				if (gateName == "X") {
+					std::cout << "Adding a H at end of circuit on " << qbitIdx << "\n";
+					auto hadamard = xacc::quantum::GateInstructionRegistry::instance()->create(
+							"H", std::vector<int> { qbitIdx });
+					tempFunction->addInstruction(hadamard);
+				} else if (gateName == "Y") {
+					std::cout << "Adding a Rx at end of circuit on " << qbitIdx << "\n";
+
+					auto rx = xacc::quantum::GateInstructionRegistry::instance()->create(
+							"Rx", std::vector<int> { qbitIdx });
+					InstructionParameter p(pi / 2.0);
+					rx->setParameter(0, p);
+					tempFunction->addInstruction(rx);
+				}
+
+			}
+
+			std::cout << "Done looking at " << spinInst->toString("") << "\n";
+
+			// Add to the total UCCSD State Prep function
+			for (auto inst : tempFunction->getInstructions()) {
+				uccsdGateFunction->addInstruction(inst);
+			}
+		}
+	}
 
 	// Prepend all GateFunctions with function containing trotterized circuit
+	for (auto f : castedIr->getKernels()) {
+		f->insertInstruction(0, uccsdGateFunction);
+	}
 
-	return newIr;
+	return castedIr;
 }
 
 }

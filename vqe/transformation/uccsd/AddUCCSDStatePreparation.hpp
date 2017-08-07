@@ -29,7 +29,7 @@
  *
  **********************************************************************************/
 #ifndef VQE_IR_ADDUCCSDSTATEPREPARATION_HPP_
-#define VQE_IR_JORDANWIGNERIRTRANSFORMATION_HPP_
+#define VQE_IR_ADDUCCSDSTATEPREPARATION_HPP_
 
 #include "IRTransformation.hpp"
 #include "FermionKernel.hpp"

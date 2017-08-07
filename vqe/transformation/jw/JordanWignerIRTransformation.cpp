@@ -44,7 +44,7 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 				zs.push_back({j, "Z"});
 			}
 
-			SpinInstruction zSpins(zs, fermionVar);
+			SpinInstruction zSpins(zs);
 			CompositeSpinInstruction sigPlusMinus;
 			auto xi = std::make_shared<SpinInstruction>(
 					std::vector<std::pair<int, std::string>> { { termSites[i],
@@ -67,6 +67,9 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 			}
 
 			auto temp = 0.5 * sigPlusMinus;
+			if (i == termSites.size() - 1) {
+				zSpins.variable = fermionVar;
+			}
 			temp = zSpins * temp;
 
 			if (i == 0) {

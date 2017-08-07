@@ -1,4 +1,3 @@
-
 /***********************************************************************************
  * Copyright (c) 2016, UT-Battelle
  * All rights reserved.
@@ -34,6 +33,7 @@
 
 #include <boost/test/included/unit_test.hpp>
 #include "AddUCCSDStatePreparation.hpp"
+#include "JordanWignerIRTransformation.hpp"
 
 using namespace xacc::vqe;
 
@@ -43,10 +43,31 @@ BOOST_AUTO_TEST_CASE(checkAddUCCSDStatePreparation) {
 	options->insert(std::make_pair("n-qubits", "4"));
 	options->insert(std::make_pair("n-electrons", "2"));
 
+	auto Instruction = std::make_shared<FermionInstruction>(
+			std::vector<std::pair<int, int>> { { 2, 1 }, { 0, 0 }}, 3.17);
+	auto Instruction2 = std::make_shared<FermionInstruction>(
+			std::vector<std::pair<int, int>> { { 0, 1 }, { 2, 0 }}, 3.17);
+
+	auto kernel = std::make_shared<FermionKernel>("foo");
+	kernel->addInstruction(Instruction);
+	kernel->addInstruction(Instruction2);
+
+	auto ir = std::make_shared<FermionIR>();
+	ir->addKernel(kernel);
+
+	JordanWignerIRTransformation jwTransform;
+
+	auto newIr = jwTransform.transform(ir);
+
+	std::stringstream ss1;
+	newIr->persist(ss1);
+	std::cout << "MEASURETERMS:\n" << ss1.str() << "\n";
 
 	AddUCCSDStatePreparation transform;
-	auto ir = std::make_shared<xacc::quantum::GateQIR>();
-	auto newIr = transform.transform(ir);
+	auto newIr2 = transform.transform(newIr);
 
+	std::stringstream ss;
+	newIr2->persist(ss);
+	std::cout << ss.str() << "\n";
 }
 
