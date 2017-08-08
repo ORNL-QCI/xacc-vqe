@@ -113,16 +113,16 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 				xacc::InstructionParameter classicalIdx(qbit);
 				meas->setParameter(0, classicalIdx);
 			} else {
-				// FIXME FIGURE THIS OUT....
+				// FIXME IF IT IS I, FIGURE THIS OUT....
 			}
 
 			// If its an X we have to add a Hadamard before the measure
-			// If its a Y we have to add a Rx(pi / 2) gate before the measure.
+			// If its a Y we have to add a Rx(-pi / 2) gate before the measure.
 			if (gateName == "X") {
 				gateFunction->addInstruction(gateRegistry->create("H", std::vector<int>{qbit}));
 			} else if (gateName == "Y") {
 				auto rx = gateRegistry->create("Rx", std::vector<int>{qbit});
-				InstructionParameter p(3.1415926 / 2.0);
+				InstructionParameter p(3.1415926 / -2.0);
 				rx->setParameter(0, p);
 				gateFunction->addInstruction(rx);
 			}

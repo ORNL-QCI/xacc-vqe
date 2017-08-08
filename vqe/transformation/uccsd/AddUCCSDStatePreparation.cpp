@@ -4,6 +4,7 @@
 #include "FermionToSpinTransformation.hpp"
 #include "ServiceRegistry.hpp"
 #include "CommutingSetGenerator.hpp"
+#include "VQEGateFunction.hpp"
 
 namespace xacc {
 namespace vqe {
@@ -140,6 +141,12 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 	auto compositeResult =
 			std::dynamic_pointer_cast<FermionToSpinTransformation>(transform)->getResult();
 
+	// Convert imaginary part to real part
+	for (auto term : compositeResult.getInstructions()) {
+		auto castedTerm = std::dynamic_pointer_cast<SpinInstruction>(term);
+		castedTerm->coefficient = std::complex<double>(std::imag(castedTerm->coefficient), 0);
+	}
+
 	CommutingSetGenerator gen;
 	auto commutingSets = gen.getCommutingSet(compositeResult);
 	std::cout << "\n\n";
@@ -192,7 +199,7 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 				if (i == terms.size() - 1) {
 					// FIXME DONT FORGET DIVIDE BY 2
 					std::stringstream ss;
-					ss << spinInst->coefficient << " * " << spinInst->variable;
+					ss << std::real(spinInst->coefficient) << " * " << spinInst->variable;
 					std::cout << "ADDING AN RZ(" << ss.str() << ") on " << qbitIdx << "\n";
 					auto rz = xacc::quantum::GateInstructionRegistry::instance()->create(
 												"Rz", std::vector<int> { qbitIdx });
@@ -247,12 +254,20 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 		}
 	}
 
-	// Prepend all GateFunctions with function containing trotterized circuit
+	auto newIR = std::make_shared<GateQIR>();
 	for (auto f : castedIr->getKernels()) {
-		f->insertInstruction(0, uccsdGateFunction);
+		auto castedGateF = std::dynamic_pointer_cast<xacc::quantum::GateFunction>(f);
+		auto coeff = std::real(boost::get<std::complex<double>>(castedGateF->getParameter(0)));
+		auto vqeFunction = std::make_shared<VQEGateFunction>(*castedGateF.get(), variables, coeff);
+		vqeFunction->insertInstruction(0, uccsdGateFunction);
+		newIR->addKernel(vqeFunction);
+
+		for (auto i : vqeFunction->getParameters()) {
+			std::cout << "PARAM: " << i << "\n";
+		}
 	}
 
-	return castedIr;
+	return newIR;
 }
 
 }
