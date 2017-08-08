@@ -63,6 +63,7 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 
 	auto fermionKernel = std::make_shared<FermionKernel>("fName");
 
+	_nQubits = 0;
 	// Loop over the lines to create DWQMI
 	for (auto termStr : fermionStrVec) {
 		boost::trim(termStr);
@@ -81,8 +82,12 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 			auto coeff = std::stod(splitOnSpaces[0]);
 			std::vector<std::pair<int, int>> operators;
 			for (int i = 1; i < splitOnSpaces.size()-1; i+=2) {
+				auto siteIdx = std::stoi(splitOnSpaces[i]);
+				if (siteIdx > _nQubits) {
+					_nQubits = siteIdx;
+				}
 				operators.push_back(
-						{ std::stoi(splitOnSpaces[i]), std::stoi(
+						{siteIdx, std::stoi(
 								splitOnSpaces[i + 1]) });
 			}
 
@@ -91,6 +96,8 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 			fermionKernel->addInstruction(fermionInst);
 		}
 	}
+
+	_nQubits++;
 
 	// Create the FermionIR to pass to our transformation.
 	auto fermionir = std::make_shared<FermionIR>();

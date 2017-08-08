@@ -65,5 +65,7 @@ BOOST_AUTO_TEST_CASE(checkFermionKernelConstruction) {
 	std::cout << "ParamSet:\n" << f.toString("qreg") << "\n";
 	BOOST_VERIFY(boost::get<double>(f.getInstruction(0)->getParameter(0)) == 3.14);
 
+	BOOST_VERIFY(f.coefficient == 3.0);
+
 }
 

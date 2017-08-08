@@ -122,11 +122,18 @@ public:
 				"on a QPU.";
 	}
 
+	virtual const int getNQubitsUsed() const {
+		return _nQubits;
+	}
+
 	/**
 	 * The destructor
 	 */
 	virtual ~FermionCompiler() {}
 
+protected:
+
+	int _nQubits = 0;
 };
 
 }

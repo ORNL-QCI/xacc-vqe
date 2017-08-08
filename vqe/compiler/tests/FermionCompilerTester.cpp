@@ -52,7 +52,7 @@ public:
 		return true;
 	}
 
-	virtual std::vector<xacc::IRTransformation> getIRTransformations() {
+	virtual std::vector<std::shared_ptr<xacc::IRTransformation>> getIRTransformations() {
 
 	}
 	;

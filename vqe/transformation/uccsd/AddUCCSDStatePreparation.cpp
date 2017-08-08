@@ -31,46 +31,46 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 	auto nElectrons = std::stoi((*runtimeOptions)["n-electrons"]);
 
 	// Compute the number of parameters
-	auto nOccupied = (int) std::ceil(nElectrons / 2.0);
-	auto nVirtual = nQubits / 2 - nOccupied;
-	auto nSingle = nOccupied * nVirtual;
+	auto _nOccupied = (int) std::ceil(nElectrons / 2.0);
+	auto _nVirtual = nQubits / 2 - _nOccupied;
+	auto nSingle = _nOccupied * _nVirtual;
 	auto nDouble = std::pow(nSingle, 2);
-	auto nParams = nSingle + nDouble;
+	auto _nParameters = nSingle + nDouble;
 
 	auto singletIndex = [=](int i, int j) -> int {
-	        return i * nOccupied + j;
+	        return i * _nOccupied + j;
 	};
 
 	auto doubletIndex = [=](int i, int j, int k, int l) -> int {
 		return
-		(i * nOccupied * nVirtual * nOccupied +
-				j * nVirtual * nOccupied +
-				k * nOccupied +
+		(i * _nOccupied * _nVirtual * _nOccupied +
+				j * _nVirtual * _nOccupied +
+				k * _nOccupied +
 				l);
 	};
 
 	std::vector<xacc::InstructionParameter> variables;
 	std::vector<std::string> params;
-	for (int i = 0; i < nParams; i++) {
+	for (int i = 0; i < _nParameters; i++) {
 		params.push_back("theta"+std::to_string(i));
 		variables.push_back(InstructionParameter("theta"+std::to_string(i)));
 	}
 
-	std::cout << "HEY: " << nOccupied << ", " << nVirtual << ", " << nParams << "\n";
+	std::cout << "HEY: " << _nOccupied << ", " << _nVirtual << ", " << _nParameters << "\n";
 
 	auto kernel = std::make_shared<FermionKernel>("fermiUCCSD");
 
-	for (int i = 0; i < nVirtual; i++) {
-		for (int j = 0; j < nOccupied; j++) {
+	for (int i = 0; i < _nVirtual; i++) {
+		for (int j = 0; j < _nOccupied; j++) {
 			for (int l = 0; l < 2; l++) {
 				std::cout << i << " " << j << " " << l << "\n";
 				std::vector<std::pair<int, int>> operators { { 2
-						* (i + nOccupied) + l, 1 }, { 2 * j + l, 0 } };
+						* (i + _nOccupied) + l, 1 }, { 2 * j + l, 0 } };
 				auto fermiInstruction1 = std::make_shared<FermionInstruction>(
 						operators, params[singletIndex(i, j)]);
 				kernel->addInstruction(fermiInstruction1);
 
-				std::vector<std::pair<int, int>> operators2 { { 2 * j + l, 1}, {2 * (i + nOccupied) + l, 0} };
+				std::vector<std::pair<int, int>> operators2 { { 2 * j + l, 1}, {2 * (i + _nOccupied) + l, 0} };
 				auto fermiInstruction2 = std::make_shared<FermionInstruction>(
 						operators2, params[singletIndex(i, j)]);
 				fermiInstruction2->coefficient = -1.0 * fermiInstruction2->coefficient;
@@ -80,20 +80,20 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 		}
 	}
 
-	for (int i = 0; i < nVirtual; i++) {
-		for (int j = 0; j < nOccupied; j++) {
+	for (int i = 0; i < _nVirtual; i++) {
+		for (int j = 0; j < _nOccupied; j++) {
 			for (int l = 0; l < 2; l++) {
-				for (int i2 = 0; i2 < nVirtual; i2++) {
-					for (int j2 = 0; j2 < nOccupied; j2++) {
+				for (int i2 = 0; i2 < _nVirtual; i2++) {
+					for (int j2 = 0; j2 < _nOccupied; j2++) {
 						for (int l2 = 0; l2 < 2; l2++) {
 							std::vector<std::pair<int, int>> operators1 { { 2
-									* (i + nOccupied) + l, 1 },
-									{ 2 * j + l, 0 }, { 2 * (i2 + nOccupied)
+									* (i + _nOccupied) + l, 1 },
+									{ 2 * j + l, 0 }, { 2 * (i2 + _nOccupied)
 											+ l2, 1 }, { 2 * j2 + l2, 0 } };
 
 							std::vector<std::pair<int, int>> operators2 { { 2
-									* j2 + l2, 1 }, { 2 * (i2 + nOccupied) + l2,
-									0 }, { 2 * j + l, 1 }, { 2 * (i + nOccupied)
+									* j2 + l2, 1 }, { 2 * (i2 + _nOccupied) + l2,
+									0 }, { 2 * j + l, 1 }, { 2 * (i + _nOccupied)
 									+ l, 0 } };
 
 							auto doubletIdx1 = nSingle + doubletIndex(i, j, i2, j2);
@@ -262,9 +262,6 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 		vqeFunction->insertInstruction(0, uccsdGateFunction);
 		newIR->addKernel(vqeFunction);
 
-		for (auto i : vqeFunction->getParameters()) {
-			std::cout << "PARAM: " << i << "\n";
-		}
 	}
 
 	return newIR;

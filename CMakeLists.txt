@@ -23,5 +23,17 @@ find_package(XACC REQUIRED)
 include_directories(${SYMENGINE_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${XACC_INCLUDE_DIRS})
+include_directories(${CMAKE_SOURCE_DIR}/tpls/cppnumericalsolvers/cppoptlib)
+include_directories(${CMAKE_SOURCE_DIR}/vqe)
+include_directories(${CMAKE_SOURCE_DIR}/vqe/ir)
+include_directories(${CMAKE_SOURCE_DIR}/vqe/transformation/uccsd)
+include_directories(${CMAKE_SOURCE_DIR}/vqe/compiler)
+
+include_directories(/projects/xacc/tpls/fire/tpls/eigen)
+
+link_directories(${XACC_LIBRARY_DIR})
 
 add_subdirectory(vqe)
+
+add_executable(xacc-vqe main.cpp)
+target_link_libraries(xacc-vqe ${SYMENGINE_LIBRARIES} ${Boost_LIBRARIES} ${XACC_LIBRARIES} pthread dl)

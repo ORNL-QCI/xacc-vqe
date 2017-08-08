@@ -61,7 +61,6 @@ public:
 	virtual const std::string description() const {
 		return "";
 	}
-
 };
 
 }
