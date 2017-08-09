@@ -72,7 +72,7 @@ public:
 			kernels[i](buffer, parameters);
 
 			// Get Expectation value
-			double expectationValue = buffer->getAverage();// get from buffer
+			double expectationValue = buffer->getExpectationValueZ();
 
 			auto vqeFunction = std::dynamic_pointer_cast<VQEGateFunction>(
 					kernels[i].getIRFunction());
