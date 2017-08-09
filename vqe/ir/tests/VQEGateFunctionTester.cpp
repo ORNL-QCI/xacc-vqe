@@ -38,7 +38,7 @@
 
 using namespace xacc::vqe;
 
-BOOST_AUTO_TEST_CASE(checkFermionKernelConstruction) {
+BOOST_AUTO_TEST_CASE(checkEvaluate) {
 
 	xacc::InstructionParameter p("0.5 * phi");
 	xacc::InstructionParameter fp("phi");

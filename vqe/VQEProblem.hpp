@@ -3,6 +3,7 @@
 
 #include "problem.h"
 #include "XACC.hpp"
+#include "VQEGateFunction.hpp"
 
 namespace xacc {
 

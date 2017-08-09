@@ -11,16 +11,11 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules")
 include (tests)
 
-if (NOT SYMENGINE_ROOT) 
-   set (SYMENGINE_ROOT /usr/local)  
-endif()
-
-find_package(SymEngine 0.1.0 CONFIG PATHS ${SYMENGINE_ROOT}/lib/cmake/symengine)
-
-find_package(Boost COMPONENTS filesystem program_options system REQUIRED)
+find_package(PythonLibs REQUIRED)
+find_package(Boost COMPONENTS filesystem program_options system python REQUIRED)
 find_package(XACC REQUIRED)
 
-include_directories(${SYMENGINE_INCLUDE_DIRS})
+include_directories(${PYTHON_INCLUDE_DIR})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${XACC_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/tpls/cppnumericalsolvers/cppoptlib)
@@ -36,4 +31,4 @@ link_directories(${XACC_LIBRARY_DIR})
 add_subdirectory(vqe)
 
 add_executable(xacc-vqe main.cpp)
-target_link_libraries(xacc-vqe ${SYMENGINE_LIBRARIES} ${Boost_LIBRARIES} ${XACC_LIBRARIES} pthread dl)
+target_link_libraries(xacc-vqe ${SYMENGINE_LIBRARIES} ${Boost_LIBRARIES} ${XACC_LIBRARIES} pthread dl xacc-vqe-ir)

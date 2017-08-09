@@ -185,7 +185,7 @@ BOOST_AUTO_TEST_CASE(checkSimpleCompile) {
                     "qubits": [
                         2
                     ],
-                    "angle": 1.5707963
+                    "angle": -1.5707963
                 },
                 {
                     "gate": "Measure",
@@ -209,7 +209,7 @@ BOOST_AUTO_TEST_CASE(checkSimpleCompile) {
                     "qubits": [
                         0
                     ],
-                    "angle": 1.5707963
+                    "angle": -1.5707963
                 },
                 {
                     "gate": "Measure",
@@ -226,5 +226,6 @@ BOOST_AUTO_TEST_CASE(checkSimpleCompile) {
 
 	std::stringstream ss;
 	ir->persist(ss);
+	std::cout << ss.str() << "\n";
 	BOOST_VERIFY(expected == ss.str());
 }

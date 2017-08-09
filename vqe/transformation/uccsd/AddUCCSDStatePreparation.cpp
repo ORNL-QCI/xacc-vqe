@@ -256,10 +256,13 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 
 	auto newIR = std::make_shared<GateQIR>();
 	for (auto f : castedIr->getKernels()) {
-		auto castedGateF = std::dynamic_pointer_cast<xacc::quantum::GateFunction>(f);
-		auto coeff = std::real(boost::get<std::complex<double>>(castedGateF->getParameter(0)));
-		auto vqeFunction = std::make_shared<VQEGateFunction>(*castedGateF.get(), variables, coeff);
-		vqeFunction->insertInstruction(0, uccsdGateFunction);
+		auto castedGateF =
+				std::dynamic_pointer_cast<xacc::quantum::GateFunction>(f);
+		auto coeff = std::real(
+				boost::get<std::complex<double>>(castedGateF->getParameter(0)));
+		auto vqeFunction = std::make_shared<VQEGateFunction>(*castedGateF.get(),
+				variables, coeff);
+//		vqeFunction->insertInstruction(0, uccsdGateFunction);
 		newIR->addKernel(vqeFunction);
 
 	}
