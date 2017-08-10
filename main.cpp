@@ -21,9 +21,11 @@ int main(int argc, char** argv) {
 
 	solver.minimize(problem, params);
 
-	std::cout << std::string(42, '-') << std::endl;
-	std::cout << "   argmin: " << params.transpose() << std::endl;
-	std::cout << "   f in argmin: " << problem(params) << std::endl;
+	std::stringstream ss;
+	ss << params.transpose();
+	XACCInfo(std::string(42, '-'));
+	XACCInfo("Final VQE_Params: (" + ss.str() + ")");
+	problem(params);
 
 	xacc::Finalize();
 

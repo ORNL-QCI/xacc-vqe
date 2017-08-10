@@ -82,12 +82,12 @@ public:
 			}
 		}
 
-		for (auto s : commuting_ops) {
-			for (auto x : s) {
-				std::cout << x << " ";
-			}
-			std::cout << "\n";
-		}
+//		for (auto s : commuting_ops) {
+//			for (auto x : s) {
+//				std::cout << x << " ";
+//			}
+//			std::cout << "\n";
+//		}
 
 		return commuting_ops;
 	}

@@ -7,12 +7,44 @@ from fermilib.ops import FermionOperator
 from fermilib.utils import MolecularData, uccsd_singlet_operator
 from fermilibpluginpsi4 import run_psi4
 from fermilib.transforms import get_fermion_operator, jordan_wigner
+from projectq.backends import CommandPrinter, CircuitDrawer
+from scipy.optimize import minimize
 
 psi4.set_memory('2.5 GB')
 
 psi4.set_options({'reference': 'uhf'})
 psi4.set_options({'scf_type': 'pk'})
 psi4.set_options({'basis': 'sto-3g'})
+
+compiler_engine = uccsd_trotter_engine()
+
+
+def energy_objective(packed_amplitudes):
+    """Evaluate the energy of a UCCSD singlet wavefunction with packed_amplitudes
+    Args:
+        packed_amplitudes(ndarray): Compact array that stores the unique
+            amplitudes for a UCCSD singlet wavefunction.
+        
+    Returns:
+        energy(float): Energy corresponding to the given amplitudes
+    """
+    # Set Jordan-Wigner initial state with correct number of electrons
+    wavefunction = compiler_engine.allocate_qureg(molecule.n_qubits)
+    for i in range(molecule.n_electrons):
+        X | wavefunction[i]
+
+    # Build the circuit and act it on the wavefunction
+    evolution_operator = uccsd_singlet_evolution(packed_amplitudes, 
+                                                 molecule.n_qubits, 
+                                                 molecule.n_electrons)
+    evolution_operator | wavefunction
+    compiler_engine.flush()
+
+    # Evaluate the energy and reset wavefunction
+    energy = compiler_engine.backend.get_expectation_value(qubit_hamiltonian, wavefunction)
+    All(Measure) | wavefunction
+    compiler_engine.flush()
+    return energy
 
 def parse_args(args):
     """ Parse command line arguments and return them. """
@@ -101,7 +133,7 @@ def main(argv=None):
     kernelFile = open(moleculeData.name.replace(" ","_")+'.hpp', "w")
     kernelFile.write(xaccKernelStr)
     kernelFile.close()
-    
+    '''
     qubit_hamiltonian = jordan_wigner(fermion_hamiltonian)
     qubit_hamiltonian.compress()
     print('The Jordan-Wigner Hamiltonian in canonical basis follows:\n{}'.format(qubit_hamiltonian))
@@ -111,7 +143,22 @@ def main(argv=None):
     jwSingOp = jordan_wigner(singOp)
     print('The UCCSD Singlet Operator JW follows:\n{}'.format(jwSingOp))
     
-    
+    n_amplitudes = uccsd_singlet_paramsize(molecule.n_qubits, molecule.n_electrons)
+
+    initial_amplitudes = [0, 0.05677]
+    initial_energy = energy_objective(initial_amplitudes)
+
+    # Run VQE Optimization to find new CCSD parameters
+    opt_result = minimize(energy_objective, initial_amplitudes,
+                          method="CG", options={'disp':True})
+
+    opt_energy, opt_amplitudes = opt_result.fun, opt_result.x
+    print("\nOptimal UCCSD Singlet Energy: {}".format(opt_energy))
+    print("Optimal UCCSD Singlet Amplitudes: {}".format(opt_amplitudes))
+    print("Classical CCSD Energy: {} Hartrees".format(molecule.ccsd_energy))
+    print("Exact FCI Energy: {} Hartrees".format(molecule.fci_energy))
+    print("Initial Energy of UCCSD with CCSD amplitudes: {} Hartrees".format(initial_energy))
+    '''
 
 if __name__ == "__main__":
     sys.exit(main())

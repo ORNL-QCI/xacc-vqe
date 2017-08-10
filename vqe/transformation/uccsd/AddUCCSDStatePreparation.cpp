@@ -54,8 +54,6 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 		variables.push_back(InstructionParameter("theta"+std::to_string(i)));
 	}
 
-	std::cout << "HEY: " << _nOccupied << ", " << _nVirtual << ", " << _nParameters << "\n";
-
 	auto kernel = std::make_shared<FermionKernel>("fermiUCCSD");
 
 	for (int i = 0; i < _nVirtual; i++) {
@@ -121,8 +119,6 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 	auto fermionir = std::make_shared<FermionIR>();
 	fermionir->addKernel(kernel);
 
-	std::cout << "HEY: " << kernel->toString("") << "\n";
-
 	std::shared_ptr<IRTransformation> transform;
 	if (runtimeOptions->exists("fermion-transformation")) {
 		auto transformStr = (*runtimeOptions)["fermion-transformation"];
@@ -147,7 +143,6 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 
 	CommutingSetGenerator gen;
 	auto commutingSets = gen.getCommutingSet(compositeResult, nQubits);
-	std::cout << "\n\n";
 	auto pi = boost::math::constants::pi<double>();
 	auto uccsdGateFunction = std::make_shared<xacc::quantum::GateFunction>(
 			"uccsdPrep", variables);
@@ -198,7 +193,7 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 					// FIXME DONT FORGET DIVIDE BY 2
 					std::stringstream ss;
 					ss << std::real(spinInst->coefficient) << " * " << spinInst->variable;
-					std::cout << "ADDING AN RZ(" << ss.str() << ") on " << qbitIdx << "\n";
+//					std::cout << "ADDING AN RZ(" << ss.str() << ") on " << qbitIdx << "\n";
 					auto rz = xacc::quantum::GateInstructionRegistry::instance()->create(
 												"Rz", std::vector<int> { qbitIdx });
 

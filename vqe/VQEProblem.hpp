@@ -3,6 +3,8 @@
 
 #include "problem.h"
 #include "XACC.hpp"
+
+#include "PrintScaffoldVisitor.hpp"
 #include "VQEGateFunction.hpp"
 
 namespace xacc {
@@ -20,11 +22,16 @@ protected:
 
 	int nParameters;
 
+	std::ofstream file;
+
+	bool valueExecutedOnce = false;
 public:
 
 	using typename cppoptlib::Problem<T>::TVector;
 
-	VQEProblem(std::istream& moleculeKernel) :nParameters(0) {
+	~VQEProblem() {file.close();}
+
+	VQEProblem(std::istream& moleculeKernel) :nParameters(0), file("H2_Qasm_R_39.qasm") {
 
 		auto serviceRegistry = xacc::ServiceRegistry::instance();
 		auto runtimeOptions = RuntimeOptions::instance();
@@ -53,7 +60,9 @@ public:
 	}
 
 	typename cppoptlib::Problem<T>::TVector initializeParameters() {
-		return Eigen::VectorXd::Random(nParameters);
+		Eigen::VectorXd x(nParameters);
+		x << .45, -.04;
+		return x;
 	}
 
 
@@ -67,29 +76,32 @@ public:
 
 		double sum = 0.0;
 		for (int i = 0; i < kernels.size(); i++) {
-			std::cout << "EXECUTING " << i << " KERNEL\n";
-
 			double expectationValue = 0.0;
 			auto kernel = kernels[i];
 			auto vqeFunction = std::dynamic_pointer_cast<VQEGateFunction>(
-							kernels[i].getIRFunction());
+							kernel.getIRFunction());
+
+			if (!valueExecutedOnce) {
+				auto str = vqeFunction->toString("qreg");
+				file << "\n\nKernel " << std::to_string(i) << " Qasm:\n" << str;
+			}
 
 			if (vqeFunction->nInstructions() > 0) {
-				std::cout << "QASM:\n" << vqeFunction->toString("qreg") << "\n";
-				kernels[i](buffer, parameters);
+				kernel(buffer, parameters);
 				// Get Expectation value
 				expectationValue = buffer->getExpectationValueZ();
 			} else {
 				expectationValue = 1.0;
 			}
 
-			std::cout << "Found Expectation - " << expectationValue << "\n";
-
 			sum += vqeFunction->coefficient * expectationValue;
 
 			buffer->resetBuffer();
 		}
 
+		valueExecutedOnce = true;
+
+		XACCInfo("Computed VQE Energy = " + std::to_string(sum));
 		return sum;
 	}
 };
@@ -97,4 +109,20 @@ public:
 
 }
 
-#endif /* VQE_VQEPROBLEM_HPP_ */
+#endif
+
+
+//auto vis = std::make_shared<xacc::vqe::PrintScaffoldVisitor>("qreg");
+//
+//		auto f = kernels[10].getIRFunction();
+//		f->evaluateVariableParameters(parameters);
+//
+//		InstructionIterator it(f);
+//		while (it.hasNext()) {
+//			// Get the next node in the tree
+//			auto nextInst = it.next();
+//			if (nextInst->isEnabled())
+//				nextInst->accept(vis);
+//		}
+//
+//		std::cout << "SCAFFOLD SRC:\n" << vis->getScaffoldString() << "\n";

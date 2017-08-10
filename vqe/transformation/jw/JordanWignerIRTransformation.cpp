@@ -108,6 +108,7 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 
 		// Loop over all terms in the Spin Instruction
 		// and create instructions to run on the Gate QPU.
+		std::vector<std::shared_ptr<xacc::quantum::GateInstruction>> measurements;
 		auto terms = spinInst->getTerms();
 		for (int i = terms.size()-1; i >= 0; i--) {
 			auto qbit = terms[i].first;
@@ -116,23 +117,23 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 			auto meas = gateRegistry->create("Measure", std::vector<int>{qbit});
 			xacc::InstructionParameter classicalIdx(qbit);
 			meas->setParameter(0, classicalIdx);
+			measurements.push_back(meas);
 
 			if (gateName == "X") {
 				auto hadamard = gateRegistry->create("H", std::vector<int>{qbit});
 				gateFunction->addInstruction(hadamard);
-				gateFunction->addInstruction(meas);
 			} else if (gateName == "Y") {
 				auto rx = gateRegistry->create("Rx", std::vector<int>{qbit});
 				InstructionParameter p(pi / -2.0);
 				rx->setParameter(0, p);
 				gateFunction->addInstruction(rx);
-				gateFunction->addInstruction(meas);
-			} else if (gateName == "Z") {
-				gateFunction->addInstruction(meas);
 			}
 
 		}
 
+		for (auto m : measurements) {
+			gateFunction->addInstruction(m);
+		}
 		newIr->addKernel(gateFunction);
 		counter++;
 	}
