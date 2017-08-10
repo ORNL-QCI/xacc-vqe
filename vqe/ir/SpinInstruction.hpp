@@ -85,6 +85,19 @@ public:
 	SpinInstruction(const SpinInstruction& i) :
 			pauliProducts(i.pauliProducts), terms(i.terms), coefficient(
 					i.coefficient), variable(i.variable) {
+
+		terms.erase(
+				std::remove_if(terms.begin(), terms.end(),
+						[&](const std::pair<int, std::string>& element) -> bool {
+							if (terms.size() != 1) {
+								return element.second == "I";
+							}
+							return false;
+						}), terms.end());
+
+		if (terms.empty()) {
+			terms.push_back({0,"I"});
+		}
 	}
 
 	/**
@@ -100,6 +113,19 @@ public:
 						std::pair<int, std::string>& right) {
 			return left.first < right.first;
 		});
+
+		terms.erase(
+				std::remove_if(terms.begin(), terms.end(),
+						[&](const std::pair<int, std::string>& element) -> bool {
+							if (terms.size() != 1) {
+								return element.second == "I";
+							}
+							return false;
+						}), terms.end());
+
+		if (terms.empty()) {
+			terms.push_back({0,"I"});
+		}
 	}
 
 	SpinInstruction(std::vector<std::pair<int, std::string>> operators, std::string var) :
@@ -109,6 +135,20 @@ public:
 						std::pair<int, std::string>& right) {
 			return left.first < right.first;
 		});
+
+		terms.erase(
+				std::remove_if(terms.begin(), terms.end(),
+						[&](const std::pair<int, std::string>& element) -> bool {
+							if (terms.size() != 1) {
+								return element.second == "I";
+							}
+							return false;
+						}), terms.end());
+
+		if (terms.empty()) {
+			terms.push_back({0,"I"});
+		}
+
 	}
 
 	/**
@@ -126,6 +166,20 @@ public:
 						std::pair<int, std::string>& right) {
 			return left.first < right.first;
 		});
+
+		terms.erase(
+				std::remove_if(terms.begin(), terms.end(),
+						[&](const std::pair<int, std::string>& element) -> bool {
+							if (terms.size() != 1) {
+								return element.second == "I";
+							}
+							return false;
+						}), terms.end());
+
+		if (terms.empty()) {
+			terms.push_back({0,"I"});
+		}
+
 	}
 
 	SpinInstruction(std::vector<std::pair<int, std::string>> operators,
@@ -136,6 +190,19 @@ public:
 						std::pair<int, std::string>& right) {
 			return left.first < right.first;
 		});
+
+		terms.erase(
+				std::remove_if(terms.begin(), terms.end(),
+						[&](const std::pair<int, std::string>& element) -> bool {
+							if (terms.size() != 1) {
+								return element.second == "I";
+							}
+							return false;
+						}), terms.end());
+
+		if (terms.empty()) {
+			terms.push_back({0,"I"});
+		}
 	}
 
 	/**
@@ -303,6 +370,7 @@ public:
 	bool operator !=(CompositeSpinInstruction &b) const {
 		return !operator==(b);
 	}
+
 
 	/**
 	 * Return true if the given SpinInstruction is equal to this one
@@ -539,8 +607,9 @@ private:
 				if (pauliProducts.find(gPair) != pauliProducts.end()) {
 					newTerms.erase(newTerms.begin() + i + 1);
 					auto coeff = pauliProducts.at(gPair).first;
+					auto newGate = pauliProducts.at(gPair).second;
 					newTerms.at(i) = std::make_pair(qubit1,
-							pauliProducts.at(gPair).second);
+							newGate);
 					newCoeff *= coeff;
 				}
 			}

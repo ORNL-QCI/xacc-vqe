@@ -4,9 +4,9 @@ import psi4
 import sys
 
 from fermilib.ops import FermionOperator
-from fermilib.utils import MolecularData
+from fermilib.utils import MolecularData, uccsd_singlet_operator
 from fermilibpluginpsi4 import run_psi4
-from fermilib.transforms import get_fermion_operator
+from fermilib.transforms import get_fermion_operator, jordan_wigner
 
 psi4.set_memory('2.5 GB')
 
@@ -101,6 +101,17 @@ def main(argv=None):
     kernelFile = open(moleculeData.name.replace(" ","_")+'.hpp', "w")
     kernelFile.write(xaccKernelStr)
     kernelFile.close()
+    
+    qubit_hamiltonian = jordan_wigner(fermion_hamiltonian)
+    qubit_hamiltonian.compress()
+    print('The Jordan-Wigner Hamiltonian in canonical basis follows:\n{}'.format(qubit_hamiltonian))
+    
+    singOp = uccsd_singlet_operator([1,1],4,2)
+    print('The UCCSD Singlet Operator follows:\n{}'.format(singOp))
+    jwSingOp = jordan_wigner(singOp)
+    print('The UCCSD Singlet Operator JW follows:\n{}'.format(jwSingOp))
+    
+    
 
 if __name__ == "__main__":
     sys.exit(main())

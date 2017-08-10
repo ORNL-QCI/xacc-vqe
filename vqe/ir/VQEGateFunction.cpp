@@ -72,8 +72,8 @@ void VQEGateFunction::evaluateVariableParameters(
 						std::stringstream ss, ss1;
 
 						// This is a variable
-						std::string variableExpressionStr = boost::get<std::string>(
-								instParam);
+						std::string variableExpressionStr = boost::get<
+								std::string>(instParam);
 
 						auto runtimeValue = runtimeParameters[j];
 						ss1 << runtimeValue;
@@ -99,6 +99,8 @@ void VQEGateFunction::evaluateVariableParameters(
 			}
 		}
 	}
+
+	Py_Finalize();
 }
 }
 }

@@ -5,6 +5,7 @@
 #include "ServiceRegistry.hpp"
 #include "CommutingSetGenerator.hpp"
 #include "VQEGateFunction.hpp"
+#include <boost/math/constants/constants.hpp>
 
 namespace xacc {
 namespace vqe {
@@ -13,9 +14,6 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 		std::shared_ptr<IR> ir) {
 
 	auto runtimeOptions = RuntimeOptions::instance();
-
-	// Create a new GateQIR to hold the spin based terms
-	auto castedIr = std::dynamic_pointer_cast<xacc::quantum::GateQIR>(ir);
 
 	if (!runtimeOptions->exists("n-electrons")) {
 		XACCError("To use this State Prep Transformation, you "
@@ -148,9 +146,9 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 	}
 
 	CommutingSetGenerator gen;
-	auto commutingSets = gen.getCommutingSet(compositeResult);
+	auto commutingSets = gen.getCommutingSet(compositeResult, nQubits);
 	std::cout << "\n\n";
-	double pi = 3.1415926;
+	auto pi = boost::math::constants::pi<double>();
 	auto uccsdGateFunction = std::make_shared<xacc::quantum::GateFunction>(
 			"uccsdPrep", variables);
 
@@ -160,7 +158,7 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 		for (auto instIdx : s) {
 			auto temp = compositeResult.getInstruction(instIdx);
 			auto spinInst = std::dynamic_pointer_cast<SpinInstruction>(temp);
-			std::cout << "Looking at " << spinInst->toString("") << "\n";
+//			std::cout << "Looking at " << spinInst->toString("") << "\n";
 			// Get the individual pauli terms
 			auto terms = spinInst->getTerms();
 
@@ -173,7 +171,7 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 				auto gateName = terms[i].second;
 
 				if (i < terms.size() - 1) {
-					std::cout << "Adding a CNot between " << qbitIdx << " and " << terms[i+1].first << "\n";
+//					std::cout << "Adding a CNot between " << qbitIdx << " and " << terms[i+1].first << "\n";
 					auto cnot =
 							xacc::quantum::GateInstructionRegistry::instance()->create(
 									"CNOT", std::vector<int> { qbitIdx,
@@ -182,12 +180,12 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 				}
 
 				if (gateName == "X") {
-					std::cout << "Adding a H on " << qbitIdx << "\n";
+//					std::cout << "Adding a H on " << qbitIdx << "\n";
 					auto hadamard = xacc::quantum::GateInstructionRegistry::instance()->create(
 							"H", std::vector<int> { qbitIdx });
 					tempFunction->insertInstruction(0, hadamard);
 				} else if (gateName == "Y") {
-					std::cout << "Adding a Rx on " << qbitIdx << "\n";
+//					std::cout << "Adding a Rx on " << qbitIdx << "\n";
 					auto rx = xacc::quantum::GateInstructionRegistry::instance()->create(
 							"Rx", std::vector<int> { qbitIdx });
 					InstructionParameter p(pi / -2.0);
@@ -219,7 +217,7 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 				auto gateName = terms[i].second;
 
 				if (i < terms.size() - 1) {
-					std::cout << "Adding a Cnot at end of circuit for " << qbitIdx << " and " << terms[i+1].first << "\n";
+//					std::cout << "Adding a Cnot at end of circuit for " << qbitIdx << " and " << terms[i+1].first << "\n";
 					auto cnot =
 							xacc::quantum::GateInstructionRegistry::instance()->create(
 									"CNOT", std::vector<int> { qbitIdx,
@@ -229,12 +227,12 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 				}
 
 				if (gateName == "X") {
-					std::cout << "Adding a H at end of circuit on " << qbitIdx << "\n";
+//					std::cout << "Adding a H at end of circuit on " << qbitIdx << "\n";
 					auto hadamard = xacc::quantum::GateInstructionRegistry::instance()->create(
 							"H", std::vector<int> { qbitIdx });
 					tempFunction->addInstruction(hadamard);
 				} else if (gateName == "Y") {
-					std::cout << "Adding a Rx at end of circuit on " << qbitIdx << "\n";
+//					std::cout << "Adding a Rx at end of circuit on " << qbitIdx << "\n";
 
 					auto rx = xacc::quantum::GateInstructionRegistry::instance()->create(
 							"Rx", std::vector<int> { qbitIdx });
@@ -245,7 +243,7 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 
 			}
 
-			std::cout << "Done looking at " << spinInst->toString("") << "\n";
+//			std::cout << "Done looking at " << spinInst->toString("") << "\n";
 
 			// Add to the total UCCSD State Prep function
 			for (auto inst : tempFunction->getInstructions()) {
@@ -254,17 +252,25 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 		}
 	}
 
+//	std::cout << "UCCSD State:\n" << uccsdGateFunction->toString("qreg") << "\n";
+
+	// Create a new GateQIR to hold the spin based terms
+	auto castedIr = std::dynamic_pointer_cast<xacc::quantum::GateQIR>(ir);
+
+	int counter = 0;
 	auto newIR = std::make_shared<GateQIR>();
 	for (auto f : castedIr->getKernels()) {
-		auto castedGateF =
-				std::dynamic_pointer_cast<xacc::quantum::GateFunction>(f);
 		auto coeff = std::real(
-				boost::get<std::complex<double>>(castedGateF->getParameter(0)));
-		auto vqeFunction = std::make_shared<VQEGateFunction>(*castedGateF.get(),
-				variables, coeff);
-//		vqeFunction->insertInstruction(0, uccsdGateFunction);
+				boost::get<std::complex<double>>(f->getParameter(0)));
+		auto vqeFunction = std::make_shared<VQEGateFunction>(
+				"vqeKernel" + std::to_string(counter), variables, coeff);
+		if (f->nInstructions() > 0) {
+			vqeFunction->addInstruction(uccsdGateFunction);
+			for (auto inst : f->getInstructions()) {
+				vqeFunction->addInstruction(inst);
+			}
+		}
 		newIR->addKernel(vqeFunction);
-
 	}
 
 	return newIR;

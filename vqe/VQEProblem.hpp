@@ -29,28 +29,26 @@ public:
 		auto serviceRegistry = xacc::ServiceRegistry::instance();
 		auto runtimeOptions = RuntimeOptions::instance();
 		(*runtimeOptions)["compiler"] = "fermion";
+		runtimeOptions->insert(std::make_pair("state-preparation", "uccsd"));
 		runtimeOptions->insert(std::make_pair("n-electrons", "2"));
 
-		auto qpu = xacc::getAccelerator("simple");
+		// Create the Accelerator
+		auto qpu = xacc::getAccelerator("tnqvm");
 
+		// Create the Program
 		xacc::Program program(qpu, moleculeKernel);
 
+		// Start compilation
 		program.build();
 
-		auto fermionCompiler = serviceRegistry->getService<xacc::Compiler>(
-				"fermion");
-		int nQubits = fermionCompiler->getNQubitsUsed();
+		// Create a buffer of qubits
+		std::string nQbtsStr = (*runtimeOptions)["n-qubits"];
+		buffer = qpu->createBuffer("qreg", std::stoi(nQbtsStr));
 
-		buffer = qpu->createBuffer("qreg", nQubits);
-
-
-		runtimeOptions->insert(std::make_pair("n-qubits", std::to_string(nQubits)));
-		auto statePrep = serviceRegistry->getService<xacc::IRTransformation>(
-				"uccsd");
-
-		program.transformIR(statePrep);
-
+		// Get the Kernels that were created
 		kernels = program.getRuntimeKernels();
+
+		// Set the number of VQE parameters
 		nParameters = kernels[0].getNumberOfKernelParameters();
 	}
 
@@ -69,14 +67,27 @@ public:
 
 		double sum = 0.0;
 		for (int i = 0; i < kernels.size(); i++) {
-			kernels[i](buffer, parameters);
+			std::cout << "EXECUTING " << i << " KERNEL\n";
 
-			// Get Expectation value
-			double expectationValue = buffer->getExpectationValueZ();
-
+			double expectationValue = 0.0;
+			auto kernel = kernels[i];
 			auto vqeFunction = std::dynamic_pointer_cast<VQEGateFunction>(
-					kernels[i].getIRFunction());
+							kernels[i].getIRFunction());
+
+			if (vqeFunction->nInstructions() > 0) {
+				std::cout << "QASM:\n" << vqeFunction->toString("qreg") << "\n";
+				kernels[i](buffer, parameters);
+				// Get Expectation value
+				expectationValue = buffer->getExpectationValueZ();
+			} else {
+				expectationValue = 1.0;
+			}
+
+			std::cout << "Found Expectation - " << expectationValue << "\n";
+
 			sum += vqeFunction->coefficient * expectationValue;
+
+			buffer->resetBuffer();
 		}
 
 		return sum;

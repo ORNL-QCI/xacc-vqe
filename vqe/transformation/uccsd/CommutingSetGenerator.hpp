@@ -9,100 +9,87 @@
 #define VQE_TRANSFORMATION_COMMUTINGSETGENERATOR_HPP_
 
 #include "SpinInstruction.hpp"
+#include <Eigen/Core>
+#include <numeric>
 
 namespace xacc {
 
 namespace vqe {
 class CommutingSetGenerator {
 
+private:
+
+	std::pair<Eigen::VectorXi, Eigen::VectorXi> bv(SpinInstruction& op, int nQubits) {
+		Eigen::VectorXi vx = Eigen::VectorXi::Zero(nQubits);
+		Eigen::VectorXi vz = Eigen::VectorXi::Zero(nQubits);
+
+		for (auto term : op.getTerms()) {
+			if (term.second == "X") {
+				vx(term.first) += 1;
+			} else if (term.second == "Z") {
+				vz(term.first) += 1;
+			} else if (term.second == "Y") {
+				vx(term.first) += 1;
+				vz(term.first) += 1;
+			}
+		}
+
+		return std::make_pair(vx, vz);
+	};
+
+	int bv_commutator(SpinInstruction& term1, SpinInstruction& term2, int nQubits) {
+			auto pair1 = bv(term1, nQubits);
+			auto pair2 = bv(term2, nQubits);
+			auto scalar = pair1.first.dot(pair2.second) + pair1.second.dot(pair2.first);
+			return scalar % 2;
+		};
+
 public:
 
-	std::vector<std::vector<int>> getCommutingSet(CompositeSpinInstruction& instruction) {
-		struct IsIIn {
-			const int d;
-			IsIIn(int n) :
-					d(n) {
-			}
-			bool operator()(std::vector<int> set) const {
-				return std::find(set.begin(), set.end(), d) != set.end();
-			}
-		};
-		// Compute commuting sets...
-		auto supports = [](CompositeSpinInstruction& i, int idx) -> std::vector<std::pair<int, std::string>> {
-			auto spinInst = std::dynamic_pointer_cast<SpinInstruction>(i.getInstruction(idx));
-			return spinInst->getTerms();
-		};
+	std::vector<std::vector<int>> getCommutingSet(CompositeSpinInstruction& composite, int n_qubits) {
 
-		auto commutator =
-				[](std::vector<std::pair<int, std::string>> support1,
-						std::vector<std::pair<int, std::string>> support2) -> bool {
-			std::vector<int> iqbits, jqbits;
-			std::vector<std::string> ips, jps;
 
-			for (auto t : support1) {
-				iqbits.push_back(t.first);
-				ips.push_back(t.second);
-			}
-			for (auto t : support2) {
-				jqbits.push_back(t.first);
-				jps.push_back(t.second);
-			}
+		std::vector<std::vector<int>> commuting_ops;
+		for (int i = 0; i < composite.nInstructions(); i++) {
 
-			std::vector<int> overlaps;
-			for (int i = 0; i < iqbits.size(); i++) {
-				auto site = iqbits[i];
-				auto itr = std::find(jqbits.begin(), jqbits.end(), site);
-				if (itr != jqbits.end()) {
-					auto ind2 = std::distance(jqbits.begin(), itr);
-					if (ips[i] != jps[ind2]) {
-						overlaps.push_back(site);
-					}
-				}
-			}
-
-			return overlaps.size() == 0;
-		};
-
-		std::vector<std::vector<int>> commutingSets;
-		for (int i = 0; i < instruction.getInstructions().size(); i++) {
+			auto t_i = std::dynamic_pointer_cast<SpinInstruction>(
+					composite.getInstruction(i));
 			if (i == 0) {
-				commutingSets.push_back(std::vector<int>{i});
-			}
+				commuting_ops.push_back(std::vector<int> { i });
+			} else {
+				auto comm_ticker = 0;
+				for (int j = 0; j < commuting_ops.size(); j++) {
+					auto j_op_list = commuting_ops[j];
+					int sum = 0;
+					for (auto j_op : j_op_list) {
+						auto t_jopPtr = std::dynamic_pointer_cast<
+								SpinInstruction>(
+								composite.getInstruction(j_op));
+						sum += bv_commutator(*t_i.get(), *t_jopPtr.get(),
+								n_qubits);
+					}
 
-			for (int j = 0 ; j < i; j++) {
-				auto s1 = supports(instruction, i);
-				auto s2 = supports(instruction, j);
-				if (commutator(s1, s2)) {
-					int counter = 0;
-					for (auto s : commutingSets) {
-						auto itr = std::find(s.begin(), s.end(), j);
-						if (itr != s.end()) {
-							commutingSets[counter].push_back(i);
-							break;
-						}
-						counter++;
+					if (sum == 0) {
+						commuting_ops[j].push_back(i);
+						comm_ticker += 1;
+						break;
 					}
 				}
+
+				if (comm_ticker == 0) {
+					commuting_ops.push_back(std::vector<int> { i });
+				}
 			}
-
-
-
-			if (!std::any_of(commutingSets.begin(), commutingSets.end(), IsIIn(i))) {
-				commutingSets.push_back(std::vector<int>{i});
-			}
-
 		}
 
-		std::cout << "FINAL Commuting term indices:\n";
-		for (auto s : commutingSets) {
-			std::cout << "{ ";
-			for (auto si : s) {
-				std::cout << si << " ";
+		for (auto s : commuting_ops) {
+			for (auto x : s) {
+				std::cout << x << " ";
 			}
-			std::cout << "}";
+			std::cout << "\n";
 		}
 
-		return commutingSets;
+		return commuting_ops;
 	}
 
 };

@@ -1,5 +1,6 @@
 #include "JordanWignerIRTransformation.hpp"
 #include "GateFunction.hpp"
+#include <boost/math/constants/constants.hpp>
 
 namespace xacc {
 namespace vqe {
@@ -21,6 +22,8 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 
 	int counter = 0;
 	CompositeSpinInstruction total;
+
+	result.clear();
 
 	// Loop over all Fermionic terms...
 	for (auto f : fermiKernel->getInstructions()) {
@@ -84,7 +87,11 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 
 	}
 
-	std::cout << "Transformed: " << result.toString("") << "\n";
+	auto resultsStr = result.toString("");
+	boost::replace_all(resultsStr, "+", "+\n");
+	std::cout << "Transformed Fermion to Spin:\nBEGIN\n" << resultsStr << "\nEND\n\n";
+	auto pi = boost::math::constants::pi<double>();
+
 	// Populate GateQIR now...
 	for (auto inst : result.getInstructions()) {
 
@@ -105,30 +112,25 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 		for (int i = terms.size()-1; i >= 0; i--) {
 			auto qbit = terms[i].first;
 			auto gateName = terms[i].second;
-			std::shared_ptr<xacc::quantum::GateInstruction> meas;
 			auto gateRegistry = xacc::quantum::GateInstructionRegistry::instance();
+			auto meas = gateRegistry->create("Measure", std::vector<int>{qbit});
+			xacc::InstructionParameter classicalIdx(qbit);
+			meas->setParameter(0, classicalIdx);
 
-			if (gateName != "I") {
-				meas = gateRegistry->create("Measure", std::vector<int>{qbit});
-				xacc::InstructionParameter classicalIdx(qbit);
-				meas->setParameter(0, classicalIdx);
-			} else {
-				// FIXME IF IT IS I, FIGURE THIS OUT....
-			}
-
-			// If its an X we have to add a Hadamard before the measure
-			// If its a Y we have to add a Rx(-pi / 2) gate before the measure.
 			if (gateName == "X") {
-				gateFunction->addInstruction(gateRegistry->create("H", std::vector<int>{qbit}));
+				auto hadamard = gateRegistry->create("H", std::vector<int>{qbit});
+				gateFunction->addInstruction(hadamard);
+				gateFunction->addInstruction(meas);
 			} else if (gateName == "Y") {
 				auto rx = gateRegistry->create("Rx", std::vector<int>{qbit});
-				InstructionParameter p(3.1415926 / -2.0);
+				InstructionParameter p(pi / -2.0);
 				rx->setParameter(0, p);
 				gateFunction->addInstruction(rx);
+				gateFunction->addInstruction(meas);
+			} else if (gateName == "Z") {
+				gateFunction->addInstruction(meas);
 			}
 
-			// Add the MeasureZ gate...
-			gateFunction->addInstruction(meas);
 		}
 
 		newIr->addKernel(gateFunction);

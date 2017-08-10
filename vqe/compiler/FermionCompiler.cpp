@@ -63,7 +63,7 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 
 	auto fermionKernel = std::make_shared<FermionKernel>("fName");
 
-	_nQubits = 0;
+	int _nQubits = 0;
 	// Loop over the lines to create DWQMI
 	for (auto termStr : fermionStrVec) {
 		boost::trim(termStr);
@@ -103,7 +103,6 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 	auto fermionir = std::make_shared<FermionIR>();
 	fermionir->addKernel(fermionKernel);
 
-
 	// Now we have a Function IR instance that contains information
 	// about the fermion representation of the Hamiltonian
 	// we are compiling. We need to transform it to a spin
@@ -123,6 +122,7 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 
 	// Prepend State Preparation if requested.
 	if (runtimeOptions->exists("state-preparation")) {
+		runtimeOptions->insert(std::make_pair("n-qubits", std::to_string(_nQubits)));
 		auto statePrepIRTransformStr = (*runtimeOptions)["state-preparation"];
 		auto statePrepIRTransform = ServiceRegistry::instance()->getService<
 				IRTransformation>(statePrepIRTransformStr);

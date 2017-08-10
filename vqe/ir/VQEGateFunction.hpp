@@ -29,27 +29,21 @@ class VQEGateFunction: public GateFunction {
 
 protected:
 
-std::vector<
-		std::pair<std::shared_ptr<Instruction>,
-				std::pair<std::pair<int, int>, InstructionParameter>>> cachedInstructions;
+	std::vector<
+			std::pair<std::shared_ptr<Instruction>,
+					std::pair<std::pair<int, int>, InstructionParameter>>> cachedInstructions;
 
 public:
 
-double coefficient = 0.0;
+	double coefficient = 0.0;
 
-VQEGateFunction(const std::string& name,
-		std::vector<InstructionParameter> varParams, double coeff) :
-		GateFunction(name, varParams), coefficient(coeff) {
-}
+	VQEGateFunction(const std::string& name,
+			std::vector<InstructionParameter> varParams, double coeff) :
+			GateFunction(name, varParams), coefficient(coeff) {
+	}
 
-VQEGateFunction(GateFunction& gf, std::vector<InstructionParameter> varParams,
-		double coeff) :
-		coefficient(coeff), GateFunction(gf.getName(), varParams) {
-	this->instructions = gf.getInstructions();
-}
-
-virtual void evaluateVariableParameters(
-		std::vector<InstructionParameter> runtimeParameters);
+	virtual void evaluateVariableParameters(
+			std::vector<InstructionParameter> runtimeParameters);
 
 };
 

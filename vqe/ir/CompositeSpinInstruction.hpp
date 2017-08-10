@@ -78,6 +78,10 @@ public:
 		return instructions.size();
 	}
 
+	void clear() {
+		instructions.clear();
+	}
+
 	/**
 	 * Return the SpinInstruction at the given index.
 	 *
