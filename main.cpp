@@ -8,6 +8,10 @@ int main(int argc, char** argv) {
 
 	xacc::Initialize(argc, argv);
 
+	xacc::addCommandLineOption("kernel-directory", "The directory "
+			"containing *.hpp files, each containing an XACC Kernel describing "
+			"a molecular fermionic Hamiltonian.");
+
 	std::ifstream moleculeKernelHpp(
 			"../vqe/scripts/H2_sto-3g_singlet_H2_Molecule.hpp");
 

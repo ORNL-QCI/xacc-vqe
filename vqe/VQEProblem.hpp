@@ -4,7 +4,6 @@
 #include "problem.h"
 #include "XACC.hpp"
 
-#include "PrintScaffoldVisitor.hpp"
 #include "VQEGateFunction.hpp"
 
 namespace xacc {

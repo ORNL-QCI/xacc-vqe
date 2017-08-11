@@ -71,12 +71,6 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 			std::vector<std::string> splitOnSpaces;
 			boost::split(splitOnSpaces, termStr, boost::is_any_of(" "));
 
-//			for (auto s : splitOnSpaces) {
-//				std::cout << s << " ";
-//			}
-//			std::cout << "\n";
-
-
 			// We know first term is coefficient
 			// FIXME WHAT IF COMPLEX
 			auto coeff = std::stod(splitOnSpaces[0]);

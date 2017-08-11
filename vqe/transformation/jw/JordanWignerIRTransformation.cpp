@@ -98,44 +98,51 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 		// Cast to a Spin Instruction
 		auto spinInst = std::dynamic_pointer_cast<SpinInstruction>(inst);
 
-		// Create a GateFunction and specify that it has
-		// a parameter that is the Spin Instruction coefficient
-		// that will help us get it to the user for their purposes.
-		auto gateFunction = std::make_shared<xacc::quantum::GateFunction>(
-				"term" + std::to_string(counter),
-				std::vector<InstructionParameter> { InstructionParameter(
-						spinInst->coefficient) });
+		if (std::fabs(std::real(spinInst->coefficient)) > 1e-9) {
+			std::cout << "Adding " << spinInst->toString("") << "\n";
+			// Create a GateFunction and specify that it has
+			// a parameter that is the Spin Instruction coefficient
+			// that will help us get it to the user for their purposes.
+			auto gateFunction = std::make_shared<xacc::quantum::GateFunction>(
+					"term" + std::to_string(counter),
+					std::vector<InstructionParameter> { InstructionParameter(
+							spinInst->coefficient) });
 
-		// Loop over all terms in the Spin Instruction
-		// and create instructions to run on the Gate QPU.
-		std::vector<std::shared_ptr<xacc::quantum::GateInstruction>> measurements;
-		auto terms = spinInst->getTerms();
-		for (int i = terms.size()-1; i >= 0; i--) {
-			auto qbit = terms[i].first;
-			auto gateName = terms[i].second;
-			auto gateRegistry = xacc::quantum::GateInstructionRegistry::instance();
-			auto meas = gateRegistry->create("Measure", std::vector<int>{qbit});
-			xacc::InstructionParameter classicalIdx(qbit);
-			meas->setParameter(0, classicalIdx);
-			measurements.push_back(meas);
+			// Loop over all terms in the Spin Instruction
+			// and create instructions to run on the Gate QPU.
+			std::vector<std::shared_ptr<xacc::quantum::GateInstruction>> measurements;
+			auto terms = spinInst->getTerms();
+			for (int i = terms.size() - 1; i >= 0; i--) {
+				auto qbit = terms[i].first;
+				auto gateName = terms[i].second;
+				auto gateRegistry =
+						xacc::quantum::GateInstructionRegistry::instance();
+				auto meas = gateRegistry->create("Measure", std::vector<int> {
+						qbit });
+				xacc::InstructionParameter classicalIdx(qbit);
+				meas->setParameter(0, classicalIdx);
+				measurements.push_back(meas);
 
-			if (gateName == "X") {
-				auto hadamard = gateRegistry->create("H", std::vector<int>{qbit});
-				gateFunction->addInstruction(hadamard);
-			} else if (gateName == "Y") {
-				auto rx = gateRegistry->create("Rx", std::vector<int>{qbit});
-				InstructionParameter p(pi / -2.0);
-				rx->setParameter(0, p);
-				gateFunction->addInstruction(rx);
+				if (gateName == "X") {
+					auto hadamard = gateRegistry->create("H", std::vector<int> {
+							qbit });
+					gateFunction->addInstruction(hadamard);
+				} else if (gateName == "Y") {
+					auto rx = gateRegistry->create("Rx",
+							std::vector<int> { qbit });
+					InstructionParameter p(pi / -2.0);
+					rx->setParameter(0, p);
+					gateFunction->addInstruction(rx);
+				}
+
 			}
 
+			for (auto m : measurements) {
+				gateFunction->addInstruction(m);
+			}
+			newIr->addKernel(gateFunction);
+			counter++;
 		}
-
-		for (auto m : measurements) {
-			gateFunction->addInstruction(m);
-		}
-		newIr->addKernel(gateFunction);
-		counter++;
 	}
 
 	return newIr;
