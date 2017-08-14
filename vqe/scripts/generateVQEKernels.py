@@ -133,7 +133,7 @@ def main(argv=None):
        fermion_hamiltonian = get_fermion_operator(molecular_hamiltonian)
        fermion_hamiltonian.compress()
     
-       xaccKernelStr = '__qpu__ ' + moleculeData.name.replace(" ","_") + '() {\n'
+       xaccKernelStr = '__qpu__ ' + moleculeData.name.replace(" ","_") + str(arg).replace(".","_") + '() {\n'
        for i, term in enumerate(list(fermion_hamiltonian.terms.keys())): 
           xaccKernelStr += '\t' + str(fermion_hamiltonian.terms[term]) + ' '
           for j, op in enumerate(term):
