@@ -3,6 +3,9 @@
 namespace xacc {
 namespace vqe {
 
+CompositeSpinInstruction::CompositeSpinInstruction() {
+}
+
 bool CompositeSpinInstruction::operator==(SpinInstruction &b) {
 	if (nInstructions() > 1) {
 		return false;

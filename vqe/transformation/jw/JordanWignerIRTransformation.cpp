@@ -82,6 +82,14 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 			}
 		}
 
+		// Case - we could have a current that has no
+		// instructions in it. If so add an Identity to it
+		if (current.nInstructions() == 0) {
+			auto nullInst = std::make_shared<SpinInstruction>(
+					std::vector<std::pair<int, std::string>> { { 0, "I" } });
+			current.addInstruction(nullInst);
+		}
+
 		auto temp = fermionCoeff * current;
 		result = result + temp;
 
@@ -89,7 +97,7 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 
 	auto resultsStr = result.toString("");
 	boost::replace_all(resultsStr, "+", "+\n");
-	std::cout << "Transformed Fermion to Spin:\nBEGIN\n" << resultsStr << "\nEND\n\n";
+	std::cout << "Jordan Wigner Transformed Fermion to Spin:\nBEGIN\n" << resultsStr << "\nEND\n\n";
 	auto pi = boost::math::constants::pi<double>();
 
 	// Populate GateQIR now...
@@ -99,7 +107,7 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 		auto spinInst = std::dynamic_pointer_cast<SpinInstruction>(inst);
 
 		if (std::fabs(std::real(spinInst->coefficient)) > 1e-9) {
-			std::cout << "Adding " << spinInst->toString("") << "\n";
+//			std::cout << "Adding " << spinInst->toString("") << "\n";
 			// Create a GateFunction and specify that it has
 			// a parameter that is the Spin Instruction coefficient
 			// that will help us get it to the user for their purposes.

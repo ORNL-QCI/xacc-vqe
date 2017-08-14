@@ -102,6 +102,7 @@ def main(argv=None):
        molecule = generateMolecule(arg)
 
        geometry = fl_geo(molecule)
+       print 'Geom: ', geometry
        basis = 'sto-3g'
        multiplicity = molecule.multiplicity()
        charge = molecule.molecular_charge()
@@ -128,11 +129,11 @@ def main(argv=None):
                         
        # Load full molecular Hamiltonian 
        molecular_hamiltonian = mol.get_molecular_hamiltonian()
-
+       print molecular_hamiltonian
        # Map operator to fermions and qubits.
        fermion_hamiltonian = get_fermion_operator(molecular_hamiltonian)
        fermion_hamiltonian.compress()
-    
+       print fermion_hamiltonian    
        xaccKernelStr = '__qpu__ ' + moleculeData.name.replace(" ","_") + str(arg).replace(".","_") + '() {\n'
        for i, term in enumerate(list(fermion_hamiltonian.terms.keys())): 
           xaccKernelStr += '\t' + str(fermion_hamiltonian.terms[term]) + ' '

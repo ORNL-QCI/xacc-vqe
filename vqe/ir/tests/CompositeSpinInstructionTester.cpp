@@ -90,3 +90,17 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 
 }
 
+BOOST_AUTO_TEST_CASE(checkIdentity) {
+	SpinInstruction i1(std::vector<std::pair<int, std::string>> { { 0, "I" } },
+			std::complex<double>(3.3, 0));
+	SpinInstruction i2(std::vector<std::pair<int, std::string>> { { 0, "I" } },
+			std::complex<double>(5.3, 0));
+	CompositeSpinInstruction compInst;
+	std::cout << "NULL: " << compInst.toString("") << "\n";
+	compInst.addInstruction(std::make_shared<SpinInstruction>(i1));
+
+	compInst = compInst + i2;
+
+	std::cout << "HELLO: " << compInst.toString("") << "\n";
+
+}

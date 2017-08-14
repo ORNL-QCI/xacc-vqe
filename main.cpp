@@ -56,15 +56,27 @@ int main(int argc, char** argv) {
 
 		// We have all files, now lets run VQE on all of them
 		std::ofstream outFile(outFileName+".csv");
+		Eigen::VectorXd params(2);
+		params << 1.69, -.433;
+		bool executedOnce = false;
 		while(!executions.empty()) {
 			std::ifstream stream(executions.top().second);
 			VQEProblem<double> problem(stream);
-			auto params = problem.initializeParameters();
+//			if (!executedOnce) {
+//				// We do this so that at first we generate
+//				// random parameters, but then we just keep
+//				// reusing the last iterations parameters...
+//				params = problem.initializeParameters();
+//				executedOnce = true;
+//			}
 			cppoptlib::NelderMeadSolver<VQEProblem<double>> solver;
 			solver.setStopCriteria(VQEProblem<double>::getConvergenceCriteria());
+			std::cout << "Starting Parameters: " << params.transpose() << "\n";
 			solver.minimize(problem, params);
-			auto finalValue = problem(params);
+			auto finalValue = problem.currentEnergy;
+			std::cout << "Converged to " << finalValue << " with " << params.transpose() << "\n";
 			outFile << executions.top().first << ", " << finalValue << "\n";
+			outFile.flush();
 			executions.pop();
 			stream.close();
 		}
@@ -82,6 +94,8 @@ int main(int argc, char** argv) {
 		VQEProblem<double> problem(moleculeKernelHpp);
 
 		auto params = problem.initializeParameters();
+
+		params << 1.69, -.433;
 
 		cppoptlib::NelderMeadSolver<VQEProblem<double>> solver;
 		solver.setStopCriteria(VQEProblem<double>::getConvergenceCriteria());

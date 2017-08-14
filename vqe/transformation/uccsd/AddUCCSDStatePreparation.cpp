@@ -59,7 +59,6 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 	for (int i = 0; i < _nVirtual; i++) {
 		for (int j = 0; j < _nOccupied; j++) {
 			for (int l = 0; l < 2; l++) {
-				std::cout << i << " " << j << " " << l << "\n";
 				std::vector<std::pair<int, int>> operators { { 2
 						* (i + _nOccupied) + l, 1 }, { 2 * j + l, 0 } };
 				auto fermiInstruction1 = std::make_shared<FermionInstruction>(

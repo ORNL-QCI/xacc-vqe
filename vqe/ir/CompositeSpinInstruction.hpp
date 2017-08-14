@@ -59,7 +59,7 @@ public:
 	/**
 	 * The nullary constructor.
 	 */
-	CompositeSpinInstruction() {}
+	CompositeSpinInstruction();
 
 	/**
 	 * The Copy constructor

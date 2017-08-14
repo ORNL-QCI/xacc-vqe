@@ -28,7 +28,7 @@ public:
 
 	using typename cppoptlib::Problem<T>::TVector;
 
-	VQEProblem(std::istream& moleculeKernel) :nParameters(0) {
+	VQEProblem(std::istream& moleculeKernel) : nParameters(0), currentEnergy(0.0) {
 		xacc::setCompiler("fermion");
 		xacc::setOption("state-preparation", "uccsd");
 		xacc::setOption("n-electrons", "2");
@@ -53,11 +53,13 @@ public:
 	}
 
 	typename cppoptlib::Problem<T>::TVector initializeParameters() {
-		Eigen::VectorXd x(nParameters);
-		x << .45, -.04;
-		return x;
+		std::srand(time(0));
+		auto rand = Eigen::VectorXd::Random(nParameters);
+		std::cout << "InitialParams: " << rand.transpose() << "\n";
+		return rand;
 	}
 
+	double currentEnergy;
 
 	T value(const TVector& x) {
 
@@ -107,7 +109,11 @@ public:
 			sum += coeff * localExpectationValue;
 		}
 
-		XACCInfo("Computed VQE Energy = " + std::to_string(sum));
+		currentEnergy = sum;
+
+		std::stringstream ss;
+		ss << x.transpose();
+		XACCInfo("Computed VQE Energy = " + std::to_string(sum) + " at (" + ss.str() + ")");
 		return sum;
 	}
 
