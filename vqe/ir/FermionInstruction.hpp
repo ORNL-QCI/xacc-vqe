@@ -169,6 +169,10 @@ public:
 		return parameters.size();
 	}
 
+	virtual void addParameter(InstructionParameter& p) {
+
+	}
+
 	/**
 	 * Return true if this Instruction is parameterized.
 	 *

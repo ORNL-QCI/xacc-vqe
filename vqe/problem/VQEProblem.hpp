@@ -88,7 +88,6 @@ public:
 	typename cppoptlib::Problem<T>::TVector initializeParameters() {
 		std::srand(time(0));
 		auto rand = Eigen::VectorXd::Random(nParameters);
-		std::cout << "InitialParams: " << rand.transpose() << "\n";
 		return rand;
 	}
 
@@ -101,12 +100,6 @@ public:
 			parameters.push_back(p);
 		}
 
-//		InstructionParameter p1(0.0);
-//		InstructionParameter p2(.05677);
-//		parameters.clear();
-//		parameters.push_back(p1);
-//		parameters.push_back(p2);
-
 		// Evaluate all parameters first,
 		// since this invokes the Python Interpreter (for now)
 		for (auto k : kernels) {
@@ -115,6 +108,7 @@ public:
 			while (it.hasNext()) {
 				// Get the next node in the tree
 				auto nextInst = it.next();
+				nextInst->enable();
 				auto gateName = nextInst->getName();
 				if (gateName == "Rx" || gateName == "Rz") {
 					auto angle =
@@ -129,10 +123,42 @@ public:
 				}
 			}
 
+
+			auto statePrep = std::dynamic_pointer_cast<Function>(k.getIRFunction()->getInstruction(0));
+			InstructionIterator it2(statePrep);
+			it2.next();
+			int counter = 0, index = 0;
+			while (it2.hasNext()) {
+				auto next = it2.next();
+				if (next->getName() == "Rz"
+						&& std::fabs(boost::get<double>(next->getParameter(0)))
+								< 1e-12) {
+//					std::cout << "Found an Rz with 0 angle\n";
+
+					next->disable();
+					// If I'm here, I have counter instructions in front of me
+					// So disable the counter in front and counter behind
+					while(counter != 0) {
+//					for (int i = index-counter; i <= 2*(counter+1); i++) {
+//						std::cout << counter << ", " << index << " | Disabling " << statePrep->getInstruction(index-counter)->toString("qreg") << " and " << statePrep->getInstruction(index+counter)->toString("qreg") << "\n";
+						statePrep->getInstruction(index-counter)->disable();
+						statePrep->getInstruction(index+counter)->disable();
+						counter--;
+					}
+
+					// reset the counter
+//					counter = 0;
+				}
+
+				if (next->getName() != "X" && next->isEnabled()) counter++;
+
+				index++;
+			}
 		}
 
+
 		double sum = 0.0, localExpectationValue = 0.0;
-#pragma omp parallel for reduction (+:sum)
+//#pragma omp parallel for reduction (+:sum)
 		for (int i = 0; i < kernels.size(); i++) {
 
 			// Get the ith Kernel
@@ -167,14 +193,18 @@ public:
 
 			// If we have instructions, execute the kernel
 			// Execute!
-			if (vqeFunction->nInstructions() > 2) kernel(buff);
+			kernel(buff);
 
 			// Get Expectation value
-			localExpectationValue = buff->getExpectationValueZ();
+			if (vqeFunction->isIdentityOperator) {
+				localExpectationValue = 1.0;
+			} else {
+				localExpectationValue = buff->getExpectationValueZ();
+			}
 
 			// Sum up the expectation values
 			sum += coeff * localExpectationValue;
-			 std::cout << " Kernel " << i << " Expectation = " << localExpectationValue << ", coeff = " << coeff << ": " << sum << "\n";
+//			std::cout << vqeFunction->nInstructions() << " Kernel " << i << " Expectation = " << localExpectationValue << ", coeff = " << coeff << ": " << sum << "\n";
 
 		}
 

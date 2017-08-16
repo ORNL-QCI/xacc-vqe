@@ -29,6 +29,7 @@ include_directories(${CMAKE_SOURCE_DIR}/vqe)
 include_directories(${CMAKE_SOURCE_DIR}/vqe/ir)
 include_directories(${CMAKE_SOURCE_DIR}/vqe/transformation/uccsd)
 include_directories(${CMAKE_SOURCE_DIR}/vqe/compiler)
+include_directories(${CMAKE_SOURCE_DIR}/vqe/problem)
 include_directories(${CMAKE_SOURCE_DIR}/tpls/eigen)
 
 link_directories(${XACC_LIBRARY_DIR})

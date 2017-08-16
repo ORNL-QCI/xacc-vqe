@@ -1,6 +1,8 @@
 #include "XACC.hpp"
 #include "VQEProblem.hpp"
 #include "solver/neldermeadsolver.h"
+#include "solver/conjugatedgradientdescentsolver.h"
+#include "solver/gradientdescentsolver.h"
 
 using ExecutionPair = std::pair<double, std::string>;
 struct ExecutionPairComparison {
@@ -63,24 +65,15 @@ int main(int argc, char** argv) {
 		// We have all files, now lets run VQE on all of them
 		std::ofstream outFile(outFileName+".csv");
 		Eigen::VectorXd params(2);
-//		params << 1.69, -.433;
 		bool executedOnce = false;
 		while(!executions.empty()) {
 			std::ifstream stream(executions.top().second);
 			VQEProblem<double> problem(stream);
-//			if (!executedOnce) {
-//				// We do this so that at first we generate
-//				// random parameters, but then we just keep
-//				// reusing the last iterations parameters...
-				params = problem.initializeParameters();
-//				executedOnce = true;
-//			}
+			params = problem.initializeParameters();
 			cppoptlib::NelderMeadSolver<VQEProblem<double>> solver;
 			solver.setStopCriteria(VQEProblem<double>::getConvergenceCriteria());
-			std::cout << "Starting Parameters: " << params.transpose() << "\n";
 			solver.minimize(problem, params);
 			auto finalValue = problem.currentEnergy;
-			std::cout << "Converged to " << finalValue << " with " << params.transpose() << "\n";
 			outFile << executions.top().first << ", " << finalValue << "\n";
 			outFile.flush();
 			executions.pop();
@@ -96,14 +89,11 @@ int main(int argc, char** argv) {
 		}
 
 		std::ifstream moleculeKernelHpp(xacc::getOption("vqe-kernel-file"));
-
 		VQEProblem<double> problem(moleculeKernelHpp);
 
 		auto params = problem.initializeParameters();
-
 		cppoptlib::NelderMeadSolver<VQEProblem<double>> solver;
 		solver.setStopCriteria(VQEProblem<double>::getConvergenceCriteria());
-
 		solver.minimize(problem, params);
 
 		std::stringstream ss;

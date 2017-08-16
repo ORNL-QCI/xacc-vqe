@@ -165,6 +165,7 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 			int largestQbitIdx = terms[terms.size() - 1].first;
 			auto tempFunction = std::make_shared<xacc::quantum::GateFunction>(
 					"");
+
 			for (int i = 0; i < terms.size(); i++) {
 
 				auto qbitIdx = terms[i].first;
@@ -242,7 +243,6 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 				}
 
 			}
-
 			// Add to the total UCCSD State Prep function
 			for (auto inst : tempFunction->getInstructions()) {
 				uccsdGateFunction->addInstruction(inst);
@@ -262,10 +262,14 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 	int counter = 0;
 	auto newIR = std::make_shared<GateQIR>();
 	for (auto f : castedIr->getKernels()) {
+
 		auto coeff = std::real(
 				boost::get<std::complex<double>>(f->getParameter(0)));
+		bool isIdentity = boost::get<int>(f->getParameter(1)) == 1;
+
 		auto vqeFunction = std::make_shared<VQEGateFunction>(
 				"vqeKernel" + std::to_string(counter), variables, coeff);
+		vqeFunction->isIdentityOperator = isIdentity;
 		if (f->nInstructions() > 0) {
 			vqeFunction->addInstruction(uccsdGateFunction);
 			for (auto inst : f->getInstructions()) {

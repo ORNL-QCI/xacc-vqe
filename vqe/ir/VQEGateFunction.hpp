@@ -37,6 +37,8 @@ public:
 
 	double coefficient = 0.0;
 
+	bool isIdentityOperator = false;
+
 	VQEGateFunction(const std::string& name,
 			std::vector<InstructionParameter> varParams, double coeff) :
 			GateFunction(name, varParams), coefficient(coeff) {

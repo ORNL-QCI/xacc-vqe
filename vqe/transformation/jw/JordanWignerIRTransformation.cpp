@@ -95,9 +95,9 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 
 	}
 
-	auto resultsStr = result.toString("");
-	boost::replace_all(resultsStr, "+", "+\n");
-	std::cout << "Jordan Wigner Transformed Fermion to Spin:\nBEGIN\n" << resultsStr << "\nEND\n\n";
+//	auto resultsStr = result.toString("");
+//	boost::replace_all(resultsStr, "+", "+\n");
+//	std::cout << "Jordan Wigner Transformed Fermion to Spin:\nBEGIN\n" << resultsStr << "\nEND\n\n";
 	auto pi = boost::math::constants::pi<double>();
 
 	// Populate GateQIR now...
@@ -107,6 +107,12 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 		auto spinInst = std::dynamic_pointer_cast<SpinInstruction>(inst);
 
 		if (std::fabs(std::real(spinInst->coefficient)) > 1e-9) {
+
+			int isIdentity = 0;
+			if (*spinInst.get() == SpinInstruction( { { 0, "I" } })) {
+				isIdentity = 1;
+			}
+
 //			std::cout << "Adding " << spinInst->toString("") << "\n";
 			// Create a GateFunction and specify that it has
 			// a parameter that is the Spin Instruction coefficient
@@ -114,7 +120,8 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 			auto gateFunction = std::make_shared<xacc::quantum::GateFunction>(
 					"term" + std::to_string(counter),
 					std::vector<InstructionParameter> { InstructionParameter(
-							spinInst->coefficient) });
+							spinInst->coefficient), InstructionParameter(
+									isIdentity) });
 
 			// Loop over all terms in the Spin Instruction
 			// and create instructions to run on the Gate QPU.

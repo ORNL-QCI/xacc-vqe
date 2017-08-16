@@ -49,7 +49,7 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 
 	// Here we expect we have a kernel, only one kernel
 
-	std::cout << "KERNEL:\n" << src << "\n";
+//	std::cout << "KERNEL:\n" << src << "\n";
 
 	// First off, split the string into lines
 	std::vector<std::string> lines, fLineSpaces;
