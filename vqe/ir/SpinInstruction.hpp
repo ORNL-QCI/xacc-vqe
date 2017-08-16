@@ -296,10 +296,6 @@ public:
 		coefficient = boost::get<std::complex<double>>(inst);
 	}
 
-	virtual void addParameter(InstructionParameter& param) {
-
-	}
-
 	/**
 	 * Return the number of InstructionParameters this Instruction contains.
 	 *

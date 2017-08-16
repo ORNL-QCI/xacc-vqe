@@ -195,9 +195,6 @@ public:
 		XACCError("FermionKernel does not contain runtime parameters.");
 	}
 
-	virtual void addParameter(InstructionParameter& p) {
-		XACCError("FermionKernel does not contain runtime parameters.");
-	}
 	/**
 	 * FermionKernel do not contain parameters. This
 	 * method is not implmeneted. An error will be thrown if invoked.
