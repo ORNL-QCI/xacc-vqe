@@ -75,7 +75,7 @@ void VQEGateFunction::evaluateVariableParameters(
 						std::string variableExpressionStr = boost::get<
 								std::string>(instParam);
 
-						auto runtimeValue = runtimeParameters[j];
+						auto runtimeValue = runtimeParameters[i];
 						ss1 << runtimeValue;
 						boost::replace_all(variableExpressionStr,
 								boost::get<std::string>(fParam), ss1.str());

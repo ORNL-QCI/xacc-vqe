@@ -94,6 +94,7 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 	}
 
 	_nQubits++;
+	runtimeOptions->insert(std::make_pair("n-qubits", std::to_string(_nQubits)));
 
 	// Create the FermionIR to pass to our transformation.
 	auto fermionir = std::make_shared<FermionIR>();
@@ -118,7 +119,6 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 
 	// Prepend State Preparation if requested.
 	if (runtimeOptions->exists("state-preparation")) {
-		runtimeOptions->insert(std::make_pair("n-qubits", std::to_string(_nQubits)));
 		auto statePrepIRTransformStr = (*runtimeOptions)["state-preparation"];
 		auto statePrepIRTransform = ServiceRegistry::instance()->getService<
 				IRTransformation>(statePrepIRTransformStr);

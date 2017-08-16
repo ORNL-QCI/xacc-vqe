@@ -36,7 +36,7 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 	auto _nParameters = nSingle + nDouble;
 
 	auto singletIndex = [=](int i, int j) -> int {
-	        return i * _nOccupied + j;
+		return i * _nOccupied + j;
 	};
 
 	auto doubletIndex = [=](int i, int j, int k, int l) -> int {
@@ -50,8 +50,8 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 	std::vector<xacc::InstructionParameter> variables;
 	std::vector<std::string> params;
 	for (int i = 0; i < _nParameters; i++) {
-		params.push_back("theta"+std::to_string(i));
-		variables.push_back(InstructionParameter("theta"+std::to_string(i)));
+		params.push_back("theta" + std::to_string(i));
+		variables.push_back(InstructionParameter("theta" + std::to_string(i)));
 	}
 
 	auto kernel = std::make_shared<FermionKernel>("fermiUCCSD");
@@ -65,10 +65,12 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 						operators, params[singletIndex(i, j)]);
 				kernel->addInstruction(fermiInstruction1);
 
-				std::vector<std::pair<int, int>> operators2 { { 2 * j + l, 1}, {2 * (i + _nOccupied) + l, 0} };
+				std::vector<std::pair<int, int>> operators2 { { 2 * j + l, 1 },
+						{ 2 * (i + _nOccupied) + l, 0 } };
 				auto fermiInstruction2 = std::make_shared<FermionInstruction>(
 						operators2, params[singletIndex(i, j)]);
-				fermiInstruction2->coefficient = -1.0 * fermiInstruction2->coefficient;
+				fermiInstruction2->coefficient = -1.0
+						* fermiInstruction2->coefficient;
 				kernel->addInstruction(fermiInstruction2);
 
 			}
@@ -87,12 +89,14 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 											+ l2, 1 }, { 2 * j2 + l2, 0 } };
 
 							std::vector<std::pair<int, int>> operators2 { { 2
-									* j2 + l2, 1 }, { 2 * (i2 + _nOccupied) + l2,
-									0 }, { 2 * j + l, 1 }, { 2 * (i + _nOccupied)
-									+ l, 0 } };
+									* j2 + l2, 1 }, { 2 * (i2 + _nOccupied)
+									+ l2, 0 }, { 2 * j + l, 1 }, { 2
+									* (i + _nOccupied) + l, 0 } };
 
-							auto doubletIdx1 = nSingle + doubletIndex(i, j, i2, j2);
-							auto doubletIdx2 = nSingle + doubletIndex(i, j, i2, j2);
+							auto doubletIdx1 = nSingle
+									+ doubletIndex(i, j, i2, j2);
+							auto doubletIdx2 = nSingle
+									+ doubletIndex(i, j, i2, j2);
 
 							auto fermiInstruction1 = std::make_shared<
 									FermionInstruction>(operators1,
@@ -104,7 +108,8 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 									FermionInstruction>(operators2,
 									params[doubletIdx2]);
 
-							fermiInstruction2->coefficient = -1.0 * fermiInstruction2->coefficient;
+							fermiInstruction2->coefficient = -1.0
+									* fermiInstruction2->coefficient;
 							kernel->addInstruction(fermiInstruction2);
 
 						}
@@ -137,14 +142,15 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 	// Convert imaginary part to real part
 	for (auto term : compositeResult.getInstructions()) {
 		auto castedTerm = std::dynamic_pointer_cast<SpinInstruction>(term);
-		castedTerm->coefficient = std::complex<double>(std::imag(castedTerm->coefficient), 0);
+		castedTerm->coefficient = std::complex<double>(
+				std::imag(castedTerm->coefficient), 0);
 	}
 
 	CommutingSetGenerator gen;
 	auto commutingSets = gen.getCommutingSet(compositeResult, nQubits);
 	auto pi = boost::math::constants::pi<double>();
-	auto uccsdGateFunction = std::make_shared<xacc::quantum::GateFunction>(
-			"uccsdPrep", variables);
+	auto uccsdGateFunction = std::make_shared<VQEGateFunction>("uccsdPrep",
+			variables, 1.0);
 
 	// Perform Trotterization...
 	for (auto s : commutingSets) {
@@ -152,37 +158,37 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 		for (auto instIdx : s) {
 			auto temp = compositeResult.getInstruction(instIdx);
 			auto spinInst = std::dynamic_pointer_cast<SpinInstruction>(temp);
-//			std::cout << "Looking at " << spinInst->toString("") << "\n";
 			// Get the individual pauli terms
 			auto terms = spinInst->getTerms();
 
 			// The largest qubit index is on the last term
-			int largestQbitIdx = terms[terms.size()-1].first;
-			auto tempFunction = std::make_shared<xacc::quantum::GateFunction>("");
+			int largestQbitIdx = terms[terms.size() - 1].first;
+			auto tempFunction = std::make_shared<xacc::quantum::GateFunction>(
+					"");
 			for (int i = 0; i < terms.size(); i++) {
 
 				auto qbitIdx = terms[i].first;
 				auto gateName = terms[i].second;
 
 				if (i < terms.size() - 1) {
-//					std::cout << "Adding a CNot between " << qbitIdx << " and " << terms[i+1].first << "\n";
 					auto cnot =
 							xacc::quantum::GateInstructionRegistry::instance()->create(
-									"CNOT", std::vector<int> { qbitIdx,
-											terms[i+1].first });
+									"CNOT",
+									std::vector<int> { qbitIdx,
+											terms[i + 1].first });
 					tempFunction->addInstruction(cnot);
 				}
 
 				if (gateName == "X") {
-//					std::cout << "Adding a H on " << qbitIdx << "\n";
-					auto hadamard = xacc::quantum::GateInstructionRegistry::instance()->create(
-							"H", std::vector<int> { qbitIdx });
+					auto hadamard =
+							xacc::quantum::GateInstructionRegistry::instance()->create(
+									"H", std::vector<int> { qbitIdx });
 					tempFunction->insertInstruction(0, hadamard);
 				} else if (gateName == "Y") {
-//					std::cout << "Adding a Rx on " << qbitIdx << "\n";
-					auto rx = xacc::quantum::GateInstructionRegistry::instance()->create(
-							"Rx", std::vector<int> { qbitIdx });
-					InstructionParameter p(pi / -2.0);
+					auto rx =
+							xacc::quantum::GateInstructionRegistry::instance()->create(
+									"Rx", std::vector<int> { qbitIdx });
+					InstructionParameter p(pi / 2.0);
 					rx->setParameter(0, p);
 					tempFunction->insertInstruction(0, rx);
 				}
@@ -191,12 +197,13 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 				if (i == terms.size() - 1) {
 					// FIXME DONT FORGET DIVIDE BY 2
 					std::stringstream ss;
-					ss << std::real(spinInst->coefficient) << " * " << spinInst->variable;
-//					std::cout << "ADDING AN RZ(" << ss.str() << ") on " << qbitIdx << "\n";
-					auto rz = xacc::quantum::GateInstructionRegistry::instance()->create(
-												"Rz", std::vector<int> { qbitIdx });
+					ss << 2*std::real(spinInst->coefficient) << " * "
+							<< spinInst->variable;
+					auto rz =
+							xacc::quantum::GateInstructionRegistry::instance()->create(
+									"Rz", std::vector<int> { qbitIdx });
 
-					InstructionParameter p("0.5 * " + ss.str());
+					InstructionParameter p(ss.str());
 					rz->setParameter(0, p);
 					tempFunction->addInstruction(rz);
 
@@ -205,39 +212,36 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 
 			int counter = tempFunction->nInstructions();
 			// Add the instruction on the backend of the circuit
-			for (int i = terms.size()-1; i >= 0; i--) {
+			for (int i = terms.size() - 1; i >= 0; i--) {
 
 				auto qbitIdx = terms[i].first;
 				auto gateName = terms[i].second;
 
 				if (i < terms.size() - 1) {
-//					std::cout << "Adding a Cnot at end of circuit for " << qbitIdx << " and " << terms[i+1].first << "\n";
 					auto cnot =
 							xacc::quantum::GateInstructionRegistry::instance()->create(
-									"CNOT", std::vector<int> { qbitIdx,
-											terms[i+1].first });
+									"CNOT",
+									std::vector<int> { qbitIdx,
+											terms[i + 1].first });
 					tempFunction->insertInstruction(counter, cnot);
 					counter++;
 				}
 
 				if (gateName == "X") {
-//					std::cout << "Adding a H at end of circuit on " << qbitIdx << "\n";
-					auto hadamard = xacc::quantum::GateInstructionRegistry::instance()->create(
-							"H", std::vector<int> { qbitIdx });
+					auto hadamard =
+							xacc::quantum::GateInstructionRegistry::instance()->create(
+									"H", std::vector<int> { qbitIdx });
 					tempFunction->addInstruction(hadamard);
 				} else if (gateName == "Y") {
-//					std::cout << "Adding a Rx at end of circuit on " << qbitIdx << "\n";
-
-					auto rx = xacc::quantum::GateInstructionRegistry::instance()->create(
-							"Rx", std::vector<int> { qbitIdx });
-					InstructionParameter p(pi / 2.0);
+					auto rx =
+							xacc::quantum::GateInstructionRegistry::instance()->create(
+									"Rx", std::vector<int> { qbitIdx });
+					InstructionParameter p(pi / -2.0);
 					rx->setParameter(0, p);
 					tempFunction->addInstruction(rx);
 				}
 
 			}
-
-//			std::cout << "Done looking at " << spinInst->toString("") << "\n";
 
 			// Add to the total UCCSD State Prep function
 			for (auto inst : tempFunction->getInstructions()) {
@@ -246,7 +250,11 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 		}
 	}
 
-//	std::cout << "UCCSD State:\n" << uccsdGateFunction->toString("qreg") << "\n";
+	for (int i = nElectrons-1; i >= 0; i--) {
+		auto xGate = xacc::quantum::GateInstructionRegistry::instance()->create(
+				"X", std::vector<int>{i});
+		uccsdGateFunction->insertInstruction(0,xGate);
+	}
 
 	// Create a new GateQIR to hold the spin based terms
 	auto castedIr = std::dynamic_pointer_cast<xacc::quantum::GateQIR>(ir);

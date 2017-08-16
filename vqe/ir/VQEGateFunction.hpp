@@ -45,6 +45,9 @@ public:
 	virtual void evaluateVariableParameters(
 			std::vector<InstructionParameter> runtimeParameters);
 
+	virtual std::shared_ptr<Function> evaluate(
+			std::vector<InstructionParameter> parameters) {
+	}
 };
 
 }

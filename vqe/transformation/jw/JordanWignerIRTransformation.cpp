@@ -138,7 +138,7 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 				} else if (gateName == "Y") {
 					auto rx = gateRegistry->create("Rx",
 							std::vector<int> { qbit });
-					InstructionParameter p(pi / -2.0);
+					InstructionParameter p(pi / 2.0);
 					rx->setParameter(0, p);
 					gateFunction->addInstruction(rx);
 				}

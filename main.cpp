@@ -17,13 +17,19 @@ int main(int argc, char** argv) {
 
 	// Add some command line options for XACC VQE
 	xacc::addCommandLineOptions("XACC VQE", std::map<std::string, std::string>{
-		{"kernel-directory", "The directory containing *.hpp files, each "
+		{"vqe-kernel-directory", "The directory containing *.hpp files, each "
 				"containing an XACC Kernel describing a molecular "
 				"fermionic Hamiltonian."},
-		{"kernel-file", "The file containing an XACC Kernel describing "
+		{"vqe-kernel-file", "The file containing an XACC Kernel describing "
 			"a molecular fermionic Hamiltonian."},
-		{"vqe-energy-delta", "Specify the change in the energy condition for convergence of Nelder-Mead minimization."},
-		{"vqe-iterations", "The number of iterations before stoping Nelder-Mead minimization."}
+		{"vqe-energy-delta", "Specify the change in the energy condition for "
+				"convergence of Nelder-Mead minimization."},
+		{"vqe-iterations", "The number of iterations before stoping "
+				"Nelder-Mead minimization."},
+		{"vqe-print-scaffold-source", "Print the source code in the Scaffold "
+				"language to the provided file name."},
+		{"vqe-exit-after-scaffold", "Print Scaffold source code to the "
+				"provided file name and then quit. Set this arg to be y"}
 	});
 
 	// Initialize the Framework
@@ -34,11 +40,11 @@ int main(int argc, char** argv) {
 	// the provided directory,
 	// OR
 	// Run a calculation on oone file.
-	if (xacc::optionExists("kernel-directory")) {
+	if (xacc::optionExists("vqe-kernel-directory")) {
 		std::priority_queue<ExecutionPair, std::vector<ExecutionPair>,
 				ExecutionPairComparison> executions;
 		std::string outFileName;
-		boost::filesystem::path filePath(xacc::getOption("kernel-directory"));
+		boost::filesystem::path filePath(xacc::getOption("vqe-kernel-directory"));
 		boost::filesystem::directory_iterator end_itr;
 		for (boost::filesystem::directory_iterator itr(filePath);
 				itr != end_itr; ++itr) {
@@ -57,7 +63,7 @@ int main(int argc, char** argv) {
 		// We have all files, now lets run VQE on all of them
 		std::ofstream outFile(outFileName+".csv");
 		Eigen::VectorXd params(2);
-		params << 1.69, -.433;
+//		params << 1.69, -.433;
 		bool executedOnce = false;
 		while(!executions.empty()) {
 			std::ifstream stream(executions.top().second);
@@ -66,7 +72,7 @@ int main(int argc, char** argv) {
 //				// We do this so that at first we generate
 //				// random parameters, but then we just keep
 //				// reusing the last iterations parameters...
-//				params = problem.initializeParameters();
+				params = problem.initializeParameters();
 //				executedOnce = true;
 //			}
 			cppoptlib::NelderMeadSolver<VQEProblem<double>> solver;
@@ -85,17 +91,15 @@ int main(int argc, char** argv) {
 
 	} else {
 
-		if (!xacc::optionExists("kernel-file")) {
+		if (!xacc::optionExists("vqe-kernel-file")) {
 			XACCError("You must at least specify a kernel file to run this app.");
 		}
 
-		std::ifstream moleculeKernelHpp(xacc::getOption("kernel-file"));
+		std::ifstream moleculeKernelHpp(xacc::getOption("vqe-kernel-file"));
 
 		VQEProblem<double> problem(moleculeKernelHpp);
 
 		auto params = problem.initializeParameters();
-
-		params << 1.69, -.433;
 
 		cppoptlib::NelderMeadSolver<VQEProblem<double>> solver;
 		solver.setStopCriteria(VQEProblem<double>::getConvergenceCriteria());

@@ -11,11 +11,11 @@ from fermilib.transforms import get_fermion_operator, jordan_wigner
 from projectq.backends import CommandPrinter, CircuitDrawer
 from scipy.optimize import minimize
 
-psi4.set_memory('2.5 GB')
+#psi4.set_memory('2.5 GB')
 
-psi4.set_options({'reference': 'uhf'})
-psi4.set_options({'scf_type': 'pk'})
-psi4.set_options({'basis': 'sto-3g'})
+#psi4.set_options({'reference': 'uhf'})
+#psi4.set_options({'scf_type': 'pk'})
+#psi4.set_options({'basis': 'sto-3g'})
 
 #compiler_engine = uccsd_trotter_engine()
 
@@ -99,6 +99,7 @@ def main(argv=None):
     exec(src)
 
     for arg in args:
+       print 'generating arg: ', arg
        molecule = generateMolecule(arg)
 
        geometry = fl_geo(molecule)

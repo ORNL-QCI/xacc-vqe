@@ -1,11 +1,12 @@
 #ifndef VQE_VQEPROBLEM_HPP_
 #define VQE_VQEPROBLEM_HPP_
 
-#include <omp.h>
 #include "problem.h"
 #include "XACC.hpp"
+#include <boost/math/constants/constants.hpp>
 
 #include "VQEGateFunction.hpp"
+#include "InstructionIterator.hpp"
 
 namespace xacc {
 
@@ -27,6 +28,8 @@ protected:
 public:
 
 	using typename cppoptlib::Problem<T>::TVector;
+
+	double currentEnergy;
 
 	VQEProblem(std::istream& moleculeKernel) : nParameters(0), currentEnergy(0.0) {
 		xacc::setCompiler("fermion");
@@ -50,6 +53,36 @@ public:
 
 		// Set the number of VQE parameters
 		nParameters = kernels[0].getNumberOfKernelParameters();
+
+		if (xacc::optionExists("vqe-print-scaffold-source")) {
+			int counter = 0;
+			for (auto k : kernels) {
+				auto scaffold = xacc::getCompiler("scaffold");
+				auto f = k.getIRFunction();
+				auto srcStr = scaffold->translate("qreg", f);
+
+				boost::filesystem::path dir("scaffold_source");
+				if (!boost::filesystem::exists(dir)) {
+					if (!boost::filesystem::create_directory(dir)) {
+						XACCError(
+								"Could not create scaffold_source directory.");
+					}
+				}
+				std::ofstream out(
+						"scaffold_source/"
+								+ xacc::getOption("vqe-print-scaffold-source")
+								+ "_kernel_" + std::to_string(counter) + ".hpp");
+				out << srcStr;
+				out.flush();
+				out.close();
+				counter++;
+			}
+
+			if (xacc::optionExists("vqe-exit-after-scaffold")) {
+				xacc::Finalize();
+				exit(0);
+			}
+		}
 	}
 
 	typename cppoptlib::Problem<T>::TVector initializeParameters() {
@@ -59,20 +92,43 @@ public:
 		return rand;
 	}
 
-	double currentEnergy;
 
 	T value(const TVector& x) {
-
+		auto pi = boost::math::constants::pi<double>();
 		std::vector<InstructionParameter> parameters;
 		for (int i = 0; i < x.rows(); i++) {
 			InstructionParameter p(x(i));
 			parameters.push_back(p);
 		}
 
+//		InstructionParameter p1(0.0);
+//		InstructionParameter p2(.05677);
+//		parameters.clear();
+//		parameters.push_back(p1);
+//		parameters.push_back(p2);
+
 		// Evaluate all parameters first,
 		// since this invokes the Python Interpreter (for now)
 		for (auto k : kernels) {
 			k.evaluateParameters(parameters);
+			InstructionIterator it(k.getIRFunction());
+			while (it.hasNext()) {
+				// Get the next node in the tree
+				auto nextInst = it.next();
+				auto gateName = nextInst->getName();
+				if (gateName == "Rx" || gateName == "Rz") {
+					auto angle =
+							boost::get<double>(nextInst->getParameter(0));
+					if (angle < 0.0) {
+						InstructionParameter newParam(
+								gateName == "Rx" ?
+										(std::fabs(angle) + 3 * pi) :
+										(std::fabs(angle) + 4 * pi));
+						nextInst->setParameter(0, newParam);
+					}
+				}
+			}
+
 		}
 
 		double sum = 0.0, localExpectationValue = 0.0;
@@ -81,6 +137,23 @@ public:
 
 			// Get the ith Kernel
 			auto kernel = kernels[i];
+
+			auto scaffold = xacc::getCompiler("scaffold");
+			auto f = kernel.getIRFunction();
+			auto srcStr = scaffold->translate("qreg", f);
+
+			boost::filesystem::path dir("temp");
+			if (!boost::filesystem::exists(dir)) {
+				if (!boost::filesystem::create_directory(dir)) {
+					XACCError("Could not create scaffold_source directory.");
+				}
+			}
+			std::ofstream out("temp/kernel_" + std::to_string(i) + "_at_"
+							+ std::to_string(boost::get<double>(parameters[0])) + "_" + std::to_string(boost::get<double>(parameters[1]))
+							+ ".hpp");
+			out << srcStr;
+			out.flush();
+			out.close();
 
 			// We need the reference to the IR Function
 			// in order to get the leading coefficient
@@ -93,26 +166,22 @@ public:
 			auto buff = qpu->createBuffer("qreg", nQubits);
 
 			// If we have instructions, execute the kernel
-			// If not just set the local expectation value to 1
-			if (vqeFunction->nInstructions() > 0) {
+			// Execute!
+			if (vqeFunction->nInstructions() > 2) kernel(buff);
 
-				// Execute!
-				kernel(buff);
-
-				// Get Expectation value
-				localExpectationValue = buff->getExpectationValueZ();
-			} else {
-				localExpectationValue = 1.0;
-			}
+			// Get Expectation value
+			localExpectationValue = buff->getExpectationValueZ();
 
 			// Sum up the expectation values
 			sum += coeff * localExpectationValue;
+			 std::cout << " Kernel " << i << " Expectation = " << localExpectationValue << ", coeff = " << coeff << ": " << sum << "\n";
+
 		}
 
 		currentEnergy = sum;
 
 		std::stringstream ss;
-		ss << x.transpose();
+		ss << parameters[0] << " " << parameters[1];//x.transpose();
 		XACCInfo("Computed VQE Energy = " + std::to_string(sum) + " at (" + ss.str() + ")");
 		return sum;
 	}
@@ -151,19 +220,3 @@ public:
 }
 
 #endif
-
-
-//auto vis = std::make_shared<xacc::vqe::PrintScaffoldVisitor>("qreg");
-//
-//		auto f = kernels[10].getIRFunction();
-//		f->evaluateVariableParameters(parameters);
-//
-//		InstructionIterator it(f);
-//		while (it.hasNext()) {
-//			// Get the next node in the tree
-//			auto nextInst = it.next();
-//			if (nextInst->isEnabled())
-//				nextInst->accept(vis);
-//		}
-//
-//		std::cout << "SCAFFOLD SRC:\n" << vis->getScaffoldString() << "\n";
