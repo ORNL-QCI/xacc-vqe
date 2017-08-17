@@ -83,40 +83,41 @@ BOOST_AUTO_TEST_CASE(checkSimpleH2) {
 
 	xacc::setAccelerator("tnqvm");
 	xacc::setOption("vqe-print-scaffold-source", "hello");
+
 	xacc::Initialize(boost::unit_test::framework::master_test_suite().argc,
 			boost::unit_test::framework::master_test_suite().argv);
 
-	std::istringstream ss(src02);
+	std::istringstream ss(src);
 
-	VQEProblem<double> problem(ss);
+	VQEProblem problem(ss);
 	Eigen::VectorXd params(2);
 	std::ofstream outFile("paramSweep.csv");
 
-	params = -1.0*pi*Eigen::VectorXd::Ones(2) + (Eigen::VectorXd::Random(2)*0.5+Eigen::VectorXd::Ones(2)*0.5)*(pi-(-1*pi));
-	std::cout << "Initial Params: " << params.transpose() << "\n";
-////	params(0) = 3.14; //2.5;
-////	params(1) = .21;
-	std::cout << "HELLO: " << problem(params) << "\n";
+	params(0) = 1.57; //2.5;
+	params(1) = -.75;
+	cppoptlib::NelderMeadSolver<VQEProblem> solver;
+	solver.setStopCriteria(VQEProblem::getConvergenceCriteria());
 
-	cppoptlib::NelderMeadSolver<VQEProblem<double>> solver;
-	solver.setStopCriteria(VQEProblem<double>::getConvergenceCriteria());
-	solver.minimize(problem, params);
+	/*solver.minimize(problem, params);
 
 	std::cout << "FINAL ENERGY: " << problem(params) << "\n";
 
-//	for (auto angle1 = -pi; angle1 <= pi; angle1 += .1) {
-////		for (auto angle2 = 0.0; angle2 <= pi; angle2 += .1) {
-//
-//			params(0) = 0;
-//			params(1) = angle1;
-//			auto energy = problem(params);
-//			outFile << angle1 <<  ", " << energy << "\n";
-//			outFile.flush();
-////		}
-//	}
+	Eigen::VectorXd range = Eigen::VectorXd::LinSpaced(100, -pi, pi);
+	std::vector<double> rangeVec(range.data(),
+			range.data() + range.size());
+	for (auto theta0 : rangeVec) {
+		for (auto theta1 : rangeVec) {
+			params(0) = theta0;
+			params(1) = theta1;
+			outFile << theta0 << ", " << theta1 << ", " << problem(params)
+					<< "\n";
+			outFile.flush();
+		}
+	}
 
-	outFile.close();
+	outFile.close();*/
 
 	xacc::Finalize();
 
 }
+//

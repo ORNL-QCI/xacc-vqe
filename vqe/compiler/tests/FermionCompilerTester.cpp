@@ -144,6 +144,13 @@ BOOST_AUTO_TEST_CASE(checkSimpleCompile) {
                     ]
                 },
                 {
+                    "gate": "H",
+                    "enabled": true,
+                    "qubits": [
+                        0
+                    ]
+                },
+                {
                     "gate": "Measure",
                     "enabled": true,
                     "qubits": [
@@ -158,13 +165,6 @@ BOOST_AUTO_TEST_CASE(checkSimpleCompile) {
                         1
                     ],
                     "classicalBitIdx": 1
-                },
-                {
-                    "gate": "H",
-                    "enabled": true,
-                    "qubits": [
-                        0
-                    ]
                 },
                 {
                     "gate": "Measure",
@@ -185,7 +185,15 @@ BOOST_AUTO_TEST_CASE(checkSimpleCompile) {
                     "qubits": [
                         2
                     ],
-                    "angle": -1.5707963
+                    "angle": 1.5707963267948966
+                },
+                {
+                    "gate": "Rx",
+                    "enabled": true,
+                    "qubits": [
+                        0
+                    ],
+                    "angle": 1.5707963267948966
                 },
                 {
                     "gate": "Measure",
@@ -202,14 +210,6 @@ BOOST_AUTO_TEST_CASE(checkSimpleCompile) {
                         1
                     ],
                     "classicalBitIdx": 1
-                },
-                {
-                    "gate": "Rx",
-                    "enabled": true,
-                    "qubits": [
-                        0
-                    ],
-                    "angle": -1.5707963
                 },
                 {
                     "gate": "Measure",

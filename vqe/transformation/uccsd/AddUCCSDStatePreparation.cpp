@@ -4,8 +4,10 @@
 #include "FermionToSpinTransformation.hpp"
 #include "ServiceRegistry.hpp"
 #include "CommutingSetGenerator.hpp"
-#include "VQEGateFunction.hpp"
+#include "GateQIR.hpp"
 #include <boost/math/constants/constants.hpp>
+
+using namespace xacc::quantum;
 
 namespace xacc {
 namespace vqe {
@@ -149,8 +151,8 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 	CommutingSetGenerator gen;
 	auto commutingSets = gen.getCommutingSet(compositeResult, nQubits);
 	auto pi = boost::math::constants::pi<double>();
-	auto uccsdGateFunction = std::make_shared<VQEGateFunction>("uccsdPrep",
-			variables, 1.0);
+	auto uccsdGateFunction = std::make_shared<xacc::quantum::GateFunction>("uccsdPrep",
+			variables);
 
 	// Perform Trotterization...
 	for (auto s : commutingSets) {
@@ -237,7 +239,7 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 					auto rx =
 							xacc::quantum::GateInstructionRegistry::instance()->create(
 									"Rx", std::vector<int> { qbitIdx });
-					InstructionParameter p(pi / -2.0);
+					InstructionParameter p(4 * pi - (pi /2.0));
 					rx->setParameter(0, p);
 					tempFunction->addInstruction(rx);
 				}
@@ -259,24 +261,10 @@ std::shared_ptr<IR> AddUCCSDStatePreparation::transform(
 	// Create a new GateQIR to hold the spin based terms
 	auto castedIr = std::dynamic_pointer_cast<xacc::quantum::GateQIR>(ir);
 
-	int counter = 0;
 	auto newIR = std::make_shared<GateQIR>();
 	for (auto f : castedIr->getKernels()) {
-
-		auto coeff = std::real(
-				boost::get<std::complex<double>>(f->getParameter(0)));
-		bool isIdentity = boost::get<int>(f->getParameter(1)) == 1;
-
-		auto vqeFunction = std::make_shared<VQEGateFunction>(
-				"vqeKernel" + std::to_string(counter), variables, coeff);
-		vqeFunction->isIdentityOperator = isIdentity;
-		if (f->nInstructions() > 0) {
-			vqeFunction->addInstruction(uccsdGateFunction);
-			for (auto inst : f->getInstructions()) {
-				vqeFunction->addInstruction(inst);
-			}
-		}
-		newIR->addKernel(vqeFunction);
+		f->insertInstruction(0, uccsdGateFunction);
+		newIR->addKernel(f);
 	}
 
 	return newIR;

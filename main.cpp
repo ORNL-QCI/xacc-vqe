@@ -68,10 +68,10 @@ int main(int argc, char** argv) {
 		bool executedOnce = false;
 		while(!executions.empty()) {
 			std::ifstream stream(executions.top().second);
-			VQEProblem<double> problem(stream);
+			VQEProblem problem(stream);
 			params = problem.initializeParameters();
-			cppoptlib::NelderMeadSolver<VQEProblem<double>> solver;
-			solver.setStopCriteria(VQEProblem<double>::getConvergenceCriteria());
+			cppoptlib::NelderMeadSolver<VQEProblem> solver;
+			solver.setStopCriteria(VQEProblem::getConvergenceCriteria());
 			solver.minimize(problem, params);
 			auto finalValue = problem.currentEnergy;
 			outFile << executions.top().first << ", " << finalValue << "\n";
@@ -89,11 +89,11 @@ int main(int argc, char** argv) {
 		}
 
 		std::ifstream moleculeKernelHpp(xacc::getOption("vqe-kernel-file"));
-		VQEProblem<double> problem(moleculeKernelHpp);
+		VQEProblem problem(moleculeKernelHpp);
 
 		auto params = problem.initializeParameters();
-		cppoptlib::NelderMeadSolver<VQEProblem<double>> solver;
-		solver.setStopCriteria(VQEProblem<double>::getConvergenceCriteria());
+		cppoptlib::NelderMeadSolver<VQEProblem> solver;
+		solver.setStopCriteria(VQEProblem::getConvergenceCriteria());
 		solver.minimize(problem, params);
 
 		std::stringstream ss;

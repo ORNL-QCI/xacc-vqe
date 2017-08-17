@@ -163,7 +163,7 @@ BOOST_AUTO_TEST_CASE(checkH2Transform) {
 	auto resultsStr = result.toString("");
 	boost::replace_all(resultsStr, "+", "+\n");
 
-	std::string expected = R"expected((-0.845127,0) * I +
+	std::string expected = R"expected((-0.490661,0) * I +
  (0.0939372,0) * Z1 +
  (0.0939372,0) * Z0 +
  (0.138381,0) * Z0 * Z1 +
@@ -179,6 +179,7 @@ BOOST_AUTO_TEST_CASE(checkH2Transform) {
  (-0.0572692,0) * Y0 * Y1 * X2 * X3 +
  (0.1401,0) * Z0 * Z3)expected";
 
+	std::cout << "HELLO: " << resultsStr << "\n";
 	BOOST_VERIFY(resultsStr == expected);
 
 	int i = 0;

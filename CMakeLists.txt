@@ -37,4 +37,4 @@ link_directories(${XACC_LIBRARY_DIR})
 add_subdirectory(vqe)
 
 add_executable(xacc-vqe main.cpp)
-target_link_libraries(xacc-vqe ${SYMENGINE_LIBRARIES} ${Boost_LIBRARIES} xacc-vqe-ir ${XACC_LIBRARIES} pthread dl)
+target_link_libraries(xacc-vqe ${SYMENGINE_LIBRARIES} ${PYTHON_LIBRARY} ${Boost_LIBRARIES} xacc-vqe-ir ${XACC_LIBRARIES} pthread dl)
