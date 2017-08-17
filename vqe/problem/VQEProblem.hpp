@@ -87,7 +87,12 @@ public:
 
 	typename cppoptlib::Problem<T>::TVector initializeParameters() {
 		std::srand(time(0));
-		auto rand = Eigen::VectorXd::Random(nParameters);
+		auto pi = boost::math::constants::pi<double>();
+		// Random parameters between -pi and pi
+		auto rand = -1.0 * pi * Eigen::VectorXd::Ones(nParameters)
+				+ (Eigen::VectorXd::Random(nParameters) * 0.5
+						+ Eigen::VectorXd::Ones(nParameters) * 0.5)
+						* (pi - (-1 * pi));
 		return rand;
 	}
 
@@ -114,10 +119,7 @@ public:
 					auto angle =
 							boost::get<double>(nextInst->getParameter(0));
 					if (angle < 0.0) {
-						InstructionParameter newParam(
-								gateName == "Rx" ?
-										(std::fabs(angle) + 3 * pi) :
-										(std::fabs(angle) + 4 * pi));
+						InstructionParameter newParam(4 * pi + angle);
 						nextInst->setParameter(0, newParam);
 					}
 				}
@@ -135,14 +137,14 @@ public:
 								< 1e-12) {
 //					std::cout << "Found an Rz with 0 angle\n";
 
-					next->disable();
+//					next->disable();
 					// If I'm here, I have counter instructions in front of me
 					// So disable the counter in front and counter behind
 					while(counter != 0) {
 //					for (int i = index-counter; i <= 2*(counter+1); i++) {
 //						std::cout << counter << ", " << index << " | Disabling " << statePrep->getInstruction(index-counter)->toString("qreg") << " and " << statePrep->getInstruction(index+counter)->toString("qreg") << "\n";
-						statePrep->getInstruction(index-counter)->disable();
-						statePrep->getInstruction(index+counter)->disable();
+//						statePrep->getInstruction(index-counter)->disable();
+//						statePrep->getInstruction(index+counter)->disable();
 						counter--;
 					}
 
@@ -150,7 +152,9 @@ public:
 //					counter = 0;
 				}
 
-				if (next->getName() != "X" && next->isEnabled()) counter++;
+				if (next->getName() != "X" && next->isEnabled()) {
+					counter++;
+				}
 
 				index++;
 			}
@@ -158,28 +162,10 @@ public:
 
 
 		double sum = 0.0, localExpectationValue = 0.0;
-//#pragma omp parallel for reduction (+:sum)
 		for (int i = 0; i < kernels.size(); i++) {
 
 			// Get the ith Kernel
 			auto kernel = kernels[i];
-
-			auto scaffold = xacc::getCompiler("scaffold");
-			auto f = kernel.getIRFunction();
-			auto srcStr = scaffold->translate("qreg", f);
-
-			boost::filesystem::path dir("temp");
-			if (!boost::filesystem::exists(dir)) {
-				if (!boost::filesystem::create_directory(dir)) {
-					XACCError("Could not create scaffold_source directory.");
-				}
-			}
-			std::ofstream out("temp/kernel_" + std::to_string(i) + "_at_"
-							+ std::to_string(boost::get<double>(parameters[0])) + "_" + std::to_string(boost::get<double>(parameters[1]))
-							+ ".hpp");
-			out << srcStr;
-			out.flush();
-			out.close();
 
 			// We need the reference to the IR Function
 			// in order to get the leading coefficient
@@ -204,7 +190,7 @@ public:
 
 			// Sum up the expectation values
 			sum += coeff * localExpectationValue;
-//			std::cout << vqeFunction->nInstructions() << " Kernel " << i << " Expectation = " << localExpectationValue << ", coeff = " << coeff << ": " << sum << "\n";
+			std::cout << vqeFunction->nInstructions() << " Kernel " << i << " Expectation = " << localExpectationValue << ", coeff = " << coeff << ": " << sum << "\n";
 
 		}
 
@@ -244,9 +230,27 @@ public:
 		return criteria;
 
 	}
+
 };
 }
 
 }
 
 #endif
+//
+//auto scaffold = xacc::getCompiler("scaffold");
+//	auto f = kernel.getIRFunction();
+//	auto srcStr = scaffold->translate("qreg", f);
+//
+//	boost::filesystem::path dir("temp");
+//	if (!boost::filesystem::exists(dir)) {
+//		if (!boost::filesystem::create_directory(dir)) {
+//			XACCError("Could not create scaffold_source directory.");
+//		}
+//	}
+//	std::ofstream out("temp/kernel_" + std::to_string(i) + "_at_"
+//					+ std::to_string(boost::get<double>(parameters[0])) + "_" + std::to_string(boost::get<double>(parameters[1]))
+//					+ ".hpp");
+//	out << srcStr;
+//	out.flush();
+//	out.close();
