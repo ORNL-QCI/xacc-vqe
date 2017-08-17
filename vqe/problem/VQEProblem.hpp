@@ -19,6 +19,8 @@ protected:
 
 	std::shared_ptr<Accelerator> qpu;
 
+	std::shared_ptr<Program> program;
+
 	std::vector<Kernel<>> kernels;
 
 	int nParameters;
@@ -40,16 +42,16 @@ public:
 		qpu = xacc::getAccelerator("tnqvm");
 
 		// Create the Program
-		xacc::Program program(qpu, moleculeKernel);
+		program = std::make_shared<Program>(qpu, moleculeKernel);
 
 		// Start compilation
-		program.build();
+		program->build();
 
 		// Create a buffer of qubits
 		nQubits = std::stoi(xacc::getOption("n-qubits"));
 
 		// Get the Kernels that were created
-		kernels = program.getRuntimeKernels();
+		kernels = program->getRuntimeKernels();
 
 		// Set the number of VQE parameters
 		nParameters = kernels[0].getNumberOfKernelParameters();
@@ -125,7 +127,7 @@ public:
 				}
 			}
 
-
+/*
 			auto statePrep = std::dynamic_pointer_cast<Function>(k.getIRFunction()->getInstruction(0));
 			InstructionIterator it2(statePrep);
 			it2.next();
@@ -157,9 +159,8 @@ public:
 				}
 
 				index++;
-			}
+			}*/
 		}
-
 
 		double sum = 0.0, localExpectationValue = 0.0;
 		for (int i = 0; i < kernels.size(); i++) {
@@ -190,7 +191,7 @@ public:
 
 			// Sum up the expectation values
 			sum += coeff * localExpectationValue;
-			std::cout << vqeFunction->nInstructions() << " Kernel " << i << " Expectation = " << localExpectationValue << ", coeff = " << coeff << ": " << sum << "\n";
+//			std::cout << vqeFunction->nInstructions() << " Kernel " << i << " Expectation = " << localExpectationValue << ", coeff = " << coeff << ": " << sum << "\n";
 
 		}
 
