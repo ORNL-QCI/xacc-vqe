@@ -17,6 +17,11 @@ int main(int argc, char** argv) {
 	// All our important stuff is in the xacc::vqe namespace
 	using namespace xacc::vqe;
 
+	// Set the default Accelerator to TNQVM, and
+	// default number of electrons to 2
+	xacc::setAccelerator("tnqvm");
+	xacc::setOption("n-electrons", "2");
+
 	// Add some command line options for XACC VQE
 	xacc::addCommandLineOptions("XACC VQE", std::map<std::string, std::string>{
 		{"vqe-kernel-directory", "The directory containing *.hpp files, each "

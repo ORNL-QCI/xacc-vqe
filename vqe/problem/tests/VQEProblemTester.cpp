@@ -98,10 +98,10 @@ BOOST_AUTO_TEST_CASE(checkSimpleH2) {
 	cppoptlib::NelderMeadSolver<VQEProblem> solver;
 	solver.setStopCriteria(VQEProblem::getConvergenceCriteria());
 
-	/*solver.minimize(problem, params);
+	solver.minimize(problem, params);
 
 	std::cout << "FINAL ENERGY: " << problem(params) << "\n";
-
+/*
 	Eigen::VectorXd range = Eigen::VectorXd::LinSpaced(100, -pi, pi);
 	std::vector<double> rangeVec(range.data(),
 			range.data() + range.size());
@@ -114,8 +114,8 @@ BOOST_AUTO_TEST_CASE(checkSimpleH2) {
 			outFile.flush();
 		}
 	}
-
-	outFile.close();*/
+*/
+	outFile.close();
 
 	xacc::Finalize();
 
