@@ -4,13 +4,10 @@
 #include "problem.h"
 #include "XACC.hpp"
 #include <boost/math/constants/constants.hpp>
-
 #include "GateQIR.hpp"
-
 #include "InstructionIterator.hpp"
+#include "exprtk.hpp"
 
-#include <boost/python.hpp>
-using namespace boost::python;
 using namespace xacc::quantum;
 
 namespace xacc {
@@ -39,6 +36,10 @@ namespace vqe {
 class VQEProblem : public cppoptlib::Problem<double> {
 
 protected:
+
+	using symbol_table_t = exprtk::symbol_table<double>;
+	using expression_t = exprtk::expression<double>;
+	using parser_t = exprtk::parser<double>;
 
 	/**
 	 * Reference to the QPU this VQE problem
@@ -286,12 +287,6 @@ private:
 					boost::get<std::string>(statePrep->getParameter(i)));
 		}
 
-		Py_Initialize();
-		const std::string code = R"code(val = eval(exprStr))code";
-		// Retrieve the main module.
-		object main = import("__main__");
-		object main_namespace = main.attr("__dict__");
-
 		auto evaluatedStatePrep = std::make_shared<GateFunction>("stateprep");
 		for (auto inst : statePrep->getInstructions()) {
 			if (!inst->isComposite() && inst->isParameterized()
@@ -303,13 +298,17 @@ private:
 						idx = i;
 					}
 				}
-				std::stringstream ss1;
-				ss1 << x(idx);
-				boost::replace_all(expression,
-						variableNames[idx], ss1.str());
-				main_namespace["exprStr"] = expression;
-				exec(code.c_str(), main_namespace);
-				double res = extract<double>(main_namespace["val"]);
+				std::string varName = variableNames[idx];
+				double val;
+				symbol_table_t symbol_table;
+				symbol_table.add_variable(varName, val);
+				symbol_table.add_constants();
+				expression_t expr;
+				expr.register_symbol_table(symbol_table);
+				parser_t parser;
+				parser.compile(expression, expr);
+				val = x(idx);
+				auto res = expr.value();
 				if (res < 0.0) {
 					res = 4 * pi + res;
 				}
@@ -322,8 +321,6 @@ private:
 				evaluatedStatePrep->addInstruction(inst);
 			}
 		}
-
-		Py_Finalize();
 
 		return evaluatedStatePrep;
 

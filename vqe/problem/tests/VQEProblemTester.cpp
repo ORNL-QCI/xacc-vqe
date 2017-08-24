@@ -83,6 +83,7 @@ BOOST_AUTO_TEST_CASE(checkSimpleH2) {
 
 	xacc::setAccelerator("tnqvm");
 	xacc::setOption("vqe-print-scaffold-source", "hello");
+	xacc::setOption("n-electrons", "2");
 
 	xacc::Initialize(boost::unit_test::framework::master_test_suite().argc,
 			boost::unit_test::framework::master_test_suite().argv);
@@ -95,10 +96,10 @@ BOOST_AUTO_TEST_CASE(checkSimpleH2) {
 
 	params(0) = 1.57; //2.5;
 	params(1) = -.75;
-	cppoptlib::NelderMeadSolver<VQEProblem> solver;
-	solver.setStopCriteria(VQEProblem::getConvergenceCriteria());
-
-	solver.minimize(problem, params);
+//	cppoptlib::NelderMeadSolver<VQEProblem> solver;
+//	solver.setStopCriteria(VQEProblem::getConvergenceCriteria());
+//
+//	solver.minimize(problem, params);
 
 	std::cout << "FINAL ENERGY: " << problem(params) << "\n";
 /*
