@@ -3,13 +3,18 @@ cmake_minimum_required(VERSION 2.8)
 set(CMAKE_DISABLE_IN_SOURCE_BUILDS ON)
 set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 11)
 
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules")
-include (tests)
+find_package(XACC REQUIRED)
+
+set(CppMicroServicesConfig_DIR "${XACC_ROOT}/share/cppmicroservices3/cmake")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${XACC_ROOT}/share/xacc")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CppMicroServicesConfig_DIR}")
+include(tests)
+include(CppMicroServicesConfig)
 
 find_package(OpenMP)
 if (OPENMP_FOUND)
