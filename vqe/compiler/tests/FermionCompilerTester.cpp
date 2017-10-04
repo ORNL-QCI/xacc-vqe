@@ -88,6 +88,10 @@ public:
 			const std::shared_ptr<xacc::Function> function) {
 	}
 
+	virtual std::vector<std::shared_ptr<xacc::AcceleratorBuffer>> execute(std::shared_ptr<xacc::AcceleratorBuffer> buffer,
+			const std::vector<std::shared_ptr<xacc::Function>> function) {
+	}
+
 	virtual const std::string name() const {
 		return "fake";
 	}
