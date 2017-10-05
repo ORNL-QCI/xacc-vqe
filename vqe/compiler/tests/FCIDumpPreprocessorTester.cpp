@@ -161,13 +161,13 @@ public:
 		return "fake";
 	}
 
-		/**
-		 * Return the description of this instance
-		 * @return description The description of this object.
-		 */
-		virtual const std::string description() const {
-			return "";
-		}
+	/**
+	 * Return the description of this instance
+	 * @return description The description of this object.
+	 */
+	virtual const std::string description() const {
+		return "";
+	}
 
 };
 
@@ -194,4 +194,15 @@ BOOST_AUTO_TEST_CASE(checkH2Process) {
 
 	std::cout << "NEWKERNEL:\n" << newKernelCode << "\n";
 
+	std::string expected = R"expected(__qpu__ kernel() {
+   0.6744931033260081E+00 1 1 1 1 1 0 1 0
+   0.6634720448605567E+00 2 1 1 1 2 0 1 0
+   0.6973979494693358E+00 2 1 2 1 2 0 2 0
+   0.1812875358123322E+00 2 1 2 1 1 0 1 0
+   -0.1252477303982147E+01 1 1 1 0
+   -0.4759344611440753E+00 2 1 2 0
+   0.7137758743754461E+00
+})expected";
+
+	BOOST_VERIFY(expected == newKernelCode);
 }
