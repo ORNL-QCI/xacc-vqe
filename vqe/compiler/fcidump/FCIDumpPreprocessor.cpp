@@ -32,6 +32,11 @@
 #include <boost/tokenizer.hpp>
 #include "XACC.hpp"
 
+#include "chemps2/Hamiltonian.h"
+#include "unsupported/Eigen/CXX11/Tensor"
+
+using namespace CheMPS2;
+
 namespace xacc {
 
 namespace vqe {
@@ -39,71 +44,77 @@ const std::string FCIDumpPreprocessor::process(const std::string& source,
 			std::shared_ptr<Compiler> compiler,
 			std::shared_ptr<Accelerator> accelerator) {
 
-	if (boost::contains(source, "FCI") && boost::contains(source, "END")
+	if (boost::contains(source, "FCI")
 			&& boost::contains(source, "NELEC")) {
 
-		std::string tempSrc = source;
-		std::cout << "Source:\n" << source << "\n";
-		auto endIdx = source.find("END");
-		auto headerStr = source.substr(0, endIdx + 3);
+		std::ofstream tmpFile(".tmp.fcidump");
+		tmpFile << source;
+		tmpFile.close();
 
-		std::cout << endIdx << " HEADER:\n" << headerStr << "\n";
+		Hamiltonian h(".tmp.fcidump", 7);
 
-		boost::char_separator<char> commasep(",");
-		boost::tokenizer<boost::char_separator<char> > commaTokens(headerStr,
-				commasep);
-		std::vector<std::string> commaSplit;
-		std::copy(commaTokens.begin(), commaTokens.end(),
-				std::back_inserter<std::vector<std::string> >(commaSplit));
+		auto nOrbitals = h.getL();
+		auto econst = h.getEconst();
 
-		for (auto s : commaSplit) {
-			if (boost::contains(s, "NELEC")) {
-				std::vector<std::string> split;
-				boost::split(split, s, boost::is_any_of("="));
-				boost::trim(split[1]);
-				xacc::setOption("n-electrons", split[1]);
+		Eigen::Tensor<double, 2> hpq(2*nOrbitals, 2*nOrbitals);
+		Eigen::Tensor<double, 4> hpqrs(2*nOrbitals, 2*nOrbitals, 2*nOrbitals, 2*nOrbitals);
+		hpq.setZero();
+		hpqrs.setZero();
+
+		for (int p = 0; p < nOrbitals; p++) {
+			for (int q = 0; q < nOrbitals; q++) {
+				hpq(2*p,2*q) = h.getTmat(p,q);
+				hpq(2*p+1, 2*q+1) = h.getTmat(p,q);
+
+				for (int r = 0; r < nOrbitals; r++) {
+					for (int s = 0; s < nOrbitals; s++) {
+
+						hpqrs(2*p, 2*q+1, 2*r+1, 2*s) = h.getVmat(p,q,r,s) / 2.0;
+						hpqrs(2*p+1, 2*q, 2*r, 2*s+1) = h.getVmat(p,q,r,s)/ 2.0;
+
+						if (p != q && r != s) {
+							hpqrs(2*p, 2*q, 2*r, 2*s) = h.getVmat(p,q,r,s) / 2.0;
+							hpqrs(2*p+1, 2*q+1, 2*r+1, 2*s+1) = h.getVmat(p,q,r,s) / 2.0;
+						}
+					}
+				}
 			}
 		}
 
-		tempSrc.erase(0, endIdx + 4);
+		std::remove(".tmp.fcidump");
 
-		boost::char_separator<char> newlineSep("\n");
-		boost::tokenizer<boost::char_separator<char> > linesTokens(tempSrc,
-				newlineSep);
-		std::vector<std::string> lines;
-		std::copy(linesTokens.begin(), linesTokens.end(),
-				std::back_inserter<std::vector<std::string> >(lines));
+		std::stringstream zz;
+		zz << "__qpu__ kernel() {\n" << "   " << std::setprecision(16) << econst << "\n";
+		std::string kernelString = zz.str();
 
-		std::string kernelString = "__qpu__ kernel() {\n";
-		for (auto line : lines) {
-
-			std::stringstream buffer(line);
-			std::vector<std::string> values {
-					std::istream_iterator<std::string>(buffer),
-					std::istream_iterator<std::string>() };
-
-			double coeff = std::stod(values[0]);
-			int i = std::stoi(values[1]);
-			int a = std::stoi(values[2]);
-			int j = std::stoi(values[3]);
-			int b = std::stoi(values[4]);
-
-			if (i == 0 && j == 0 && a == 0 && b == 0) {
-				kernelString += "   " + values[0] + "\n";
-			} else if (a == 0 && j == 0 && b == 0) {
-				// DO NOTHING FOR NOW
-			} else if (j == 0 && b == 0) {
-				kernelString += "   " + values[0] + " " + values[1] + " 1 "
-						+ values[2] + " 0\n";
-			} else {
-				kernelString += "   " + values[0] + " " + values[1] + " 1 "
-						+ values[3] + " 1 " + values[2] + " 0 " + values[4]
-						+ " 0\n";
+		for (int p = 0; p < 2*nOrbitals; p++) {
+			for (int q = 0; q < 2*nOrbitals; q++) {
+				if (std::fabs(hpq(p, q)) > 1e-12) {
+					std::stringstream ss;
+					ss << std::setprecision(16) << "   " << hpq(p, q) << " " << p << " 1 " << q
+							<< " 0\n";
+					kernelString += ss.str();
+				}
 			}
-
 		}
 
-		kernelString += "}";
+		for (int p = 0; p < 2*nOrbitals; p++) {
+			for (int q = 0; q < 2*nOrbitals; q++) {
+				for (int r = 0; r < 2*nOrbitals; r++) {
+					for (int s = 0; s < 2*nOrbitals; s++) {
+						if (std::fabs(hpqrs(p, q, r, s)) > 1e-12) {
+							std::stringstream ss;
+							ss << std::setprecision(16) << "   " << hpqrs(p, q, r, s) << " " << p
+									<< " 1 " << q << " 1 " << r << " 0 " << s
+									<< " 0\n";
+							kernelString += ss.str();
+						}
+					}
+				}
+			}
+		}
+
+		kernelString += "}\n";
 
 		return kernelString;
 	} else {

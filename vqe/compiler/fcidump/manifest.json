@@ -1,0 +1,6 @@
+{
+  "bundle.symbolic_name" : "xacc_vqe_fcidump",
+  "bundle.activator" : true,
+  "bundle.name" : "XACC VQE FCIDUMP Preprocessor",
+  "bundle.description" : "This bundle provides a Preprocessor that maps FCIDUMP to our Fermion kernels."
+}

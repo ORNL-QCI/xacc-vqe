@@ -28,11 +28,14 @@
 #   Initial API and implementation - Alex McCaskey
 #
 #**********************************************************************************/
-set (PACKAGE_NAME "XACC VQE Fermion Compiler")
-set (PACKAGE_DESCIPTION "XACC Variational Quantum Eigensolver Fermion Compiler Support")
+set (PACKAGE_NAME "XACC VQE Fermion Compiler FCIDUMP Preprocessor")
+set (PACKAGE_DESCIPTION "")
 
-set (LIBRARY_NAME xacc-vqe-fermion-compiler)
+set (LIBRARY_NAME xacc-vqe-fcidump)
 file (GLOB SRC *.cpp)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CheMPS2_ROOT})
 
 # Set up dependencies to resources to track changes
 usFunctionGetResourceSource(TARGET ${LIBRARY_NAME} OUT SRC)
@@ -41,7 +44,7 @@ usFunctionGenerateBundleInit(TARGET ${LIBRARY_NAME} OUT SRC)
 
 add_library(${LIBRARY_NAME} SHARED ${SRC})
 
-set(_bundle_name xacc_vqe_fermion_compiler)
+set(_bundle_name xacc_vqe_fcidump)
 
 set_target_properties(${LIBRARY_NAME} PROPERTIES
   # This is required for every bundle
@@ -65,15 +68,11 @@ usFunctionEmbedResources(TARGET ${LIBRARY_NAME}
     manifest.json
   )
 
-target_link_libraries(${LIBRARY_NAME} ${Boost_LIBRARIES} ${XACC_LIBRARIES} ${SYMENGINE_LIBRARIES} xacc-vqe-ir)
+link_directories(/usr/local/lib64)
+target_link_libraries(${LIBRARY_NAME} ${Boost_LIBRARIES} ${XACC_LIBRARIES} ${SYMENGINE_LIBRARIES} xacc-vqe-ir chemps2)
 
-install(TARGETS ${LIBRARY_NAME} DESTINATION ${XACC_LIBRARY_DIR}/plugins/compilers)
+install(TARGETS ${LIBRARY_NAME} DESTINATION ${XACC_LIBRARY_DIR}/plugins/preprocessors)
 
 # Gather tests
 file (GLOB test_files tests/*.cpp)
-add_tests("${test_files}" "${CMAKE_CURRENT_SOURCE_DIR}" "${Boost_LIBRARIES};pthread;dl;xacc-vqe-ir;xacc-vqe-fermion-compiler")
-
-if (EXISTS /usr/local/include/chemps2/Hamiltonian.h OR EXISTS ${CheMPS2_ROOT}/chemps2/Hamiltonian.h)
-   message(STATUS "Found CheMPS2, adding FCIDUMP Preprocessor")
-   add_subdirectory(fcidump)
-endif()
+add_tests("${test_files}" "${CMAKE_CURRENT_SOURCE_DIR}" "${Boost_LIBRARIES};pthread;dl;xacc-vqe-ir;xacc-vqe-fermion-compiler;xacc-vqe-fcidump")
