@@ -95,9 +95,9 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 
 	}
 
-//	auto resultsStr = result.toString("");
-//	boost::replace_all(resultsStr, "+", "+\n");
-//	std::cout << "Jordan Wigner Transformed Fermion to Spin:\nBEGIN\n" << resultsStr << "\nEND\n\n";
+	auto resultsStr = result.toString("");
+	boost::replace_all(resultsStr, "+", "+\n");
+	std::cout << "Jordan Wigner Transformed Fermion to Spin:\nBEGIN\n" << resultsStr << "\nEND\n\n";
 	auto pi = boost::math::constants::pi<double>();
 
 	// Populate GateQIR now...
@@ -159,6 +159,7 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 			counter++;
 		}
 	}
+
 
 	return newIr;
 }
