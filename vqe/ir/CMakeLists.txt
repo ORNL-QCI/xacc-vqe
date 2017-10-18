@@ -68,7 +68,7 @@ usFunctionEmbedResources(TARGET ${IR_LIBRARY_NAME}
     manifest.json
   )
 
-target_link_libraries(${IR_LIBRARY_NAME} ${Boost_LIBRARIES} ${XACC_LIBRARIES} ${SYMENGINE_LIBRARIES})
+target_link_libraries(${IR_LIBRARY_NAME} ${Boost_LIBRARIES} ${XACC_LIBRARIES} ${MPI_CXX_LIBRARIES})
 
 install(TARGETS ${IR_LIBRARY_NAME} DESTINATION ${XACC_LIBRARY_DIR})
 

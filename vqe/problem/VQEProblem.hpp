@@ -9,6 +9,8 @@
 #include "exprtk.hpp"
 #include <boost/range/algorithm/count.hpp>
 
+#include <boost/mpi.hpp>
+
 using namespace xacc::quantum;
 
 namespace xacc {
@@ -49,17 +51,6 @@ protected:
 	std::shared_ptr<Accelerator> qpu;
 
 	/**
-	 * Reference to the compiled XACC
-	 * Kernels. These kernels each represent
-	 * a term in the spin Hamiltonian (the
-	 * Hamiltonian produced from a Jordan-Wigner
-	 * or Bravi-Kitaev transformation). Each kernel
-	 * amounts to a state preparation circuit
-	 * followed by appropriately constructed qubit measurements.
-	 */
-	std::vector<Kernel<>> kernels;
-
-	/**
 	 * The number of parameters in the
 	 * state preparation circuit.
 	 */
@@ -76,25 +67,13 @@ protected:
 	 */
 	std::shared_ptr<Function> statePrep;
 
-public:
+	int rank = 0;
 
-	/**
-	 * Reference to the current iteration's computed energy.
-	 */
-	double currentEnergy;
+	int nRanks = 1;
 
-	/**
-	 * The constructor, executes the compilation from
-	 * a fermionic hamiltonian represented as an XACC kernel
-	 * function and provided as a file stream.
-	 * Compilation maps this hamiltonian to a spin-based
-	 * hamiltonian through a Jordan-Wigner (or other) IR Transformation. This
-	 * constructor also prepares a user-specified state preparation circuit.
-	 *
-	 * @param moleculeKernel
-	 */
-	VQEProblem(std::istream& moleculeKernel) : nParameters(0), currentEnergy(0.0) {
+	boost::mpi::communicator comm;
 
+	void initialize(std::istream& moleculeKernel) {
 		bool userProvidedKernels = false;
 
 		// This class only takes kernels
@@ -126,6 +105,7 @@ public:
 
 		// Create the Program
 		Program program(qpu, src);
+		program.addPreprocessor("fcidump-preprocessor");
 
 		// Start compilation
 		program.build();
@@ -137,7 +117,6 @@ public:
 		kernels = program.getRuntimeKernels();
 
 		if (userProvidedKernels) {
-
 			if (boost::contains(src, "pragma")
 					&& boost::contains(src, "coefficient")) {
 				std::vector<std::string> lines;
@@ -165,9 +144,69 @@ public:
 		// Set the number of VQE parameters
 		nParameters = statePrep->nParameters();
 
+		if (nParameters < 1) {
+			XACCError("Error: State preparation circuit has 0 "
+					"parameters. Try inputing a custom state prep kernel.");
+		}
+
 		if (xacc::optionExists("vqe-print-scaffold-source")) {
 			printScaffoldSourceCode();
 		}
+
+		if (xacc::optionExists("vqe-print-stats")) {
+
+			if (comm.rank() == 0) {
+				XACCInfo("Number of Qubits = " + xacc::getOption("n-qubits"));
+				XACCInfo("Number of Hamiltonian Terms = " + std::to_string(kernels.size()));
+				XACCInfo("State Prep Type: " + statePrepType);
+				XACCInfo("Number of Variational Parameters = " + std::to_string(nParameters));
+			}
+
+			exit(0);
+		}
+	}
+
+public:
+
+	/**
+	 * Reference to the compiled XACC
+	 * Kernels. These kernels each represent
+	 * a term in the spin Hamiltonian (the
+	 * Hamiltonian produced from a Jordan-Wigner
+	 * or Bravi-Kitaev transformation). Each kernel
+	 * amounts to a state preparation circuit
+	 * followed by appropriately constructed qubit measurements.
+	 */
+	std::vector<Kernel<>> kernels;
+
+	/**
+	 * Referne
+	 */
+	int totalQpuCalls = 0;
+
+	/**
+	 * Reference to the current iteration's computed energy.
+	 */
+	double currentEnergy;
+
+	VQEProblem(std::istream& moleculeKernel, boost::mpi::communicator& c) :
+			comm(c), nParameters(0), currentEnergy(0.0) {
+		initialize(moleculeKernel);
+	}
+
+	/**
+	 * The constructor, executes the compilation from
+	 * a fermionic hamiltonian represented as an XACC kernel
+	 * function and provided as a file stream.
+	 * Compilation maps this hamiltonian to a spin-based
+	 * hamiltonian through a Jordan-Wigner (or other) IR Transformation. This
+	 * constructor also prepares a user-specified state preparation circuit.
+	 *
+	 * @param moleculeKernel
+	 */
+	VQEProblem(std::istream& moleculeKernel) :
+			nParameters(0), currentEnergy(0.0), comm(boost::mpi::communicator()) {
+		initialize(moleculeKernel);
 	}
 
 	/**
@@ -179,11 +218,26 @@ public:
 	Eigen::VectorXd initializeParameters() {
 		std::srand(time(0));
 		auto pi = boost::math::constants::pi<double>();
+		Eigen::VectorXd rand;
+
+		std::vector<double> data;
+
 		// Random parameters between -pi and pi
-		auto rand = -1.0 * pi * Eigen::VectorXd::Ones(nParameters)
-				+ (Eigen::VectorXd::Random(nParameters) * 0.5
-						+ Eigen::VectorXd::Ones(nParameters) * 0.5)
-						* (pi - (-1 * pi));
+		if (comm.rank() == 0) {
+			rand = -1.0 * pi * Eigen::VectorXd::Ones(nParameters)
+					+ (Eigen::VectorXd::Random(nParameters) * 0.5
+							+ Eigen::VectorXd::Ones(nParameters) * 0.5)
+							* (pi - (-1 * pi));
+			data.resize(rand.size());
+			Eigen::VectorXd::Map(&data[0], rand.size()) = rand;
+		}
+
+		boost::mpi::broadcast(comm, data, 0);
+
+		if (comm.rank() != 0) {
+			rand = Eigen::Map<Eigen::VectorXd>(data.data(), data.size());
+		}
+
 		return rand;
 	}
 
@@ -205,8 +259,12 @@ public:
 		// Execute the kernels on the appropriate QPU
 		// in parallel using OpenMP threads per
 		// every MPI rank.
+		int rank = comm.rank();
+		int nRanks = comm.size();
+		int myStart = (rank) * kernels.size() / nRanks;
+		int myEnd = (rank + 1) * kernels.size() / nRanks;
 #pragma omp parallel for reduction (+:sum)
-		for (int i = 0; i < kernels.size(); i++) {
+		for (int i = myStart; i < myEnd; i++) {
 
 			// Get the ith Kernel
 			auto kernel = kernels[i];
@@ -218,8 +276,10 @@ public:
 			// Create a temporary buffer of qubits
 			auto buff = qpu->createBuffer("qreg", nQubits);
 
-			// Execute the kernel!
-			kernel(buff);
+			if (kernel.getIRFunction()->nInstructions() > 1) {
+				// Execute the kernel!
+				kernel(buff);
+			}
 
 			// Get Expectation value. The second parameter of
 			// the Kernel's IR function stores whether or not
@@ -246,10 +306,17 @@ public:
 		// Set the energy.
 		currentEnergy = sum;
 
+		double result = 0.0;
+		boost::mpi::all_reduce(comm, currentEnergy, result, std::plus<double>());
+		currentEnergy = result;
+
+		totalQpuCalls += kernels.size();
+
 		std::stringstream ss;
 		ss << x.transpose();
-		XACCInfo("Computed VQE Energy = " + std::to_string(sum) + " at (" + ss.str() + ")");
-		return sum;
+
+		if (rank == 0) XACCInfo("Computed VQE Energy = " + std::to_string(currentEnergy) + " at (" + ss.str() + ")");
+		return currentEnergy;
 	}
 
 	/**
@@ -292,6 +359,8 @@ public:
 
 private:
 
+	std::string statePrepType = "uccsd";
+
 	/**
 	 * This private utility method is invoked once to
 	 * produce the state preparation circuit, represented
@@ -311,6 +380,8 @@ private:
 				xacc::setCompiler(xacc::getOption("vqe-state-prep-kernel-compiler"));
 			}
 
+			statePrepType = "custom";
+
 			Program p(qpu, filess);
 			p.build();
 
@@ -327,10 +398,13 @@ private:
 									InstructionParameter(
 											std::complex<double>(1.0)),
 									InstructionParameter(0) }));
+
+			if (xacc::optionExists("state-preparation")) {
+				statePrepType = xacc::getOption("state-preparation");
+			}
+
 			auto statePrepIRTransform = ServiceRegistry::instance()->getService<
-					IRTransformation>(
-					xacc::optionExists("state-preparation") ?
-							xacc::getOption("state-preparation") : "uccsd");
+					IRTransformation>(statePrepType);
 			auto statePrepIR = statePrepIRTransform->transform(tempIR);
 			return std::dynamic_pointer_cast<Function>(
 					statePrepIR->getKernels()[0]->getInstruction(0));

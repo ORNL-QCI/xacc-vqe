@@ -4,6 +4,8 @@
 #include "solver/conjugatedgradientdescentsolver.h"
 #include "solver/gradientdescentsolver.h"
 
+#include <boost/mpi.hpp>
+
 using ExecutionPair = std::pair<double, std::string>;
 struct ExecutionPairComparison {
 	constexpr bool operator()(const ExecutionPair& lhs,
@@ -16,6 +18,9 @@ int main(int argc, char** argv) {
 
 	// All our important stuff is in the xacc::vqe namespace
 	using namespace xacc::vqe;
+
+	mpi::environment env(argc, argv);
+	mpi::communicator world;
 
 	// Set the default Accelerator to TNQVM, and
 	// default number of electrons to 2
@@ -41,9 +46,11 @@ int main(int argc, char** argv) {
 				"preparation circuit."},
 		{"vqe-state-prep-kernel-compiler", "If not scaffold, provide the "
 				"compiler to use in compiling the state prep circuit."},
-		{"n-qubits", ""}
+		{"n-qubits", "The number of qubits used in this calculation."},
+		{"vqe-print-stats", "Print the number of qubits, variational parameters, and Hamiltonian terms."}
 	});
 
+	std::cout << "PID: " << world.rank() << ", " << getpid() << "\n";
 	// Initialize the Framework
 	xacc::Initialize(argc, argv);
 
@@ -78,7 +85,7 @@ int main(int argc, char** argv) {
 		bool executedOnce = false;
 		while(!executions.empty()) {
 			std::ifstream stream(executions.top().second);
-			VQEProblem problem(stream);
+			VQEProblem problem(stream, world);
 			params = problem.initializeParameters();
 			cppoptlib::NelderMeadSolver<VQEProblem> solver;
 			solver.setStopCriteria(VQEProblem::getConvergenceCriteria());
@@ -88,6 +95,8 @@ int main(int argc, char** argv) {
 			outFile.flush();
 			executions.pop();
 			stream.close();
+			if (world.rank() == 0) XACCInfo("Number of Hamiltonian Terms = " + std::to_string(problem.kernels.size()));
+			if (world.rank() == 0) XACCInfo("Total QPU Calls = " + std::to_string(problem.totalQpuCalls));
 		}
 
 		outFile.close();
@@ -99,21 +108,27 @@ int main(int argc, char** argv) {
 		}
 
 		std::ifstream moleculeKernelHpp(xacc::getOption("vqe-kernel-file"));
-		VQEProblem problem(moleculeKernelHpp);
+		VQEProblem problem(moleculeKernelHpp, world);
 
-		auto params = problem.initializeParameters();
+		Eigen::VectorXd params = problem.initializeParameters();
+
 		cppoptlib::NelderMeadSolver<VQEProblem> solver;
 		solver.setStopCriteria(VQEProblem::getConvergenceCriteria());
 		solver.minimize(problem, params);
 
 		std::stringstream ss;
 		ss << params.transpose();
-		XACCInfo(std::string(42, '-'));
-		XACCInfo("Final VQE_Params: (" + ss.str() + ")");
+		if (world.rank() == 0)XACCInfo(std::string(42, '-'));
+		if (world.rank() == 0)XACCInfo("Final VQE_Params: (" + ss.str() + ")");
 		problem(params);
+
+		if (world.rank() == 0)XACCInfo("Number of Hamiltonian Terms = " + std::to_string(problem.kernels.size()));
+		if (world.rank() == 0)XACCInfo("Total QPU Calls = " + std::to_string(problem.totalQpuCalls));
+		if (world.rank() == 0)XACCInfo("Total VQE Steps = " + std::to_string(problem.totalQpuCalls/problem.kernels.size()));
+
+
 	}
 
 	xacc::Finalize();
-
 }
 

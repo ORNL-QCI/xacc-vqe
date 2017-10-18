@@ -11,6 +11,7 @@
 #include "VQEProblem.hpp"
 #include "solver/neldermeadsolver.h"
 #include <boost/math/constants/constants.hpp>
+#include <boost/mpi.hpp>
 
 BOOST_AUTO_TEST_CASE(checkSimpleH2) {
 
@@ -88,9 +89,12 @@ BOOST_AUTO_TEST_CASE(checkSimpleH2) {
 	xacc::Initialize(boost::unit_test::framework::master_test_suite().argc,
 			boost::unit_test::framework::master_test_suite().argv);
 
+	boost::mpi::environment env;
+	boost::mpi::communicator comm;
+
 	std::istringstream ss(src);
 
-	VQEProblem problem(ss);
+	VQEProblem problem(ss, comm);
 	Eigen::VectorXd params(2);
 	std::ofstream outFile("paramSweep.csv");
 
