@@ -220,6 +220,11 @@ public:
 				"CompositeSpinInstruction does not contain runtime parameters.");
 	}
 
+	virtual void addParameter(InstructionParameter instParam) {
+		XACCError(
+						"CompositeSpinInstruction does not contain runtime parameters.");
+	}
+
 	/**
 	 * CompositeSpinInstruction is not parameterized.
 	 *

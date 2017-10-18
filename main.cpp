@@ -36,7 +36,12 @@ int main(int argc, char** argv) {
 		{"vqe-print-scaffold-source", "Print the source code in the Scaffold "
 				"language to the provided file name."},
 		{"vqe-exit-after-scaffold", "Print Scaffold source code to the "
-				"provided file name and then quit. Set this arg to be y"}
+				"provided file name and then quit. Set this arg to be y"},
+		{"vqe-state-prep-kernel", "Provide the file name of the state "
+				"preparation circuit."},
+		{"vqe-state-prep-kernel-compiler", "If not scaffold, provide the "
+				"compiler to use in compiling the state prep circuit."},
+		{"n-qubits", ""}
 	});
 
 	// Initialize the Framework

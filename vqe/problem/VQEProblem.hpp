@@ -7,6 +7,7 @@
 #include "GateQIR.hpp"
 #include "InstructionIterator.hpp"
 #include "exprtk.hpp"
+#include <boost/range/algorithm/count.hpp>
 
 using namespace xacc::quantum;
 
@@ -93,6 +94,9 @@ public:
 	 * @param moleculeKernel
 	 */
 	VQEProblem(std::istream& moleculeKernel) : nParameters(0), currentEnergy(0.0) {
+
+		bool userProvidedKernels = false;
+
 		// This class only takes kernels
 		// represented as Fermion Kernels.
 		xacc::setCompiler("fermion");
@@ -101,8 +105,27 @@ public:
 		// if --accelerator not passed to this executable.
 		qpu = xacc::getAccelerator();
 
+		// Count the number of kernels in the file
+		std::string src((std::istreambuf_iterator<char>(moleculeKernel)),
+		                 std::istreambuf_iterator<char>());
+
+		auto nKernels = 0;
+		size_t nPos = src.find("__qpu__", 0);
+		while (nPos != std::string::npos) {
+			nKernels++;
+			nPos = src.find("__qpu__", nPos + 1);
+		}
+
+		std::vector<double> coeffs;
+		// If nKernels > 1, we have non-fermioncompiler kernels
+		// so lets check to see if they provided any coefficients
+		if (nKernels > 1) { // && boost::contains(src, "coefficients")) {
+			xacc::setCompiler("scaffold");
+			userProvidedKernels = true;
+		}
+
 		// Create the Program
-		Program program(qpu, moleculeKernel);
+		Program program(qpu, src);
 
 		// Start compilation
 		program.build();
@@ -112,6 +135,30 @@ public:
 
 		// Get the Kernels that were created
 		kernels = program.getRuntimeKernels();
+
+		if (userProvidedKernels) {
+
+			if (boost::contains(src, "pragma")
+					&& boost::contains(src, "coefficient")) {
+				std::vector<std::string> lines;
+				boost::split(lines, src, boost::is_any_of("\n"));
+				int counter = 0;
+				for (int i = 0; i < lines.size(); ++i) {
+					auto line = lines[i];
+					if (boost::contains(line, "#pragma vqe-coefficient")) {
+						std::vector<std::string> splitspaces;
+						boost::split(splitspaces, line, boost::is_any_of(" "));
+						boost::trim(splitspaces[2]);
+						coeffs.push_back(std::stod(splitspaces[2]));
+						InstructionParameter p(std::complex<double>(std::stod(splitspaces[2]), 0.0));
+						InstructionParameter q((kernels[counter].getIRFunction()->nInstructions() == 0 ? 1 : 0));
+						kernels[counter].getIRFunction()->addParameter(p);
+						kernels[counter].getIRFunction()->addParameter(q);
+						counter++;
+					}
+				}
+			}
+		}
 
 		statePrep = createStatePreparationCircuit();
 
@@ -254,20 +301,40 @@ private:
 	 * 			the State Preparation circuite
 	 */
 	std::shared_ptr<Function> createStatePreparationCircuit() {
-		// Create the State Preparation circuit
-		auto tempIR = std::make_shared<GateQIR>();
-		tempIR->addKernel(
-				std::make_shared<GateFunction>("temp",
-						std::vector<InstructionParameter> {
-								InstructionParameter(std::complex<double>(1.0)),
-								InstructionParameter(0) }));
-		auto statePrepIRTransform = ServiceRegistry::instance()->getService<
-				IRTransformation>(
-				xacc::optionExists("state-preparation") ?
-						xacc::getOption("state-preparation") : "uccsd");
-		auto statePrepIR = statePrepIRTransform->transform(tempIR);
-		return std::dynamic_pointer_cast<Function>(
-				statePrepIR->getKernels()[0]->getInstruction(0));
+
+		if (xacc::optionExists("vqe-state-prep-kernel")) {
+			auto filename = xacc::getOption("vqe-state-prep-kernel");
+			std::ifstream filess(filename);
+
+			xacc::setCompiler("scaffold");
+			if (xacc::optionExists("vqe-state-prep-kernel-compiler")) {
+				xacc::setCompiler(xacc::getOption("vqe-state-prep-kernel-compiler"));
+			}
+
+			Program p(qpu, filess);
+			p.build();
+
+			auto kernel = p.getRuntimeKernels()[0];
+
+			return kernel.getIRFunction();
+		} else {
+
+			// Create the State Preparation circuit
+			auto tempIR = std::make_shared<GateQIR>();
+			tempIR->addKernel(
+					std::make_shared<GateFunction>("temp",
+							std::vector<InstructionParameter> {
+									InstructionParameter(
+											std::complex<double>(1.0)),
+									InstructionParameter(0) }));
+			auto statePrepIRTransform = ServiceRegistry::instance()->getService<
+					IRTransformation>(
+					xacc::optionExists("state-preparation") ?
+							xacc::getOption("state-preparation") : "uccsd");
+			auto statePrepIR = statePrepIRTransform->transform(tempIR);
+			return std::dynamic_pointer_cast<Function>(
+					statePrepIR->getKernels()[0]->getInstruction(0));
+		}
 	}
 
 	/**

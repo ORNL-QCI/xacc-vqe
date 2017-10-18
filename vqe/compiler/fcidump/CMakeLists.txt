@@ -34,6 +34,9 @@ set (PACKAGE_DESCIPTION "")
 set (LIBRARY_NAME xacc-vqe-fcidump)
 file (GLOB SRC *.cpp)
 
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib;/usr/local/lib64")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CheMPS2_ROOT})
 
@@ -68,7 +71,6 @@ usFunctionEmbedResources(TARGET ${LIBRARY_NAME}
     manifest.json
   )
 
-link_directories(/usr/local/lib64)
 target_link_libraries(${LIBRARY_NAME} ${Boost_LIBRARIES} ${XACC_LIBRARIES} ${SYMENGINE_LIBRARIES} xacc-vqe-ir chemps2)
 
 install(TARGETS ${LIBRARY_NAME} DESTINATION ${XACC_LIBRARY_DIR}/plugins/preprocessors)
