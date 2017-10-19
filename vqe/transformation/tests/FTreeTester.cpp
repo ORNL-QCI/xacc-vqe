@@ -37,7 +37,7 @@
 BOOST_AUTO_TEST_CASE(checkSimple) {
 
 
-	FTree f(8);
+	FenwickTree f(8);
 
 	std::map<int, std::set<int>> expectedParity {
 		{0, {}},
@@ -52,15 +52,54 @@ BOOST_AUTO_TEST_CASE(checkSimple) {
 
 	for (auto& kv : expectedParity) {
 		auto pSet = f.getParitySet(kv.first);
-		std::vector<int> ids;
-		std::cout << "KEY: " << kv.first << ": ";
+		std::set<int> ids;
 		for (auto& node : pSet) {
-			std::cout << node->index << " ";
-			ids.push_back(node->index);
+			ids.insert(node->index);
 		}
-		std::cout << "\n";
 
-//		BOOST_VERIFY(ids == kv.second);
+		BOOST_VERIFY(ids == kv.second);
+	}
+
+	std::map<int, std::set<int>> expectedUpdate {
+		{0, {1,3,7}},
+		{1, {3,7}},
+		{2, {3,7}},
+		{3, {7}},
+		{4, {5,7}},
+		{5, {7}},
+		{6, {7}},
+		{7, {}}
+	};
+
+	for (auto& kv : expectedUpdate) {
+		auto uSet = f.getUpdateSet(kv.first);
+		std::set<int> ids;
+		for (auto& node : uSet) {
+			ids.insert(node->index);
+		}
+
+		BOOST_VERIFY(ids == kv.second);
+	}
+
+	std::map<int, std::set<int>> expectedChildren {
+		{0, {}},
+		{1, {0}},
+		{2, {}},
+		{3, {2,1}},
+		{4, {}},
+		{5, {4}},
+		{6, {}},
+		{7, {6,5,3}}
+	};
+
+	for (auto& kv : expectedChildren) {
+		auto cSet = f.getChildrenSet(kv.first);
+		std::set<int> ids;
+		for (auto& node : cSet) {
+			ids.insert(node->index);
+		}
+
+		BOOST_VERIFY(ids == kv.second);
 	}
 
 }

@@ -4,83 +4,147 @@
 
 #include <vector>
 
-class FNode : public std::enable_shared_from_this<FNode> {
+/**
+ * This class represents a Node in the Fenwick Tree. It keeps track
+ * of its parent, integer index, and any children it has.
+ */
+class Node : public std::enable_shared_from_this<Node> {
 
 public:
-	using FNodePtr = std::shared_ptr<FNode>;
+	using NodePtr = std::shared_ptr<Node>;
 
-	FNodePtr parent;
-	std::set<FNodePtr> children;
+	/**
+	 * Reference to this Node's parent Node
+	 */
+	NodePtr parent;
+
+	/**
+	 * Reference to this Node's children Nodes.
+	 */
+	std::set<NodePtr> children;
+
+	/**
+	 * Reference to this Node's index
+	 */
 	int index;
 
-	FNode(FNodePtr p, std::set<FNodePtr> cs) : index(-1), parent(p), children(cs) {}
-	FNode(std::set<FNodePtr> cs) : index(-1), children(cs) {}
+	/**
+	 * The constructor
+	 */
+	Node() : index(-1), children(std::set<NodePtr>{}) {}
 
-	std::set<FNodePtr> getAncestors() {
-
+	/**
+	 * Return all predecessor Nodes.
+	 *
+	 * @return ancestors This Node's predecessor Nodes
+	 */
+	std::set<NodePtr> getAncestors() {
 		auto node = shared_from_this();
-		std::set<FNodePtr> ancestors;
+		std::set<NodePtr> ancestors;
 		while (node->parent) {
-			ancestors.insert(node);
+			ancestors.insert(node->parent);
 			node = node->parent;
 		}
-
 		return ancestors;
 	}
 };
 
-class FTree {
+/**
+ * This class models a Fenwick Tree and provides a way to
+ * map binary strings to binary strings such that both the
+ * predecessor sum and any bit flip operations have O(logN) access cost.
+ *
+ * See https://arxiv.org/pdf/1701.07072.pdf
+ */
+class FenwickTree {
 
-	using FNodePtr = std::shared_ptr<FNode>;
+	using NodePtr = std::shared_ptr<Node>;
 
 protected:
 
-	std::vector<FNodePtr> nodes;
+	/**
+	 * Reference to the Nodes in this tree
+	 */
+	std::vector<NodePtr> nodes;
 
-	FNodePtr root;
+	/**
+	 * The root node of this Tree.
+	 */
+	NodePtr root;
+
 public:
 
-	FTree(const int nQubits) {
+	/**
+	 * The Constructor.
+	 *
+	 * @param nQubits
+	 */
+	FenwickTree(const int nQubits) {
 
+		 // Initialize with nQubits Nodes.
 		for (int i = 0; i < nQubits; i++) {
-			nodes.push_back(std::make_shared<FNode>(std::set<FNodePtr>{}));
+			nodes.push_back(std::make_shared<Node>());
 		}
 
 		if (nQubits > 0 ) {
+
+			// Set the Root node and its index
 			root = nodes[nQubits-1];
 			root->index = nQubits - 1;
 
-			std::function<void(const int, const int, FNodePtr)> construct;
+			// Create a recursive lambda that will let
+			// us build up the tree.
+			std::function<void(const int, const int, NodePtr)> construct;
 			construct =
-					[this,&construct](const int idx1, const int idx2, FNodePtr parent) {
+					[this,&construct](const int idx1, const int idx2, NodePtr parent) {
 						if( idx1 >= idx2) {
 							return;
 						} else {
-							auto pivot = (idx1 + idx2) >> 1;
-							auto child = nodes[pivot];
+							auto pvt = (idx1 + idx2) >> 1;
+							auto c = nodes[pvt];
 
-							child->index = pivot;
-							parent->children.insert(child);
-							child->parent = parent;
+							c->index = pvt;
+							parent->children.insert(c);
+							c->parent = parent;
 
-							construct(idx1, pivot, child);
-							construct(pivot + 1, idx2, parent);
+							construct(idx1, pvt, c);
+							construct(pvt + 1, idx2, parent);
 						}
 					};
+
+			// Construct the Tree!
 			construct(0, nQubits-1, root);
 		}
 	}
 
-	std::set<FNodePtr> getUpdateSet(const int i) {
+	/**
+	 * Return the update set corresponding to Node i.
+	 *
+	 * @param i
+	 * @return
+	 */
+	std::set<NodePtr> getUpdateSet(const int i) {
 		return nodes[i]->getAncestors();
 	}
 
-	std::set<FNodePtr> getChildrenSet(const int i) {
+	/**
+	 * Return the children of Node i.
+	 *
+	 * @param i
+	 * @return
+	 */
+	std::set<NodePtr> getChildrenSet(const int i) {
 		return nodes[i]->children;
 	}
 
-	std::set<FNodePtr> getRemainderSet(const int i) {
-		std::set<FNodePtr> rset;
+	/**
+	 * Return the remainder set for Node i.
+	 *
+	 * @param i
+	 * @return
+	 */
+	std::set<NodePtr> getRemainderSet(const int i) {
+		std::set<NodePtr> rset;
 		auto ancestors = getUpdateSet(i);
 
 		for (auto a : ancestors) {
@@ -94,11 +158,17 @@ public:
 		return rset;
 	}
 
-	std::set<FNodePtr> getParitySet(const int i) {
+	/**
+	 * Return the parity set for Node i.
+	 *
+	 * @param i
+	 * @return
+	 */
+	std::set<NodePtr> getParitySet(const int i) {
 		auto result = getRemainderSet(i);
 		auto cs = getChildrenSet(i);
 
-		std::set<FNodePtr> paritySet = result;
+		std::set<NodePtr> paritySet = result;
 		paritySet.insert(cs.begin(), cs.end());
 
 		return paritySet;

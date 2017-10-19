@@ -8,7 +8,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/uccsd)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/bk)
 
 file (GLOB_RECURSE HEADERS *.hpp)
-file (GLOB SRC *.cpp jw/*.cpp uccsd/*.cpp)
+file (GLOB SRC *.cpp jw/*.cpp bk/*.cpp uccsd/*.cpp)
 
 # Set up dependencies to resources to track changes
 usFunctionGetResourceSource(TARGET ${LIBRARY_NAME} OUT SRC)

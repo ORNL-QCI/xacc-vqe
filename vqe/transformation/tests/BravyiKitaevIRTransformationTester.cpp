@@ -30,15 +30,17 @@
  *
  **********************************************************************************/
 #define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE JordanWignerIRTransformationTester
+#define BOOST_TEST_MODULE BravyiKitaevIRTransformationTester
 
 #include <boost/test/included/unit_test.hpp>
-#include "JordanWignerIRTransformation.hpp"
+#include "BravyiKitaevIRTransformation.hpp"
+#include "XACC.hpp"
 
 using namespace xacc::vqe;
 
-BOOST_AUTO_TEST_CASE(checkJWTransform) {
+BOOST_AUTO_TEST_CASE(checkBKTransform) {
 
+	xacc::setOption("n-qubits", "3");
 	auto Instruction = std::make_shared<FermionInstruction>(
 			std::vector<std::pair<int, int>> { { 2, 1 }, { 0, 0 }}, 3.17);
 	auto Instruction2 = std::make_shared<FermionInstruction>(
@@ -51,13 +53,13 @@ BOOST_AUTO_TEST_CASE(checkJWTransform) {
 	auto ir = std::make_shared<FermionIR>();
 	ir->addKernel(kernel);
 
-	JordanWignerIRTransformation jwTransform;
+	BravyiKitaevIRTransformation bkTransform;
 
-	auto newIr = jwTransform.transform(ir);
+	auto newIr = bkTransform.transform(ir);
 
 	BOOST_VERIFY(
-			"(1.585,0) * X0 * Z1 * X2 + (1.585,0) * Y0 * Z1 * Y2"
-					== jwTransform.getResult().toString(""));
+			"(-1.585,0) * Y0 * Y1 + (-1.585,0) * X0 * X1 * Z2"
+					== bkTransform.getResult().toString(""));
 
 	for (auto k : newIr->getKernels()) {
 		for (auto i : k->getInstructions()) {
@@ -65,7 +67,7 @@ BOOST_AUTO_TEST_CASE(checkJWTransform) {
 		}
 	}
 }
-
+/*
 BOOST_AUTO_TEST_CASE(checkH2Transform) {
 
 	const std::string code = R"code(__qpu__ H2_sto-3g_singlet_H2_Molecule() {
@@ -192,3 +194,4 @@ BOOST_AUTO_TEST_CASE(checkH2Transform) {
 	}
 
 }
+*/

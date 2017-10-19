@@ -1,6 +1,8 @@
 #include "GateFunction.hpp"
 #include <boost/math/constants/constants.hpp>
 #include "BravyiKitaevIRTransformation.hpp"
+#include "XACC.hpp"
+#include "Fenwick.hpp"
 
 namespace xacc {
 namespace vqe {
@@ -22,14 +24,81 @@ std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
 
 	int counter = 0;
 	CompositeSpinInstruction total;
-
 	result.clear();
 
+	int nQubits = std::stoi(xacc::getOption("n-qubits"));
+
+	FenwickTree tree(nQubits);
 
 
-//	auto resultsStr = result.toString("");
-//	boost::replace_all(resultsStr, "+", "+\n");
-//	std::cout << "Jordan Wigner Transformed Fermion to Spin:\nBEGIN\n" << resultsStr << "\nEND\n\n";
+	// Loop over all Fermionic terms...
+	for (auto f : fermiKernel->getInstructions()) {
+
+		auto fermionInst = std::dynamic_pointer_cast<FermionInstruction>(f);
+
+		// Get the creation or annihilation sites
+		auto termSites = fermionInst->bits();
+
+		// Get the params indicating if termSite is creation or annihilation
+		auto params = fermionInst->getParameters();
+
+		auto fermionCoeff = fermionInst->coefficient;
+		auto fermionVar = fermionInst->variable;
+
+		CompositeSpinInstruction ladderProduct;
+		for (int i = 0; i < termSites.size(); i++) {
+
+			auto creationOrAnnihilation = boost::get<int>(params[i]);
+
+			auto index = termSites[i];
+
+			auto paritySet = tree.getParitySet(index);
+			auto ancestors = tree.getUpdateSet(index);
+			auto ancestorChildren = tree.getRemainderSet(index);
+
+			auto getSetElement = [](const std::set<std::shared_ptr<Node>>& s, const int idx) {
+				return *std::next(s.begin(), idx);
+			};
+
+			std::complex<double> dcoeff;
+			if (creationOrAnnihilation) {
+				dcoeff = std::complex<double>(0,-.5);
+			} else {
+				dcoeff = std::complex<double>(0,.5);
+			}
+
+			std::vector<std::pair<int, std::string>> dTerms{{index, "Y"}}, cTerms{{index, "X"}};
+			for (auto ac : ancestorChildren) {
+				dTerms.push_back({ac->index, "Z"});
+			}
+			for (auto p : paritySet) {
+				cTerms.push_back({p->index, "Z"});
+			}
+			for (auto a : ancestors) {
+				dTerms.push_back({a->index, "X"});
+				cTerms.push_back({a->index, "X"});
+			}
+
+			SpinInstruction d_majorana(dTerms, dcoeff), c_majorana(cTerms, std::complex<double>(0.5,0.0));
+			auto sum = c_majorana + d_majorana;
+			if (i == 0) {
+				ladderProduct = sum;
+			} else {
+				ladderProduct = ladderProduct * sum;
+			}
+		}
+
+		ladderProduct = fermionCoeff * ladderProduct;
+
+		total = total + ladderProduct;
+
+	}
+
+	result = total;
+
+	auto resultsStr = result.toString("");
+	boost::replace_all(resultsStr, "+", "+\n");
+	std::cout << "BK Transformed Fermion to Spin:\nBEGIN\n" << resultsStr << "\nEND\n\n";
 	auto pi = boost::math::constants::pi<double>();
 
 	// Populate GateQIR now...
