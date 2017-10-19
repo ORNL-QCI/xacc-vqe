@@ -33,7 +33,8 @@
 
 #include "Compiler.hpp"
 #include "Utils.hpp"
-
+#include "ServiceRegistry.hpp"
+#include "FermionToSpinTransformation.hpp"
 #include "FermionIR.hpp"
 
 namespace xacc {
@@ -89,13 +90,14 @@ public:
 		return desc;
 	}
 
-
 	virtual bool handleOptions(variables_map& args) {
 		if (args.count("fermion-list-transformations")) {
-//			auto ids = IRTransformationRegistry::instance()->getRegisteredIds();
-//			for (auto i : ids) {
-//				XACCInfo("Registered IR Transformation: " + i);
-//			}
+			auto ids = ServiceRegistry::instance()->getRegisteredIds<
+					IRTransformation>();
+			for (auto i : ids) {
+				XACCInfo("Registered Fermion To Spin Transformation: " + i);
+			}
+			return true;
 			return true;
 		}
 		return false;
