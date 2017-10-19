@@ -5,6 +5,7 @@ set (LIBRARY_NAME xacc-vqe-irtransformations)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/jw)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/uccsd)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/bk)
 
 file (GLOB_RECURSE HEADERS *.hpp)
 file (GLOB SRC *.cpp jw/*.cpp uccsd/*.cpp)
