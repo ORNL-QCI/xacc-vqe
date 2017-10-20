@@ -80,12 +80,18 @@ std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
 			}
 
 			SpinInstruction d_majorana(dTerms, dcoeff), c_majorana(cTerms, std::complex<double>(0.5,0.0));
+			if (i == termSites.size() - 1) {
+				d_majorana.variable = fermionVar;
+				c_majorana.variable = fermionVar;
+			}
 			auto sum = c_majorana + d_majorana;
 			if (i == 0) {
 				ladderProduct = sum;
 			} else {
 				ladderProduct = ladderProduct * sum;
 			}
+
+
 		}
 
 		ladderProduct = fermionCoeff * ladderProduct;
