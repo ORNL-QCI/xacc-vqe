@@ -50,7 +50,6 @@ int main(int argc, char** argv) {
 		{"vqe-print-stats", "Print the number of qubits, variational parameters, and Hamiltonian terms."}
 	});
 
-	std::cout << "PID: " << world.rank() << ", " << getpid() << "\n";
 	// Initialize the Framework
 	xacc::Initialize(argc, argv);
 

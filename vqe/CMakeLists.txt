@@ -1,7 +1,0 @@
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ir)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/compiler)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/transformation)
-add_subdirectory(ir)
-add_subdirectory(transformation)
-add_subdirectory(compiler)
-add_subdirectory(problem)
