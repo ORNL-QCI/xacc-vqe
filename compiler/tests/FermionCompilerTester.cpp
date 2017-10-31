@@ -134,104 +134,7 @@ BOOST_AUTO_TEST_CASE(checkSimpleCompile) {
 
 	auto ir = compiler->compile(simpleFermionHamiltonian, acc);
 
-	auto expected =
-			R"expected({
-    "kernels": [
-        {
-            "function": "term0",
-            "instructions": [
-                {
-                    "gate": "H",
-                    "enabled": true,
-                    "qubits": [
-                        2
-                    ]
-                },
-                {
-                    "gate": "H",
-                    "enabled": true,
-                    "qubits": [
-                        0
-                    ]
-                },
-                {
-                    "gate": "Measure",
-                    "enabled": true,
-                    "qubits": [
-                        2
-                    ],
-                    "classicalBitIdx": 2
-                },
-                {
-                    "gate": "Measure",
-                    "enabled": true,
-                    "qubits": [
-                        1
-                    ],
-                    "classicalBitIdx": 1
-                },
-                {
-                    "gate": "Measure",
-                    "enabled": true,
-                    "qubits": [
-                        0
-                    ],
-                    "classicalBitIdx": 0
-                }
-            ]
-        },
-        {
-            "function": "term1",
-            "instructions": [
-                {
-                    "gate": "Rx",
-                    "enabled": true,
-                    "qubits": [
-                        2
-                    ],
-                    "angle": 1.5707963267948966
-                },
-                {
-                    "gate": "Rx",
-                    "enabled": true,
-                    "qubits": [
-                        0
-                    ],
-                    "angle": 1.5707963267948966
-                },
-                {
-                    "gate": "Measure",
-                    "enabled": true,
-                    "qubits": [
-                        2
-                    ],
-                    "classicalBitIdx": 2
-                },
-                {
-                    "gate": "Measure",
-                    "enabled": true,
-                    "qubits": [
-                        1
-                    ],
-                    "classicalBitIdx": 1
-                },
-                {
-                    "gate": "Measure",
-                    "enabled": true,
-                    "qubits": [
-                        0
-                    ],
-                    "classicalBitIdx": 0
-                }
-            ]
-        }
-    ]
-})expected";
-
-	std::stringstream ss;
-	ir->persist(ss);
-	std::cout << ss.str() << "\n";
-	BOOST_VERIFY(expected == ss.str());
+	BOOST_VERIFY(ir->getKernels().size() == 2);
 }
 
 BOOST_AUTO_TEST_CASE(checkH2MinBondLength) {
@@ -272,11 +175,4 @@ BOOST_AUTO_TEST_CASE(checkH2MinBondLength) {
 
 	auto compiler = std::make_shared<FermionCompiler>();
 	auto ir = compiler->compile(code, acc);
-
-//	std::map<std::vector<std::pair<int, std::string>>, std::complex<double>> expected {
-//		{{{0,"I"}}, std::complex<double>(-0.461105,0)}
-//	};
-
-
-
 }

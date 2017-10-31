@@ -59,18 +59,22 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 	BOOST_VERIFY(compInst2 != i1);
 
 	auto multBySpinInst = compInst * i4;
-
-	BOOST_VERIFY("(0,-1) * Y1 + (-1,0) * X1" == multBySpinInst.toString(""));
+	multBySpinInst.simplify();
+	BOOST_VERIFY("(-1,0) * X1 + (0,-1) * Y1" == multBySpinInst.toString(""));
 	multBySpinInst = compInst * i1;
+	multBySpinInst.simplify();
 	BOOST_VERIFY(
-			"(1,0) * Z0 * X1 + (0,1) * Z0 * Y1" == multBySpinInst.toString(""));
+			"(0,1) * Z0 * Y1 + (1,0) * Z0 * X1" == multBySpinInst.toString(""));
 
 	auto multByComposite = compInst * compInst;
+	multByComposite.simplify();
 	BOOST_VERIFY("(0,0)" == multByComposite.toString(""));
 
+	auto t = compInst3 * compInst3;
+	t.simplify();
 	BOOST_VERIFY(
-			"(2,0) * I + (2,0) * Z0 * X1"
-					== (compInst3 * compInst3).toString(""));
+			"(2,0) * Z0 * X1 + (2,0) * I"
+					== t.toString(""));
 
 	auto test = compInst * 4.4;
 	BOOST_VERIFY("(4.4,0) * X1 + (0,4.4) * Y1" == test.toString(""));
@@ -86,7 +90,8 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 	// Test Addition now
 
 	auto added = compInst + compInst3;
-	BOOST_VERIFY("(2,0) * X1 + (0,1) * Y1 + (1,0) * Z0" == added.toString(""));
+	added.simplify();
+	BOOST_VERIFY("(1,0) * Z0 + (2,0) * X1 + (0,1) * Y1" == added.toString(""));
 
 }
 
@@ -96,11 +101,8 @@ BOOST_AUTO_TEST_CASE(checkIdentity) {
 	SpinInstruction i2(std::vector<std::pair<int, std::string>> { { 0, "I" } },
 			std::complex<double>(5.3, 0));
 	CompositeSpinInstruction compInst;
-	std::cout << "NULL: " << compInst.toString("") << "\n";
 	compInst.addInstruction(std::make_shared<SpinInstruction>(i1));
 
 	compInst = compInst + i2;
-
-	std::cout << "HELLO: " << compInst.toString("") << "\n";
 
 }

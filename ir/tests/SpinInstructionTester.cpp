@@ -106,6 +106,7 @@ BOOST_AUTO_TEST_CASE(checkVariableCoefficient) {
 			{ 3, "Z" }, }, "theta");
 	auto three = 3*inst;
 	auto sum = ((inst+inst) + three);
+	sum.simplify();
 	BOOST_VERIFY(sum.toString("") == "(5,0) * theta * Z3 * X4");
 
 	SpinInstruction i2(std::vector<std::pair<int, std::string>> { { 4, "X" },

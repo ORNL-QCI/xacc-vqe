@@ -62,12 +62,6 @@ public:
 	 */
 	virtual std::shared_ptr<IR> transform(std::shared_ptr<IR> ir);
 
-	/**
-	 * Return the result of the Jordan Wigner transformation
-	 * @return
-	 */
-	virtual CompositeSpinInstruction getResult();
-
 	virtual const std::string name() const {
 		return "jordan-wigner";
 	}
@@ -77,12 +71,6 @@ public:
 				"transformation to map fermionic instructions to spin-based instructions.";
 	}
 
-protected:
-
-	/**
-	 * Reference to the JW result.
-	 */
-	CompositeSpinInstruction result;
 };
 
 }

@@ -38,7 +38,58 @@
 
 using namespace xacc::vqe;
 
-BOOST_AUTO_TEST_CASE(checkBKTransform) {
+
+std::shared_ptr<FermionKernel> compileKernel(const std::string src) {
+	// First off, split the string into lines
+	std::vector<std::string> lines, fLineSpaces;
+	boost::split(lines, src, boost::is_any_of("\n"));
+	auto functionLine = lines[0];
+//	std::cout << "HELLO WORLD: " << functionLine << "\n";
+	boost::split(fLineSpaces, functionLine, boost::is_any_of(" "));
+	auto fName = fLineSpaces[1];
+	boost::trim(fName);
+	fName = fName.substr(0, fName.find_first_of("("));
+	auto firstCodeLine = lines.begin() + 1;
+	auto lastCodeLine = lines.end() - 1;
+	std::vector<std::string> fermionStrVec(firstCodeLine, lastCodeLine);
+
+	auto fermionKernel = std::make_shared<FermionKernel>("fName");
+
+	int _nQubits = 0;
+	// Loop over the lines to create DWQMI
+	for (auto termStr : fermionStrVec) {
+		boost::trim(termStr);
+		if (!termStr.empty() && (std::string::npos != termStr.find_first_of("0123456789"))) {
+			std::vector<std::string> splitOnSpaces;
+			boost::split(splitOnSpaces, termStr, boost::is_any_of(" "));
+
+			// We know first term is coefficient
+			// FIXME WHAT IF COMPLEX
+			auto coeff = std::stod(splitOnSpaces[0]);
+			std::vector<std::pair<int, int>> operators;
+			for (int i = 1; i < splitOnSpaces.size()-1; i+=2) {
+				auto siteIdx = std::stoi(splitOnSpaces[i]);
+				if (siteIdx > _nQubits) {
+					_nQubits = siteIdx;
+				}
+				operators.push_back(
+						{siteIdx, std::stoi(
+								splitOnSpaces[i + 1]) });
+			}
+
+			auto fermionInst = std::make_shared<FermionInstruction>(operators,
+					coeff);
+			fermionKernel->addInstruction(fermionInst);
+		}
+	}
+
+	_nQubits++;
+
+	xacc::setOption("n-qubits", "4");
+	return fermionKernel;
+}
+
+/*BOOST_AUTO_TEST_CASE(checkBKTransform) {
 
 	xacc::setOption("n-qubits", "3");
 	auto Instruction = std::make_shared<FermionInstruction>(
@@ -57,6 +108,8 @@ BOOST_AUTO_TEST_CASE(checkBKTransform) {
 
 	auto newIr = bkTransform.transform(ir);
 
+	auto result = bkTransform.getResult();
+	std::cout << "HI: " << bkTransform.getResult().toString("") << "\n";
 	BOOST_VERIFY(
 			"(-1.585,0) * Y0 * Y1 + (-1.585,0) * X0 * X1 * Z2"
 					== bkTransform.getResult().toString(""));
@@ -66,8 +119,8 @@ BOOST_AUTO_TEST_CASE(checkBKTransform) {
 			std::cout << "InstTest: " << i->getName() << "\n";
 		}
 	}
-}
-/*
+}*/
+
 BOOST_AUTO_TEST_CASE(checkH2Transform) {
 
 	const std::string code = R"code(__qpu__ H2_sto-3g_singlet_H2_Molecule() {
@@ -102,96 +155,45 @@ BOOST_AUTO_TEST_CASE(checkH2Transform) {
         0.280200438869 0 1 3 1 3 0 0 0
 })code";
 
-	// First off, split the string into lines
-	std::vector<std::string> lines, fLineSpaces;
-	boost::split(lines, code, boost::is_any_of("\n"));
-	auto functionLine = lines[0];
-	std::cout << "HELLO WORLD: " << functionLine << "\n";
-	boost::split(fLineSpaces, functionLine, boost::is_any_of(" "));
-	auto fName = fLineSpaces[1];
-	boost::trim(fName);
-	fName = fName.substr(0, fName.find_first_of("("));
-	auto firstCodeLine = lines.begin() + 1;
-	auto lastCodeLine = lines.end() - 1;
-	std::vector<std::string> fermionStrVec(firstCodeLine, lastCodeLine);
-
-	auto fermionKernel = std::make_shared<FermionKernel>("fName");
-
-	int _nQubits = 0;
-	// Loop over the lines to create DWQMI
-	for (auto termStr : fermionStrVec) {
-		boost::trim(termStr);
-		if (!termStr.empty() && (std::string::npos != termStr.find_first_of("0123456789"))) {
-			std::vector<std::string> splitOnSpaces;
-			boost::split(splitOnSpaces, termStr, boost::is_any_of(" "));
-
-			for (auto s : splitOnSpaces) {
-				std::cout << s << " ";
-			}
-			std::cout << "\n";
-
-
-			// We know first term is coefficient
-			// FIXME WHAT IF COMPLEX
-			auto coeff = std::stod(splitOnSpaces[0]);
-			std::vector<std::pair<int, int>> operators;
-			for (int i = 1; i < splitOnSpaces.size()-1; i+=2) {
-				auto siteIdx = std::stoi(splitOnSpaces[i]);
-				if (siteIdx > _nQubits) {
-					_nQubits = siteIdx;
-				}
-				operators.push_back(
-						{siteIdx, std::stoi(
-								splitOnSpaces[i + 1]) });
-			}
-
-			auto fermionInst = std::make_shared<FermionInstruction>(operators,
-					coeff);
-			fermionKernel->addInstruction(fermionInst);
-		}
-	}
-
-	_nQubits++;
+	auto fermionKernel = compileKernel(code);
 
 	// Create the FermionIR to pass to our transformation.
 	auto fermionir = std::make_shared<FermionIR>();
 	fermionir->addKernel(fermionKernel);
 
+	xacc::setOption("n-qubits", "4");
 
-	JordanWignerIRTransformation t;
+	BravyiKitaevIRTransformation t;
 	auto ir = t.transform(fermionir);
 
 	auto result = t.getResult();
-	auto resultsStr = result.toString("");
-	boost::replace_all(resultsStr, "+", "+\n");
 
-	std::string expected = R"expected((-0.490661,0) * I +
- (0.0939372,0) * Z1 +
- (0.0939372,0) * Z0 +
- (0.138381,0) * Z0 * Z1 +
- (-0.0365278,0) * Z2 +
- (0.082831,0) * Z0 * Z2 +
- (-0.0365278,0) * Z3 +
- (0.082831,0) * Z1 * Z3 +
- (0.146066,0) * Z2 * Z3 +
- (0.1401,0) * Z1 * Z2 +
- (-0.0572692,0) * X0 * X1 * Y2 * Y3 +
- (0.0572692,0) * X0 * Y1 * Y2 * X3 +
- (0.0572692,0) * Y0 * X1 * X2 * Y3 +
- (-0.0572692,0) * Y0 * Y1 * X2 * X3 +
- (0.1401,0) * Z0 * Z3)expected";
+	BOOST_VERIFY(result.nInstructions() == 15);
 
-	std::cout << "HELLO: " << resultsStr << "\n";
-	BOOST_VERIFY(resultsStr == expected);
+	std::vector<std::vector<std::pair<int, std::string>>> expectedTerms {
+		{{0,"Z"}},
+		{{1,"Z"}},
+		{{2,"Z"}},
+		{{0,"Z"},{1,"Z"}},
+		{{0,"Z"},{2,"Z"}},
+		{{1,"Z"},{3,"Z"}},
+		{{0,"X"},{1,"Z"},{2,"X"}},
+		{{0,"Y"},{1,"Z"},{2,"Y"}},
+		{{0,"Z"},{1,"Z"},{2,"Z"}},
+		{{0,"Z"},{2,"Z"},{3,"Z"}},
+		{{1,"Z"},{2,"Z"},{3,"Z"}},
+		{{0,"X"},{1,"Z"},{2,"X"},{3,"Z"}},
+		{{0,"Y"},{1,"Z"},{2,"Y"},{3,"Z"}},
+		{{0,"Z"},{1,"Z"},{2,"Z"},{3,"Z"}},
+		{{0,"I"}}
+	};
 
-	int i = 0;
-	for (auto k : ir->getKernels()) {
-		std::cout << "KERNEL: " << i << "\n";
-		for (auto i : k->getInstructions()) {
-			std::cout << "\tInst: " << i->getName() << "\n";
-		}
-		i++;
+	for (auto inst : result.getInstructions()) {
+		auto cast = std::dynamic_pointer_cast<SpinInstruction>(inst);
+		auto terms = cast->getTerms();
+		BOOST_VERIFY(std::find(expectedTerms.begin(), expectedTerms.end(), terms) != expectedTerms.end());
 	}
 
+
 }
-*/
+

@@ -536,8 +536,6 @@ public:
 	 */
 	CompositeSpinInstruction operator+(const SpinInstruction &b) const {
 		CompositeSpinInstruction ret;
-
-
 		if (operator==(b)) {
 			auto newCoeff = coefficient + b.coefficient;
 			auto ptr = std::make_shared<SpinInstruction>(*this);

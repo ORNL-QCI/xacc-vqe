@@ -62,12 +62,6 @@ public:
 	 */
 	virtual std::shared_ptr<IR> transform(std::shared_ptr<IR> ir);
 
-	/**
-	 * Return the result of the Bravyi Kitaev transformation
-	 * @return
-	 */
-	virtual CompositeSpinInstruction getResult();
-
 	virtual const std::string name() const {
 		return "bravyi-kitaev";
 	}
@@ -76,12 +70,6 @@ public:
 		return "";
 	}
 
-protected:
-
-	/**
-	 * Reference to the BK result.
-	 */
-	CompositeSpinInstruction result;
 };
 
 }

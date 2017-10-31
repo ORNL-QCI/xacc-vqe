@@ -53,7 +53,7 @@ CompositeSpinInstruction CompositeSpinInstruction::operator*(
 		auto newinst = casted->operator*(b);
 		ret.addInstruction(std::make_shared<SpinInstruction>(newinst));
 	}
-	ret.simplify();
+//	ret.simplify();
 	return ret;
 }
 
@@ -76,7 +76,7 @@ CompositeSpinInstruction CompositeSpinInstruction::operator*(
 		}
 	}
 
-	ret.simplify();
+//	ret.simplify();
 	return ret;
 }
 
@@ -91,7 +91,7 @@ CompositeSpinInstruction CompositeSpinInstruction::operator*(const std::complex<
 		ret.addInstruction(std::make_shared<SpinInstruction>(newinst));
 	}
 
-	ret.simplify();
+//	ret.simplify();
 	return ret;
 }
 
@@ -104,7 +104,7 @@ CompositeSpinInstruction& CompositeSpinInstruction::operator*=(const std::comple
 		auto casted = std::dynamic_pointer_cast<SpinInstruction>(i);
 		casted->operator*=(b);
 	}
-	simplify();
+//	simplify();
 	return *this;
 }
 
@@ -119,7 +119,7 @@ CompositeSpinInstruction CompositeSpinInstruction::operator+(CompositeSpinInstru
 		ret.addInstruction(i);
 	}
 
-	ret.simplify();
+//	ret.simplify();
 
 	return ret;
 }
@@ -127,46 +127,39 @@ CompositeSpinInstruction CompositeSpinInstruction::operator+(CompositeSpinInstru
 CompositeSpinInstruction CompositeSpinInstruction::operator+(SpinInstruction& b) {
 	CompositeSpinInstruction ret(*this);
 	ret.addInstruction(std::make_shared<SpinInstruction>(b));
-	ret.simplify();
+//	ret.simplify();
 	return ret;
 }
 
 void CompositeSpinInstruction::simplify() {
-	for (int i = 0; i < nInstructions(); i++) {
-		for (int j = 0; j < nInstructions(); j++) {
-			if (i < j) {
-				auto castedi = std::dynamic_pointer_cast<SpinInstruction>(
-						getInstruction(i));
-				auto castedj = std::dynamic_pointer_cast<SpinInstruction>(
-						getInstruction(j));
 
-				if (castedi->operator==(*castedj.get())) {
-
-					// At this point castedi and castedj both
-					// have either complex or string, not differing
-
-					auto size = castedi->bits().size();
-					auto coeffj = castedj->coefficient;
-
-					castedi->coefficient += coeffj;
-					auto it = instructions.begin();
-					std::advance(it, j);
-					instructions.erase(it);
-					j--;
-				}
+	std::unordered_map<std::string, std::shared_ptr<SpinInstruction>> map;
+	for (int i = 0; i < nInstructions(); ++i) {
+		auto inst = std::dynamic_pointer_cast<SpinInstruction>(
+								getInstruction(i));
+		auto terms = inst->getTerms();
+		std::string key;
+		for (auto t : terms) {
+			if (t.second != "I") {
+				key += t.second + std::to_string(t.first);
+			} else {
+				key = "I";
 			}
+		}
+
+		auto search = map.find(key);
+		if (search != map.end()) {
+			search->second->coefficient += inst->coefficient;
+		} else {
+			map[key] = inst;
 		}
 	}
 
-	for (int i = 0; i < nInstructions(); i++) {
-		auto inst = getInstruction(i);
-		auto casted = std::dynamic_pointer_cast<SpinInstruction>(inst);
-		auto coeff = casted->coefficient;
-		if (std::complex<double>(0,0) == coeff) {
-			auto it = instructions.begin();
-			std::advance(it, i);
-			instructions.erase(it);
-			i--;
+	instructions.clear();
+
+	for (auto& kv : map) {
+		if (kv.second->coefficient != std::complex<double>(0.0,0.0)) {
+			addInstruction(kv.second);
 		}
 	}
 }
