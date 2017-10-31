@@ -49,8 +49,6 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 
 	// Here we expect we have a kernel, only one kernel
 
-//	std::cout << "KERNEL:\n" << src << "\n";
-
 	// First off, split the string into lines
 	std::vector<std::string> lines, fLineSpaces;
 	boost::split(lines, src, boost::is_any_of("\n"));
@@ -115,14 +113,19 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 	}
 
 	// Create the Spin Hamiltonian
+	XACCInfo("Mapping Fermion to Spin with " + transform->name());
 	auto transformedIR = transform->transform(fermionir);
+	XACCInfo("Done mapping Fermion to Spin.");
 
 	// Prepend State Preparation if requested.
 	if (runtimeOptions->exists("state-preparation")) {
 		auto statePrepIRTransformStr = (*runtimeOptions)["state-preparation"];
 		auto statePrepIRTransform = ServiceRegistry::instance()->getService<
 				IRTransformation>(statePrepIRTransformStr);
-		return statePrepIRTransform->transform(transformedIR);
+		XACCInfo("Generating State Preparation Circuit with " + statePrepIRTransform->name());
+		auto ir = statePrepIRTransform->transform(transformedIR);
+		XACCInfo("Done generating State Preparation Circuit with " + statePrepIRTransform->name());
+		return ir;
 	} else {
 		return transformedIR;
 	}

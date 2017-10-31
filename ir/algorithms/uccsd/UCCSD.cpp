@@ -58,7 +58,7 @@ std::shared_ptr<Function> UCCSD::generate(
 	}
 
 	auto kernel = std::make_shared<FermionKernel>("fermiUCCSD");
-
+	XACCInfo("Constructing UCCSD Fermion Operator.");
 	for (int i = 0; i < _nVirtual; i++) {
 		for (int j = 0; j < _nOccupied; j++) {
 			for (int l = 0; l < 2; l++) {
@@ -122,10 +122,13 @@ std::shared_ptr<Function> UCCSD::generate(
 		}
 	}
 
-	std::cout << "KERNEL: \n" << kernel->toString("") << "\n";
+//	std::cout << "KERNEL: \n" << kernel->toString("") << "\n";
 	// Create the FermionIR to pass to our transformation.
 	auto fermionir = std::make_shared<FermionIR>();
 	fermionir->addKernel(kernel);
+
+	XACCInfo("Done constructing UCCSD Fermion Operator.");
+	XACCInfo("Mapping UCCSD Fermion Operator to Spin. ");
 
 	std::shared_ptr<IRTransformation> transform;
 	if (runtimeOptions->exists("fermion-transformation")) {
@@ -136,6 +139,8 @@ std::shared_ptr<Function> UCCSD::generate(
 		transform = ServiceRegistry::instance()->getService<IRTransformation>(
 				"jordan-wigner");
 	}
+
+	XACCInfo("Done mapping UCCSD Fermion Operator to Spin. ");
 
 	// Create the Spin Hamiltonian
 	auto transformedIR = transform->transform(fermionir);
