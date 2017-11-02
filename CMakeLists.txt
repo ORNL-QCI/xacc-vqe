@@ -13,6 +13,8 @@ find_package(XACC REQUIRED)
 set(CppMicroServicesConfig_DIR "${XACC_ROOT}/share/cppmicroservices3/cmake")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${XACC_ROOT}/share/xacc")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CppMicroServicesConfig_DIR}")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules")
+
 include(tests)
 include(CppMicroServicesConfig)
 
@@ -41,11 +43,16 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ir)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/compiler)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/transformations)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/problem)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/problem/petsctao)
+include_directories(/projects/petsc/include)
+include_directories(/projects/petsc/arch-linux2-c-debug/include)
+
 
 add_subdirectory(ir)
 add_subdirectory(transformations)
 add_subdirectory(compiler)
 add_subdirectory(problem)
 
+link_directories(/projects/petsc/arch-linux2-c-debug/lib)
 add_executable(xacc-vqe main.cpp)
-target_link_libraries(xacc-vqe ${Boost_LIBRARIES} xacc-vqe-ir ${XACC_LIBRARIES} pthread dl ${MPI_CXX_LIBRARIES})
+target_link_libraries(xacc-vqe ${Boost_LIBRARIES} xacc-vqe-ir ${XACC_LIBRARIES} pthread dl ${MPI_CXX_LIBRARIES} petsc)

@@ -1,8 +1,5 @@
 #include "XACC.hpp"
-#include "VQEProblem.hpp"
-#include "solver/neldermeadsolver.h"
-#include "solver/conjugatedgradientdescentsolver.h"
-#include "solver/gradientdescentsolver.h"
+#include "TaoPetscVQEProblem.hpp"
 
 #include <boost/mpi.hpp>
 
@@ -29,6 +26,7 @@ int main(int argc, char** argv) {
 
 	// Add some command line options for XACC VQE
 	xacc::addCommandLineOptions("XACC VQE", std::map<std::string, std::string>{
+		{"vqe-solver", "Default is cppoptlib, specify \"tao\" for Petsc Tao solver."},
 		{"vqe-kernel-directory", "The directory containing *.hpp files, each "
 				"containing an XACC Kernel describing a molecular "
 				"fermionic Hamiltonian."},
@@ -85,10 +83,7 @@ int main(int argc, char** argv) {
 		while(!executions.empty()) {
 			std::ifstream stream(executions.top().second);
 			VQEProblem problem(stream, world);
-			params = problem.initializeParameters();
-			cppoptlib::NelderMeadSolver<VQEProblem> solver;
-			solver.setStopCriteria(VQEProblem::getConvergenceCriteria());
-			solver.minimize(problem, params);
+			params = problem.minimize();
 			auto finalValue = problem.currentEnergy;
 			outFile << executions.top().first << ", " << finalValue << "\n";
 			outFile.flush();
@@ -106,24 +101,31 @@ int main(int argc, char** argv) {
 			XACCError("You must at least specify a kernel file to run this app.");
 		}
 
+		std::string solver = "cppoptlib";
+		if (xacc::optionExists("vqe-solver")) {
+			solver = xacc::getOption("vqe-solver");
+		}
+
 		std::ifstream moleculeKernelHpp(xacc::getOption("vqe-kernel-file"));
-		VQEProblem problem(moleculeKernelHpp, world);
 
-		Eigen::VectorXd params = problem.initializeParameters();
+		std::shared_ptr<VQEProblem> problem;
+		if (solver == "cppoptlib") {
+			problem = std::make_shared<VQEProblem>(moleculeKernelHpp, world);
+		} else if (solver == "tao") {
+			problem = std::make_shared<TaoPetscVQEProblem>(moleculeKernelHpp, world);
+		}
 
-		cppoptlib::NelderMeadSolver<VQEProblem> solver;
-		solver.setStopCriteria(VQEProblem::getConvergenceCriteria());
-		solver.minimize(problem, params);
+		auto params = problem->minimize();
 
 		std::stringstream ss;
 		ss << params.transpose();
 		if (world.rank() == 0)XACCInfo(std::string(42, '-'));
 		if (world.rank() == 0)XACCInfo("Final VQE_Params: (" + ss.str() + ")");
-		problem(params);
+		if (world.rank() == 0) XACCInfo("Computed VQE Energy = " + std::to_string(problem->currentEnergy) + " at (" + ss.str() + ")");
 
-		if (world.rank() == 0)XACCInfo("Number of Hamiltonian Terms = " + std::to_string(problem.kernels.size()));
-		if (world.rank() == 0)XACCInfo("Total QPU Calls = " + std::to_string(problem.totalQpuCalls));
-		if (world.rank() == 0)XACCInfo("Total VQE Steps = " + std::to_string(problem.totalQpuCalls/problem.kernels.size()));
+		if (world.rank() == 0)XACCInfo("Number of Hamiltonian Terms = " + std::to_string(problem->kernels.size()));
+		if (world.rank() == 0)XACCInfo("Total QPU Calls = " + std::to_string(problem->totalQpuCalls));
+		if (world.rank() == 0)XACCInfo("Total VQE Steps = " + std::to_string(problem->totalQpuCalls/problem->kernels.size()));
 
 
 	}

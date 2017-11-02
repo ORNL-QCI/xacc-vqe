@@ -13,6 +13,10 @@
 #include <boost/mpi.hpp>
 #include "CountGatesOfTypeVisitor.hpp"
 
+#include "solver/neldermeadsolver.h"
+#include "solver/conjugatedgradientdescentsolver.h"
+#include "solver/gradientdescentsolver.h"
+
 using namespace xacc::quantum;
 
 namespace xacc {
@@ -231,6 +235,14 @@ public:
 		initialize(moleculeKernel);
 	}
 
+	virtual const Eigen::VectorXd minimize() {
+		cppoptlib::NelderMeadSolver<VQEProblem> solver;
+		solver.setStopCriteria(VQEProblem::getConvergenceCriteria());
+		auto params = initializeParameters();
+		solver.minimize(*this, params);
+		return params;
+	}
+
 	/**
 	 * Return an initial random vector of
 	 * parameters.
@@ -377,6 +389,10 @@ public:
 
 		return criteria;
 
+	}
+
+	const int getNParameters() {
+		return nParameters;
 	}
 
 private:

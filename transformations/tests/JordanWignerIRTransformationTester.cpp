@@ -107,13 +107,9 @@ BOOST_AUTO_TEST_CASE(checkJWTransform) {
 
 	BOOST_VERIFY(
 			"(1.585,0) * X0 * Z1 * X2 + (1.585,0) * Y0 * Z1 * Y2"
-					== jwTransform.getResult().toString(""));
+					== jwTransform.getResult().toString("") ||
+					"(1.585,0) * Y0 * Z1 * Y2 + (1.585,0) * X0 * Z1 * X2" == jwTransform.getResult().toString(""));
 
-	for (auto k : newIr->getKernels()) {
-		for (auto i : k->getInstructions()) {
-			std::cout << "InstTest: " << i->getName() << "\n";
-		}
-	}
 }
 
 BOOST_AUTO_TEST_CASE(checkH2Transform) {
