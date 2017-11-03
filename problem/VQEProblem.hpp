@@ -107,6 +107,7 @@ protected:
 		if (nKernels > 1) { // && boost::contains(src, "coefficients")) {
 			xacc::setCompiler("scaffold");
 			userProvidedKernels = true;
+			qpu->createBuffer("qreg", 2);
 		}
 
 		// Create the Program
@@ -150,10 +151,10 @@ protected:
 		// Set the number of VQE parameters
 		nParameters = statePrep->nParameters();
 
-		if (nParameters < 1) {
-			XACCError("Error: State preparation circuit has 0 "
-					"parameters. Try inputing a custom state prep kernel.");
-		}
+//		if (nParameters < 1) {
+//			XACCError("Error: State preparation circuit has 0 "
+//					"parameters. Try inputing a custom state prep kernel.");
+//		}
 
 		if (xacc::optionExists("vqe-print-scaffold-source")) {
 			printScaffoldSourceCode();
@@ -203,7 +204,7 @@ public:
 	 * amounts to a state preparation circuit
 	 * followed by appropriately constructed qubit measurements.
 	 */
-	std::vector<Kernel<>> kernels;
+	KernelList<> kernels;
 
 	/**
 	 * Referne
@@ -250,29 +251,42 @@ public:
 	 * @return params Initial parameters
 	 */
 	Eigen::VectorXd initializeParameters() {
-		std::srand(time(0));
-		auto pi = boost::math::constants::pi<double>();
-		Eigen::VectorXd rand;
 
-		std::vector<double> data;
+		if (xacc::optionExists("vqe-initial-parameters")) {
+			auto paramStr = xacc::getOption("vqe-initial-parameters");
+			std::vector<std::string> split;
+			boost::split(split, paramStr, boost::is_any_of(","));
 
-		// Random parameters between -pi and pi
-		if (comm.rank() == 0) {
-			rand = -1.0 * pi * Eigen::VectorXd::Ones(nParameters)
-					+ (Eigen::VectorXd::Random(nParameters) * 0.5
-							+ Eigen::VectorXd::Ones(nParameters) * 0.5)
-							* (pi - (-1 * pi));
-			data.resize(rand.size());
-			Eigen::VectorXd::Map(&data[0], rand.size()) = rand;
+			Eigen::VectorXd params(nParameters);
+			for (int i = 0; i < split.size(); i++) {
+				params(i) = std::stod(split[i]);
+			}
+
+			return params;
+		} else {
+			std::srand(time(0));
+			auto pi = boost::math::constants::pi<double>();
+			Eigen::VectorXd rand;
+
+			std::vector<double> data;
+
+			// Random parameters between -pi and pi
+			if (comm.rank() == 0) {
+				rand = -1.0 * pi * Eigen::VectorXd::Ones(nParameters)
+						+ (Eigen::VectorXd::Random(nParameters) * 0.5
+								+ Eigen::VectorXd::Ones(nParameters) * 0.5)
+								* (pi - (-1 * pi));
+				data.resize(rand.size());
+				Eigen::VectorXd::Map(&data[0], rand.size()) = rand;
+			}
+
+			boost::mpi::broadcast(comm, data, 0);
+
+			if (comm.rank() != 0) {
+				rand = Eigen::Map<Eigen::VectorXd>(data.data(), data.size());
+			}
+			return rand;
 		}
-
-		boost::mpi::broadcast(comm, data, 0);
-
-		if (comm.rank() != 0) {
-			rand = Eigen::Map<Eigen::VectorXd>(data.data(), data.size());
-		}
-
-		return rand;
 	}
 
 	/**

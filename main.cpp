@@ -1,5 +1,5 @@
 #include "XACC.hpp"
-#include "TaoPetscVQEProblem.hpp"
+#include "VQEProblem.hpp"
 
 #include <boost/mpi.hpp>
 
@@ -45,7 +45,9 @@ int main(int argc, char** argv) {
 		{"vqe-state-prep-kernel-compiler", "If not scaffold, provide the "
 				"compiler to use in compiling the state prep circuit."},
 		{"n-qubits", "The number of qubits used in this calculation."},
-		{"vqe-print-stats", "Print the number of qubits, variational parameters, and Hamiltonian terms."}
+		{"vqe-print-stats", "Print the number of qubits, variational "
+				"parameters, and Hamiltonian terms."},
+		{"vqe-initial-parameters", ""}
 	});
 
 	// Initialize the Framework
@@ -112,7 +114,7 @@ int main(int argc, char** argv) {
 		if (solver == "cppoptlib") {
 			problem = std::make_shared<VQEProblem>(moleculeKernelHpp, world);
 		} else if (solver == "tao") {
-			problem = std::make_shared<TaoPetscVQEProblem>(moleculeKernelHpp, world);
+//			problem = std::make_shared<TaoPetscVQEProblem>(moleculeKernelHpp, world);
 		}
 
 		auto params = problem->minimize();
@@ -126,7 +128,6 @@ int main(int argc, char** argv) {
 		if (world.rank() == 0)XACCInfo("Number of Hamiltonian Terms = " + std::to_string(problem->kernels.size()));
 		if (world.rank() == 0)XACCInfo("Total QPU Calls = " + std::to_string(problem->totalQpuCalls));
 		if (world.rank() == 0)XACCInfo("Total VQE Steps = " + std::to_string(problem->totalQpuCalls/problem->kernels.size()));
-
 
 	}
 

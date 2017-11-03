@@ -10,4 +10,4 @@ include_directories(/projects/petsc/include)
 file (GLOB test_files tests/*.cpp)
 add_tests("${test_files}" "${CMAKE_CURRENT_SOURCE_DIR}" "${Boost_LIBRARIES};pthread;dl;xacc-vqe-ir;xacc-vqe-irtransformations")
 
-add_subdirectory(petsctao)
+#add_subdirectory(petsctao)

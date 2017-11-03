@@ -9,10 +9,11 @@ namespace xacc {
 namespace vqe {
 
 typedef struct {
-  PetscInt  n;       /* dimension */
-  PetscReal alpha;   /* condition parameter */
+  PetscInt  n;
+  PetscReal alpha;
   PetscBool chained;
   VQEProblem* problem;
+  mpi::communicator comm;
 } AppCtx;
 
 PetscErrorCode FormFunctionGradient(Tao tao, Vec X, PetscReal *f, Vec G,
@@ -20,11 +21,23 @@ PetscErrorCode FormFunctionGradient(Tao tao, Vec X, PetscReal *f, Vec G,
 	PetscErrorCode ierr;
 	AppCtx *user = (AppCtx *) ptr;
 	double *x;
+	int localSize;
 
 	/* Get pointers to vector data */
 	ierr = VecGetArray(X, &x);
+	ierr = VecGetLocalSize(X, &localSize);
 
-	std::cout << "HEY WORLD FROM TAO\n";
+	std::vector<double> allDataVec;
+	std::vector<double> dataVec(x, x+localSize);
+
+	boost::mpi::all_gather(user->comm, dataVec, &allDataVec);
+
+//	if (user->comm.rank() == 0) std::cout << "Alldata vec:\n";
+//	for (auto d : allDataVec) {
+//		if (user->comm.rank() == 0) std::cout << d << " ";
+//	}
+//	if (user->comm.rank() == 0) std::cout << "\n";
+
 	// Need to broadcast data pointer
 	auto params = Eigen::Map<Eigen::VectorXd>(x, user->problem->getNParameters());
 	*f = user->problem->value(params);
@@ -69,9 +82,11 @@ public:
 		user.alpha = 99.0;
 		user.chained = PETSC_FALSE;
 		user.problem = this;
+		user.comm = comm;
 
 //		/* Allocate vectors for the solution and gradient */
-		ierr = VecCreateSeq(PETSC_COMM_WORLD, user.n, &x);
+//		ierr = VecCreateSeq(PETSC_COMM_WORLD, user.n, &x);
+		ierr = VecCreateMPI(PETSC_COMM_WORLD, PETSC_DECIDE, user.n, &x);
 
 		/* The TAO code begins here */
 
@@ -80,14 +95,19 @@ public:
 		ierr = TaoSetType(tao, TAONM);
 
 		/* Set solution vec and an initial guess */
-		int *indices;
-		VecSetValues(x, nParameters, indices, params.data());
-		ierr = VecSet(x, zero);
+		int *indices = new int[nParameters];
+		for (int i = 0; i < nParameters; i++) indices[i] = i;
+
+		VecSetValues(x, nParameters, indices, params.data(), INSERT_VALUES);
+		VecAssemblyBegin(x);
+		VecAssemblyEnd(x);
+
 		ierr = TaoSetInitialVector(tao, x);
 
 		/* Set routines for function, gradient, hessian evaluation */
 		ierr = TaoSetObjectiveAndGradientRoutine(tao, FormFunctionGradient,
 				&user);
+
 		/* Check for TAO command line options */
 		ierr = TaoSetFromOptions(tao);
 

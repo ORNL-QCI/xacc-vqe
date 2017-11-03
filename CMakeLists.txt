@@ -44,8 +44,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/compiler)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/transformations)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/problem)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/problem/petsctao)
-include_directories(/projects/petsc/include)
-include_directories(/projects/petsc/arch-linux2-c-debug/include)
+include_directories(/usr/local/petsc/include)
 
 
 add_subdirectory(ir)
@@ -53,6 +52,6 @@ add_subdirectory(transformations)
 add_subdirectory(compiler)
 add_subdirectory(problem)
 
-link_directories(/projects/petsc/arch-linux2-c-debug/lib)
+#link_directories(/usr/local/petsc/lib)
 add_executable(xacc-vqe main.cpp)
-target_link_libraries(xacc-vqe ${Boost_LIBRARIES} xacc-vqe-ir ${XACC_LIBRARIES} pthread dl ${MPI_CXX_LIBRARIES} petsc)
+target_link_libraries(xacc-vqe ${Boost_LIBRARIES} xacc-vqe-ir ${XACC_LIBRARIES} pthread dl ${MPI_CXX_LIBRARIES}) # petsc)
