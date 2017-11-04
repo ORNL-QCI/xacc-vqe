@@ -105,6 +105,7 @@ protected:
 		// If nKernels > 1, we have non-fermioncompiler kernels
 		// so lets check to see if they provided any coefficients
 		if (nKernels > 1) { // && boost::contains(src, "coefficients")) {
+			// FIXME ADD HOOK TO SET COMPILER FOR THESE
 			xacc::setCompiler("scaffold");
 			userProvidedKernels = true;
 			qpu->createBuffer("qreg", 2);
@@ -216,9 +217,26 @@ public:
 	 */
 	double currentEnergy;
 
+	const double getCurrentEnergy() {
+		return currentEnergy;
+	}
+
 	VQEProblem(std::istream& moleculeKernel, boost::mpi::communicator& c) :
 			comm(c), nParameters(0), currentEnergy(0.0) {
 		initialize(moleculeKernel);
+	}
+
+	VQEProblem(const std::string& kernelSrc) : nParameters(0),
+			currentEnergy(0.0) {
+		std::istringstream ss(kernelSrc);
+		initialize(ss);
+	}
+
+	VQEProblem(const std::string& kernelSrc, const int nqbits) : nParameters(0),
+			currentEnergy(0.0), nQubits(nqbits) {
+		xacc::setOption("n-qubits", std::to_string(nqbits));
+		std::istringstream ss(kernelSrc);
+		initialize(ss);
 	}
 
 	/**
@@ -232,7 +250,7 @@ public:
 	 * @param moleculeKernel
 	 */
 	VQEProblem(std::istream& moleculeKernel) :
-			nParameters(0), currentEnergy(0.0), comm(boost::mpi::communicator()) {
+			nParameters(0), currentEnergy(0.0) {
 		initialize(moleculeKernel);
 	}
 
@@ -243,6 +261,14 @@ public:
 		solver.minimize(*this, params);
 		return params;
 	}
+
+	virtual const Eigen::VectorXd minimize(Eigen::VectorXd& initialParameters) {
+		cppoptlib::NelderMeadSolver<VQEProblem> solver;
+		solver.setStopCriteria(VQEProblem::getConvergenceCriteria());
+		solver.minimize(*this, initialParameters);
+		return initialParameters;
+	}
+
 
 	/**
 	 * Return an initial random vector of

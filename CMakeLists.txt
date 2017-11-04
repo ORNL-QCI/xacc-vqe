@@ -51,6 +51,7 @@ add_subdirectory(ir)
 add_subdirectory(transformations)
 add_subdirectory(compiler)
 add_subdirectory(problem)
+add_subdirectory(python)
 
 #link_directories(/usr/local/petsc/lib)
 add_executable(xacc-vqe main.cpp)
