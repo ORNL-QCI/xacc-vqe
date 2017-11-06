@@ -387,9 +387,9 @@ public:
 		totalQpuCalls += kernels.size();
 
 		std::stringstream ss;
-		ss << x.transpose();
+		ss << currentEnergy << " at (" << x.transpose() << ")";
 
-		if (rank == 0) XACCInfo("Computed VQE Energy = " + std::to_string(currentEnergy) + " at (" + ss.str() + ")");
+		if (rank == 0) XACCInfo("Computed VQE Energy = " + ss.str());
 		return currentEnergy;
 	}
 
