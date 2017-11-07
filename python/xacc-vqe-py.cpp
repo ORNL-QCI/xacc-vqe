@@ -6,57 +6,74 @@
 #include <pybind11/iostream.h>
 
 #include "VQEProblem.hpp"
+#include "VQEProgram.hpp"
+#include "VQETask.hpp"
+#include "VQEParameterGenerator.hpp"
 
 namespace py = pybind11;
 
-std::pair<Eigen::VectorXd, double> execute_vqe(const std::string& hamiltonianSrc,
-		const std::string& statePrepSrc, const int nQbits, const std::string& accelerator = "tnqvm") {
-	std::ofstream tempStatePrep(".tempStatePrep.hpp");
-	tempStatePrep << statePrepSrc;
-	tempStatePrep.close();
-	xacc::setOption("vqe-state-prep-kernel", ".tempStatePrep.hpp");
+using namespace xacc;
+using namespace xacc::vqe;
+
+std::pair<Eigen::VectorXd, double> execute_vqe(
+		const std::string& hamiltonianSrc, const std::string& statePrepSrc,
+		const int nQbits, const std::string& accelerator = "tnqvm") {
+
 	xacc::setOption("n-qubits", std::to_string(nQbits));
-	xacc::setOption("accelerator", accelerator);
+	auto qpu = xacc::getAccelerator(accelerator);
 
-	xacc::vqe::VQEProblem problem(hamiltonianSrc);
-	auto params = problem.minimize();
-	std::remove(".tempStatePrep.hpp");
+	boost::mpi::communicator comm;
+	auto program = std::make_shared<VQEProgram>(qpu, hamiltonianSrc, statePrepSrc, comm);
+	program->build();
 
-	return std::make_pair(params, problem.currentEnergy);
+	auto task = ServiceRegistry::instance()->getService<VQETask>("vqe");
+	task->setVQEProgram(program);
+
+	auto parameters = VQEParameterGenerator::generateParameters(program->getNParameters(), comm);
+	auto result = task->execute(parameters);
+	return result[0];
 }
 
-std::pair<Eigen::VectorXd, double> execute_vqe(const std::string& hamiltonianSrc,
-                const std::string& statePrepSrc, const int nQbits, Eigen::VectorXd& params, const std::string& accelerator = "tnqvm") {
-        std::ofstream tempStatePrep(".tempStatePrep.hpp");
-        tempStatePrep << statePrepSrc;
-        tempStatePrep.close();
-        xacc::setOption("vqe-state-prep-kernel", ".tempStatePrep.hpp");
-        xacc::setOption("n-qubits", std::to_string(nQbits));
-        xacc::setOption("accelerator", accelerator);
+std::pair<Eigen::VectorXd, double> execute_vqe(
+		const std::string& hamiltonianSrc, const std::string& statePrepSrc,
+		const int nQbits, Eigen::VectorXd& params,
+		const std::string& accelerator = "tnqvm") {
+	xacc::setOption("n-qubits", std::to_string(nQbits));
+	auto qpu = xacc::getAccelerator(accelerator);
 
-        xacc::vqe::VQEProblem problem(hamiltonianSrc);
-        auto newParams = problem.minimize(params);
-        std::remove(".tempStatePrep.hpp");
+	boost::mpi::communicator comm;
+	auto program = std::make_shared<VQEProgram>(qpu, hamiltonianSrc, statePrepSrc, comm);
+	program->build();
 
-        return std::make_pair(newParams, problem.currentEnergy);
+	auto task = ServiceRegistry::instance()->getService<VQETask>("vqe");
+	task->setVQEProgram(program);
+
+	auto result = task->execute(params);
+	return result[0];
 }
 
 std::vector<double> sweepParameter1D(const std::string& hamiltonianSrc,
-                const std::string& statePrepSrc, const int nQbits, const Eigen::VectorXd& range, const std::string& accelerator = "tnqvm") {
-    std::ofstream tempStatePrep(".tempStatePrep.hpp");
-    tempStatePrep << statePrepSrc;
-    tempStatePrep.close();
-    xacc::setOption("vqe-state-prep-kernel", ".tempStatePrep.hpp");
-    xacc::setOption("n-qubits", std::to_string(nQbits));
-    xacc::setOption("accelerator", accelerator);
-    xacc::vqe::VQEProblem problem(hamiltonianSrc);
+		const std::string& statePrepSrc, const int nQbits,
+		const Eigen::VectorXd& range,
+		const std::string& accelerator = "tnqvm") {
 
-    std::vector<double> energies;
-    Eigen::VectorXd params(1);
-    for (int i = 0; i < range.rows(); i++) {
-    	params(0) = range(i);
-    	energies.push_back(problem(params));
-    }
+	xacc::setOption("n-qubits", std::to_string(nQbits));
+	auto qpu = xacc::getAccelerator(accelerator);
+
+	boost::mpi::communicator comm;
+	auto program = std::make_shared<VQEProgram>(qpu, hamiltonianSrc, statePrepSrc, comm);
+	program->build();
+
+	auto task = ServiceRegistry::instance()->getService<VQETask>("sweep-1d");
+	task->setVQEProgram(program);
+
+	auto result = task->execute(range);
+
+	std::vector<double> energies;
+	for (auto r : result) {
+		energies.push_back(r.second);
+	}
+
     return energies;
 }
 
@@ -65,27 +82,26 @@ double computeEnergyAtParameters(
 		const int nQbits, Eigen::VectorXd& params,
 		const std::string& accelerator = "tnqvm") {
 
-	std::ofstream tempStatePrep(".tempStatePrep.hpp");
-    tempStatePrep << statePrepSrc;
-    tempStatePrep.close();
-    xacc::setOption("vqe-state-prep-kernel", ".tempStatePrep.hpp");
-    xacc::setOption("n-qubits", std::to_string(nQbits));
-    xacc::setOption("accelerator", accelerator);
-    xacc::vqe::VQEProblem problem(hamiltonianSrc);
+	xacc::setOption("n-qubits", std::to_string(nQbits));
+	auto qpu = xacc::getAccelerator(accelerator);
 
-    auto energy = problem(params);
+	boost::mpi::communicator comm;
+	auto program = std::make_shared<VQEProgram>(qpu, hamiltonianSrc,
+			statePrepSrc, comm);
+	program->build();
 
-    std::cout << "I HAVE THE ENERGY AT " << energy << "\n";
+	auto task = ServiceRegistry::instance()->getService<VQETask>(
+			"compute-energy");
+	task->setVQEProgram(program);
 
-    std::remove(".tempStatePrep.hpp");
-
-    return energy;
+	auto result = task->execute(params);
+	return result[0].second;
 }
 
 PYBIND11_MODULE(pyxaccvqe, m) {
     m.doc() = "Python bindings for XACC VQE.";
 
-py::add_ostream_redirect(m, "ostream_redirect");
+    py::add_ostream_redirect(m, "ostream_redirect");
 
     m.def("execute_vqe", [](const std::string& hamiltonianSrc,
     		const std::string& statePrepSrc, const int nQbits, const std::string& accelerator = "tnqvm") -> std::pair<Eigen::VectorXd, double> {
@@ -124,19 +140,6 @@ py::add_ostream_redirect(m, "ostream_redirect");
           );
           return computeEnergyAtParameters(hamiltonianSrc, statePrepSrc, nQbits, params, accelerator);
       });
-
-	// Expose the Program object
-	py::class_<xacc::vqe::VQEProblem> problem(m,
-			"VQEProblem", "");
-	problem.def(py::init<const std::string &>(), "The constructor");
-	problem.def(py::init<const std::string &, const int>(), "The constructor");
-
-	problem.def("minimize", (const Eigen::VectorXd (xacc::vqe::VQEProblem::*)()) &xacc::vqe::VQEProblem::minimize, "");
-
-	problem.def("minimize", (const Eigen::VectorXd (xacc::vqe::VQEProblem::*)(Eigen::VectorXd&)) &xacc::vqe::VQEProblem::minimize,
-			"");
-	problem.def("getCurrentEnergy", &xacc::vqe::VQEProblem::getCurrentEnergy, "Run VQE.");
-
 }
 
 

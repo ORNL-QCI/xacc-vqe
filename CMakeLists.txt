@@ -5,10 +5,9 @@ set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 
-set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib;/usr/local/lib64")
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
 find_package(XACC REQUIRED)
+set(CMAKE_INSTALL_RPATH "${XACC_ROOT}/lib;${XACC_ROOT}/lib/plugins/misc;/usr/local/lib64")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 set(CppMicroServicesConfig_DIR "${XACC_ROOT}/share/cppmicroservices3/cmake")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${XACC_ROOT}/share/xacc")
@@ -44,15 +43,21 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/compiler)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/transformations)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/problem)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/problem/petsctao)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/utils)
 include_directories(/usr/local/petsc/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/vqetask)
 
 
 add_subdirectory(ir)
 add_subdirectory(transformations)
 add_subdirectory(compiler)
 add_subdirectory(problem)
+add_subdirectory(vqetask)
 add_subdirectory(python)
 
 #link_directories(/usr/local/petsc/lib)
-add_executable(xacc-vqe main.cpp)
-target_link_libraries(xacc-vqe ${Boost_LIBRARIES} xacc-vqe-ir ${XACC_LIBRARIES} pthread dl ${MPI_CXX_LIBRARIES}) # petsc)
+#add_executable(xacc-vqe main.cpp)
+#target_link_libraries(xacc-vqe ${Boost_LIBRARIES} xacc-vqe-ir ${XACC_LIBRARIES} pthread dl ${MPI_CXX_LIBRARIES}) # petsc)
+
+add_executable(xacc-vqe xacc-vqe.cpp)
+target_link_libraries(xacc-vqe ${Boost_LIBRARIES} xacc-vqe-ir xacc-vqe-tasks ${XACC_LIBRARIES} pthread dl ${MPI_CXX_LIBRARIES}) # petsc)

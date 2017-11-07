@@ -1,0 +1,6 @@
+{
+  "bundle.symbolic_name" : "xacc_vqe_tasks",
+  "bundle.activator" : true,
+  "bundle.name" : "XACC VQE Tasks",
+  "bundle.description" : "This bundle provides VQE Tasks."
+}

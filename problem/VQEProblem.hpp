@@ -3,6 +3,7 @@
 
 #include "problem.h"
 #include "XACC.hpp"
+#include "Program.hpp"
 #include <boost/math/constants/constants.hpp>
 #include "GateQIR.hpp"
 #include "IRGenerator.hpp"
@@ -269,7 +270,6 @@ public:
 		return initialParameters;
 	}
 
-
 	/**
 	 * Return an initial random vector of
 	 * parameters.
@@ -315,6 +315,74 @@ public:
 		}
 	}
 
+	double value(const Eigen::VectorXd& x) {
+		return physicalValue(x);
+	}
+
+	double physicalValue(const Eigen::VectorXd& x) {
+		double sum = 0.0, localExpectationValue = 0.0;
+
+		// Evaluate our variable parameterized State Prep circuite
+		// to produce a state prep circuit with actual rotations
+		auto evaluatedStatePrep = evaluateStatePreparationCircuit(x);
+
+		std::vector<double> coeffs;
+		KernelList<> modifiedKernelList(qpu);
+		KernelList<> identityKernels(qpu);
+
+		for (auto& k : kernels) {
+			// If not identity
+			if (!boost::get<int>(k.getIRFunction()->getParameter(1))) {
+				k.getIRFunction()->insertInstruction(0, evaluatedStatePrep);
+				modifiedKernelList.push_back(k);
+				coeffs.push_back(std::real(
+					boost::get<std::complex<double>>(
+							k.getIRFunction()->getParameter(0))));
+			} else {
+				identityKernels.push_back(k);
+			}
+		}
+
+		auto buff = qpu->createBuffer("qreg", nQubits);
+
+		auto tmpBuffers = modifiedKernelList.execute(buff);
+
+		int counter = 0;
+		for (auto b : tmpBuffers) {
+			localExpectationValue = b->getExpectationValueZ();
+			sum += coeffs[counter]
+					* localExpectationValue;
+			counter++;
+		}
+
+		for (auto k : identityKernels) {
+			sum += std::real(
+					boost::get<std::complex<double>>(
+							k.getIRFunction()->getParameter(0)));
+		}
+
+		for (int i = 0; i < kernels.size(); i++) {
+			if (kernels[i].getIRFunction()->nInstructions() > 0) {
+				kernels[i].getIRFunction()->removeInstruction(0);
+			}
+		}
+
+		// Set the energy.
+		currentEnergy = sum;
+
+		double result = 0.0;
+		boost::mpi::all_reduce(comm, currentEnergy, result, std::plus<double>());
+		currentEnergy = result;
+
+		totalQpuCalls += kernels.size();
+
+		std::stringstream ss;
+		ss << currentEnergy << " at (" << x.transpose() << ")";
+
+		if (rank == 0) XACCInfo("Computed VQE Energy = " + ss.str());
+		return currentEnergy;
+	}
+
 	/**
 	 * Compute the energy at the provided vector
 	 * of initial state parameters.
@@ -322,7 +390,7 @@ public:
 	 * @param x The parameters
 	 * @return energy The computed energy.
 	 */
-	double value(const Eigen::VectorXd& x) {
+	double value2(const Eigen::VectorXd& x) {
 		// Local Declarations
 		double sum = 0.0, localExpectationValue = 0.0;
 
@@ -377,6 +445,9 @@ public:
 			kernel.getIRFunction()->removeInstruction(0);
 		}
 
+		if (xacc::optionExists("ibm-write-openqasm")) {
+			exit(0);
+		}
 		// Set the energy.
 		currentEnergy = sum;
 
