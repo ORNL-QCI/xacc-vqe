@@ -32,6 +32,7 @@
 #include "VQEMinimizeTask.hpp"
 #include "GenerateHamiltonianStats.hpp"
 #include "Sweep1DParameter.hpp"
+#include "ComputeExpectationValues.hpp"
 
 #include "cppmicroservices/BundleActivator.h"
 #include "cppmicroservices/BundleContext.h"
@@ -60,11 +61,13 @@ public:
 		auto c2 = std::make_shared<xacc::vqe::VQEMinimizeTask>();
 		auto c3 = std::make_shared<xacc::vqe::GenerateHamiltonianStats>();
 		auto c4 = std::make_shared<xacc::vqe::Sweep1DParameter>();
+		auto c5 = std::make_shared<xacc::vqe::ComputeExpectationValues>();
 
 		context.RegisterService<xacc::vqe::VQETask>(c);
 		context.RegisterService<xacc::vqe::VQETask>(c2);
 		context.RegisterService<xacc::vqe::VQETask>(c3);
 		context.RegisterService<xacc::vqe::VQETask>(c4);
+		context.RegisterService<xacc::vqe::VQETask>(c5);
 
 	}
 

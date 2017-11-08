@@ -81,41 +81,52 @@ VQETaskResult ComputeEnergyVQETask::execute(
 			// Get the ith Kernel
 			auto kernel = kernels[i];
 
-			if (kernel.getIRFunction()->nInstructions() > 0) {
-				// Insert the state preparation circuit IR
-				// at location 0 in this Kernels IR instructions.
-				kernel.getIRFunction()->insertInstruction(0,
-						evaluatedStatePrep);
+			auto q = xacc::getAccelerator();
 
-				// Create a temporary buffer of qubits
-				auto buff = qpu->createBuffer("qreg", nQubits);
+			// Insert the state preparation circuit IR
+			// at location 0 in this Kernels IR instructions.
+			kernel.getIRFunction()->insertInstruction(0, evaluatedStatePrep);
 
-				if (kernel.getIRFunction()->nInstructions() > 1) {
-					// Execute the kernel!
-					kernel(buff);
-					nlocalqpucalls++;
-				}
+			// Create a temporary buffer of qubits
+			auto buff = q->createBuffer("qreg", nQubits);
 
-				localExpectationValue = buff->getExpectationValueZ();
-
-				// The next iteration will have a different
-				// state prep circuit, so toss the current one.
-				kernel.getIRFunction()->removeInstruction(0);
-			} else {
-				localExpectationValue = 1.0;
+			if (kernel.getIRFunction()->nInstructions() > 1) {
+				// Execute the kernel!
+				kernel(buff);
+				nlocalqpucalls++;
 			}
+
+			// Get Expectation value. The second parameter of
+			// the Kernel's IR function stores whether or not
+			// this kernel is the Identity.
+			if (boost::get<int>(kernel.getIRFunction()->getParameter(1))) {
+				localExpectationValue = 1.0;
+			} else {
+				localExpectationValue = buff->getExpectationValueZ();
+			}
+
+			auto t = std::real(
+					boost::get<std::complex<double>>(
+							kernel.getIRFunction()->getParameter(0)));
+
+			XACCInfo(std::to_string(i) + " Adding " + kernel.getIRFunction()->getName() + ", " + std::to_string(localExpectationValue) + ", " + std::to_string(std::real(
+					boost::get<std::complex<double>>(
+							kernel.getIRFunction()->getParameter(0)))
+					) + ", " + std::to_string(t * localExpectationValue));
 
 			// Sum up the expectation values, the Hamiltonian
 			// terms coefficient is stored in the first
 			// parameter of the Kernels IR Function representation
-			sum += std::real(
-					boost::get<std::complex<double>>(
-							kernel.getIRFunction()->getParameter(0)))
-					* localExpectationValue;
+			sum = sum + t * localExpectationValue;
+
+			// The next iteration will have a different
+			// state prep circuit, so toss the current one.
+			kernel.getIRFunction()->removeInstruction(0);
 		}
 
 	}
 
+	XACCInfo("SUM AFTER OPENMP LOOP IS " + std::to_string(sum));
 	// Set the energy.
 	double currentEnergy = sum;
 
@@ -128,11 +139,11 @@ VQETaskResult ComputeEnergyVQETask::execute(
 	totalQpuCalls += nlocalqpucalls;
 
 	std::stringstream ss;
-	ss << currentEnergy << " at (" << parameters.transpose() << ")";
+	ss << std::setprecision(10) << currentEnergy << " at (" << parameters.transpose() << ")";
 
 	if (rank == 0) {
 		XACCInfo("Iteration " + std::to_string(vqeIteration) + ", Computed VQE Energy = " + ss.str());
-//		XACCInfo("\tTotal QPU calls = " + std::to_string(totalQpuCalls));
+		XACCInfo("\tTotal QPU calls = " + std::to_string(totalQpuCalls));
 	}
 
 	vqeIteration++;

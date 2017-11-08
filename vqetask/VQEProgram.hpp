@@ -83,15 +83,19 @@ public:
 					for (int i = 0; i < lines.size(); ++i) {
 						auto line = lines[i];
 						if (boost::contains(line, "#pragma vqe-coefficient")) {
-							std::vector<std::string> splitspaces;
-							boost::split(splitspaces, line, boost::is_any_of(" "));
-							boost::trim(splitspaces[2]);
-							coeffs.push_back(std::stod(splitspaces[2]));
-							InstructionParameter p(
-									std::complex<double>(std::stod(splitspaces[2]),
-											0.0));
-							kernels[counter].getIRFunction()->addParameter(p);
-							counter++;
+						std::vector<std::string> splitspaces;
+						boost::split(splitspaces, line, boost::is_any_of(" "));
+						boost::trim(splitspaces[2]);
+						coeffs.push_back(std::stod(splitspaces[2]));
+						InstructionParameter p(
+								std::complex<double>(std::stod(splitspaces[2]),
+										0.0));
+						InstructionParameter q(
+								(kernels[counter].getIRFunction()->nInstructions()
+										== 0 ? 1 : 0));
+						kernels[counter].getIRFunction()->addParameter(p);
+						kernels[counter].getIRFunction()->addParameter(q);
+						counter++;
 						}
 					}
 				}

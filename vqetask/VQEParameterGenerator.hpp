@@ -20,12 +20,16 @@ public:
 			std::vector<std::string> split;
 			boost::split(split, paramStr, boost::is_any_of(","));
 
-			Eigen::VectorXd params(nParameters);
-			for (int i = 0; i < split.size(); i++) {
-				params(i) = std::stod(split[i]);
-			}
+			if (xacc::getOption("vqe-task") == "sweep-1d") {
+				return Eigen::VectorXd::LinSpaced(50, std::stod(split[0]), std::stod(split[1]));
+			} else {
+				Eigen::VectorXd params(nParameters);
+				for (int i = 0; i < split.size(); i++) {
+					params(i) = std::stod(split[i]);
+				}
 
-			return params;
+				return params;
+			}
 		} else {
 			std::srand(time(0));
 			auto pi = boost::math::constants::pi<double>();

@@ -98,6 +98,30 @@ double computeEnergyAtParameters(
 	return result[0].second;
 }
 
+std::vector<double> computeKernelExpectationValues(const std::string& hamiltonianSrc, const std::string& statePrepSrc,
+		const int nQbits, Eigen::VectorXd& params,
+		const std::string& accelerator = "tnqvm") {
+
+	xacc::setOption("n-qubits", std::to_string(nQbits));
+	auto qpu = xacc::getAccelerator(accelerator);
+
+	boost::mpi::communicator comm;
+	auto program = std::make_shared<VQEProgram>(qpu, hamiltonianSrc,
+			statePrepSrc, comm);
+	program->build();
+
+	auto task = ServiceRegistry::instance()->getService<VQETask>(
+			"compute-expectation-values");
+	task->setVQEProgram(program);
+
+	auto result = task->execute(params);
+	std::vector<double> vals;
+	for (auto r : result) {
+		vals.push_back(r.second);
+	}
+	return vals;
+}
+
 PYBIND11_MODULE(pyxaccvqe, m) {
     m.doc() = "Python bindings for XACC VQE.";
 
@@ -140,6 +164,17 @@ PYBIND11_MODULE(pyxaccvqe, m) {
           );
           return computeEnergyAtParameters(hamiltonianSrc, statePrepSrc, nQbits, params, accelerator);
       });
+
+ m.def("computeKernelExpectationValues", [](
+     		const std::string& hamiltonianSrc, const std::string& statePrepSrc,
+     		const int nQbits, Eigen::VectorXd& params,
+     		const std::string& accelerator = "tnqvm") -> std::vector<double> {
+           py::scoped_ostream_redirect stream(
+               std::cout,                               // std::ostream&
+               py::module::import("sys").attr("stdout") // Python output
+           );
+           return computeKernelExpectationValues(hamiltonianSrc, statePrepSrc, nQbits, params, accelerator);
+       });
 }
 
 
