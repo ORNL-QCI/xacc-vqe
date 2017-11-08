@@ -19,12 +19,12 @@ std::shared_ptr<Function> UCCSD::generate(
 	auto runtimeOptions = RuntimeOptions::instance();
 
 	if (!runtimeOptions->exists("n-electrons")) {
-		XACCError("To use this State Prep IRGenerator, you "
+		XACCError("To use this UCCSD State Prep IRGenerator, you "
 				"must specify the number of electrons.");
 	}
 
 	if (!runtimeOptions->exists("n-qubits")) {
-		XACCError("To use this State Prep IRGenerator, you "
+		XACCError("To use this UCCSD State Prep IRGenerator, you "
 				"must specify the number of qubits.");
 	}
 

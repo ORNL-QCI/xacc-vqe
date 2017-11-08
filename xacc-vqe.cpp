@@ -27,7 +27,10 @@ int main(int argc, char** argv) {
 		{"vqe-state-prep-kernel-compiler", "(optional) If not scaffold, provide the "
 				"compiler to use in compiling the state prep circuit."},
 		{"n-qubits", "The number of qubits used in this calculation."},
-		{"vqe-initial-parameters", "(optional)"}
+		{"n-electrons", "The number of electrons used in this calculation."},
+		{"vqe-parameters", "(optional)"},
+		{"vqe-energy-delta", "Specify the change in the energy condition for "
+						"convergence of Nelder-Mead minimization."}
 	});
 
 	xacc::Initialize(argc, argv);
