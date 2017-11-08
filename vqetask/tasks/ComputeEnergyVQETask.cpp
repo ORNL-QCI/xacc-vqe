@@ -21,7 +21,6 @@ VQETaskResult ComputeEnergyVQETask::execute(
 	// to produce a state prep circuit with actual rotations
 	auto evaluatedStatePrep = StatePreparationEvaluator::evaluateCircuit(
 			statePrep, program->getNParameters(), parameters);
-//	XACCInfo("HELLO WORLD:\n" + evaluatedStatePrep->toString("qreg"));
 
 	auto kernels = program->getVQEKernels();
 
@@ -82,26 +81,28 @@ VQETaskResult ComputeEnergyVQETask::execute(
 			// Get the ith Kernel
 			auto kernel = kernels[i];
 
-			// Insert the state preparation circuit IR
-			// at location 0 in this Kernels IR instructions.
-			kernel.getIRFunction()->insertInstruction(0, evaluatedStatePrep);
+			if (kernel.getIRFunction()->nInstructions() > 0) {
+				// Insert the state preparation circuit IR
+				// at location 0 in this Kernels IR instructions.
+				kernel.getIRFunction()->insertInstruction(0,
+						evaluatedStatePrep);
 
-			// Create a temporary buffer of qubits
-			auto buff = qpu->createBuffer("qreg", nQubits);
+				// Create a temporary buffer of qubits
+				auto buff = qpu->createBuffer("qreg", nQubits);
 
-			if (kernel.getIRFunction()->nInstructions() > 1) {
-				// Execute the kernel!
-				kernel(buff);
-				nlocalqpucalls++;
-			}
+				if (kernel.getIRFunction()->nInstructions() > 1) {
+					// Execute the kernel!
+					kernel(buff);
+					nlocalqpucalls++;
+				}
 
-			// Get Expectation value. The second parameter of
-			// the Kernel's IR function stores whether or not
-			// this kernel is the Identity.
-			if (kernel.getIRFunction()->nInstructions() == 0) {
-				localExpectationValue = 1.0;
-			} else {
 				localExpectationValue = buff->getExpectationValueZ();
+
+				// The next iteration will have a different
+				// state prep circuit, so toss the current one.
+				kernel.getIRFunction()->removeInstruction(0);
+			} else {
+				localExpectationValue = 1.0;
 			}
 
 			// Sum up the expectation values, the Hamiltonian
@@ -111,10 +112,6 @@ VQETaskResult ComputeEnergyVQETask::execute(
 					boost::get<std::complex<double>>(
 							kernel.getIRFunction()->getParameter(0)))
 					* localExpectationValue;
-
-			// The next iteration will have a different
-			// state prep circuit, so toss the current one.
-			kernel.getIRFunction()->removeInstruction(0);
 		}
 
 	}

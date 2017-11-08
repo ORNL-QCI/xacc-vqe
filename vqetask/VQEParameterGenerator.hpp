@@ -15,8 +15,8 @@ public:
 
 	static Eigen::VectorXd generateParameters(const int nParameters, boost::mpi::communicator& comm) {
 
-		if (xacc::optionExists("vqe-initial-parameters")) {
-			auto paramStr = xacc::getOption("vqe-initial-parameters");
+		if (xacc::optionExists("vqe-parameters")) {
+			auto paramStr = xacc::getOption("vqe-parameters");
 			std::vector<std::string> split;
 			boost::split(split, paramStr, boost::is_any_of(","));
 

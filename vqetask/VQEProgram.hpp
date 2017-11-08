@@ -49,6 +49,9 @@ public:
 				nPos = src.find("__qpu__", nPos + 1);
 			}
 
+			// Create a buffer of qubits
+			nQubits = std::stoi(xacc::getOption("n-qubits"));
+
 			std::vector<double> coeffs;
 			// If nKernels > 1, we have non-fermioncompiler kernels
 			// so lets check to see if they provided any coefficients
@@ -60,16 +63,13 @@ public:
 
 				}
 				userProvidedKernels = true;
-				accelerator->createBuffer("qreg", 2);
+				accelerator->createBuffer("qreg", nQubits);
 			}
 
 			addPreprocessor("fcidump-preprocessor");
 
 			// Start compilation
 			Program::build();
-
-			// Create a buffer of qubits
-			nQubits = std::stoi(xacc::getOption("n-qubits"));
 
 			// Get the Kernels that were created
 			kernels = getRuntimeKernels();
