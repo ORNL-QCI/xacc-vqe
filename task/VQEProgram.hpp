@@ -56,11 +56,9 @@ public:
 		// If nKernels > 1, we have non-fermioncompiler kernels
 		// so lets check to see if they provided any coefficients
 		if (nKernels > 1) { // && boost::contains(src, "coefficients")) {
-			// FIXME ADD HOOK TO SET COMPILER FOR THESE
 			xacc::setCompiler("scaffold");
 			if (xacc::optionExists("vqe-kernels-compiler")) {
 				xacc::setCompiler(xacc::getOption("vqe-kernels-compiler"));
-
 			}
 			userProvidedKernels = true;
 			accelerator->createBuffer("qreg", nQubits);

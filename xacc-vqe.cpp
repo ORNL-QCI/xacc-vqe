@@ -23,6 +23,7 @@ int main(int argc, char** argv) {
 	xacc::addCommandLineOptions("XACC VQE", std::map<std::string, std::string>{
 		{"vqe-kernel-file", "(required) The file containing XACC Kernels describing "
 			"a Hamiltonian."},
+		{"vqe-kernels-compiler", ""},
 		{"vqe-task", "(required)"},
 		{"vqe-list-tasks", "(optional) List all available VQE Tasks."},
 		{"vqe-state-prep-kernel", "(optional) Provide the file name of the state "
