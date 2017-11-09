@@ -38,51 +38,51 @@ public:
 	virtual void build() {
 		bool userProvidedKernels = false;
 
-			// This class only takes kernels
-			// represented as Fermion Kernels.
-			xacc::setCompiler("fermion");
+		// This class only takes kernels
+		// represented as Fermion Kernels.
+		xacc::setCompiler("fermion");
 
-			auto nKernels = 0;
-			size_t nPos = src.find("__qpu__", 0);
-			while (nPos != std::string::npos) {
-				nKernels++;
-				nPos = src.find("__qpu__", nPos + 1);
+		auto nKernels = 0;
+		size_t nPos = src.find("__qpu__", 0);
+		while (nPos != std::string::npos) {
+			nKernels++;
+			nPos = src.find("__qpu__", nPos + 1);
+		}
+
+		// Create a buffer of qubits
+		nQubits = std::stoi(xacc::getOption("n-qubits"));
+
+		std::vector<double> coeffs;
+		// If nKernels > 1, we have non-fermioncompiler kernels
+		// so lets check to see if they provided any coefficients
+		if (nKernels > 1) { // && boost::contains(src, "coefficients")) {
+			// FIXME ADD HOOK TO SET COMPILER FOR THESE
+			xacc::setCompiler("scaffold");
+			if (xacc::optionExists("vqe-kernels-compiler")) {
+				xacc::setCompiler(xacc::getOption("vqe-kernels-compiler"));
+
 			}
+			userProvidedKernels = true;
+			accelerator->createBuffer("qreg", nQubits);
+		}
 
-			// Create a buffer of qubits
-			nQubits = std::stoi(xacc::getOption("n-qubits"));
+		addPreprocessor("fcidump-preprocessor");
 
-			std::vector<double> coeffs;
-			// If nKernels > 1, we have non-fermioncompiler kernels
-			// so lets check to see if they provided any coefficients
-			if (nKernels > 1) { // && boost::contains(src, "coefficients")) {
-				// FIXME ADD HOOK TO SET COMPILER FOR THESE
-				xacc::setCompiler("scaffold");
-				if (xacc::optionExists("vqe-kernels-compiler")) {
-					xacc::setCompiler(xacc::getOption("vqe-kernels-compiler"));
+		// Start compilation
+		Program::build();
 
-				}
-				userProvidedKernels = true;
-				accelerator->createBuffer("qreg", nQubits);
-			}
+		// Get the Kernels that were created
+		kernels = getRuntimeKernels();
 
-			addPreprocessor("fcidump-preprocessor");
-
-			// Start compilation
-			Program::build();
-
-			// Get the Kernels that were created
-			kernels = getRuntimeKernels();
-
-			if (userProvidedKernels) {
-				if (boost::contains(src, "pragma")
-						&& boost::contains(src, "coefficient")) {
-					std::vector<std::string> lines;
-					boost::split(lines, src, boost::is_any_of("\n"));
-					int counter = 0;
-					for (int i = 0; i < lines.size(); ++i) {
-						auto line = lines[i];
-						if (boost::contains(line, "#pragma vqe-coefficient")) {
+		if (userProvidedKernels) {
+			if (boost::contains(src, "pragma")
+					&& boost::contains(src, "coefficient")) {
+				std::vector<std::string> lines;
+				boost::split(lines, src, boost::is_any_of("\n"));
+				int counter = 0;
+				for (int i = 0; i < lines.size(); ++i) {
+					auto line = lines[i];
+					if (boost::contains(line, "#pragma vqe-coefficient")) {
 						std::vector<std::string> splitspaces;
 						boost::split(splitspaces, line, boost::is_any_of(" "));
 						boost::trim(splitspaces[2]);
@@ -96,15 +96,15 @@ public:
 						kernels[counter].getIRFunction()->addParameter(p);
 						kernels[counter].getIRFunction()->addParameter(q);
 						counter++;
-						}
 					}
 				}
 			}
+		}
 
-			statePrep = createStatePreparationCircuit();
+		statePrep = createStatePreparationCircuit();
 
-			// Set the number of VQE parameters
-			nParameters = statePrep->nParameters();
+		// Set the number of VQE parameters
+		nParameters = statePrep->nParameters();
 
 	}
 
@@ -132,7 +132,8 @@ public:
 		return accelerator;
 	}
 
-	virtual ~VQEProgram() {}
+	virtual ~VQEProgram() {
+	}
 
 protected:
 
@@ -178,7 +179,8 @@ protected:
 
 			statePrepType = "custom";
 
-			XACCInfo("GENERATING STATE PREP CIRCUIT\n"+statePrepSource+"\n");
+			XACCInfo(
+					"GENERATING STATE PREP CIRCUIT\n" + statePrepSource + "\n");
 			Program p(accelerator, statePrepSource);
 			p.build();
 
