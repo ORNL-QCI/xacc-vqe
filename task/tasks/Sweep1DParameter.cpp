@@ -8,6 +8,7 @@ namespace vqe {
 
 VQETaskResult Sweep1DParameter::execute(
 		Eigen::VectorXd parameters) {
+
 	computeTask = std::make_shared<ComputeEnergyVQETask>(program);
 	VQETaskResult result;
 	Eigen::VectorXd param(1);
@@ -16,6 +17,16 @@ VQETaskResult Sweep1DParameter::execute(
     		auto energy = computeTask->execute(param)[0].second;
     		result.push_back({param, energy});
     }
+
+	if (xacc::optionExists("vqe-sweep-persist")) {
+		std::ofstream out(xacc::getOption("vqe-sweep-persist"));
+		for (auto r : result) {
+			out << r.first(0) << ", " << r.second << "\n";
+		}
+		out.flush();
+		out.close();
+	}
+
 	return result;
 }
 }

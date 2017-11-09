@@ -69,6 +69,8 @@ public:
 		context.RegisterService<xacc::vqe::VQETask>(c5);
 
 		context.RegisterService<xacc::OptionsProvider>(c);
+		context.RegisterService<xacc::OptionsProvider>(c4);
+
 	}
 
 	/**

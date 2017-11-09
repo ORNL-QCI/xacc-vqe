@@ -16,13 +16,30 @@ public:
 	static Eigen::VectorXd generateParameters(const int nParameters, boost::mpi::communicator& comm) {
 
 		if (xacc::optionExists("vqe-parameters")) {
-			auto paramStr = xacc::getOption("vqe-parameters");
-			std::vector<std::string> split;
-			boost::split(split, paramStr, boost::is_any_of(","));
-
 			if (xacc::getOption("vqe-task") == "sweep-1d") {
-				return Eigen::VectorXd::LinSpaced(50, std::stod(split[0]), std::stod(split[1]));
+				auto paramStr = xacc::getOption("vqe-parameters");
+
+				// HERE WE COULD HAVE SOMETHING LIKE EITHER
+				// 50:-3.14,3.14 or
+				// -3.14,3.14
+				std::vector<std::string> split, colon;
+				boost::split(split, paramStr, boost::is_any_of(","));
+				int nSteps = 50;
+				std::string minVal;
+				if (boost::contains(paramStr, ":")) {
+					boost::split(colon, split[0], boost::is_any_of(":"));
+					nSteps = std::stoi(colon[0]);
+					minVal = colon[1];
+				} else {
+					minVal = split[0];
+				}
+
+				return Eigen::VectorXd::LinSpaced(nSteps, std::stod(minVal),
+						std::stod(split[1]));
 			} else {
+				auto paramStr = xacc::getOption("vqe-parameters");
+				std::vector<std::string> split;
+				boost::split(split, paramStr, boost::is_any_of(","));
 				Eigen::VectorXd params(nParameters);
 				for (int i = 0; i < split.size(); i++) {
 					params(i) = std::stod(split[i]);

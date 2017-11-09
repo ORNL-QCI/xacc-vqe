@@ -36,6 +36,30 @@ public:
 		return "";
 	}
 
+	/**
+	 * Return an empty options_description, this is for
+	 * subclasses to implement.
+	 */
+	virtual std::shared_ptr<options_description> getOptions() {
+		auto desc = std::make_shared<options_description>(
+				"Sweep 1D Energies");
+		desc->add_options()("vqe-sweep-persist",value<std::string>(),
+				"Persist the results to the provided CSV file.");
+		return desc;
+	}
+
+	/**
+	 * Given user-input command line options, perform
+	 * some operation. Returns true if runtime should exit,
+	 * false otherwise.
+	 *
+	 * @param map The mapping of options to values
+	 * @return exit True if exit, false otherwise
+	 */
+	virtual bool handleOptions(variables_map& map) {
+		return false;
+	}
+
 	std::shared_ptr<ComputeEnergyVQETask> computeTask;
 
 };
