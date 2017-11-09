@@ -64,6 +64,31 @@ VQETaskResult ComputeEnergyVQETask::execute(
 			counter++;
 		}
 
+		counter = 0;
+		if (xacc::optionExists("vqe-compute-persist-buffer-data")) {
+			auto base = xacc::getOption("vqe-compute-persist-buffer-data");
+			boost::filesystem::path dir(base);
+			if (!boost::filesystem::exists(dir)) {
+				if (!boost::filesystem::create_directory(dir)) {
+					XACCError("Could not create directory: " + base);
+				}
+			}
+			std::stringstream s;
+			s << parameters.transpose();
+			std::ofstream out(base + "/" + base + std::string("_") + s.str());
+
+			for (auto b : tmpBuffers) {
+				out << "kernel: "
+						<< modifiedKernelList[counter].getIRFunction()->getName()
+						<< "\n";
+				out << "angle: " << s.str() << "\n";
+				tmpBuffers[counter]->print(out);
+				out << "\n";
+				counter++;
+			}
+			out.close();
+		}
+
 		for (auto k : identityKernels) {
 			sum += std::real(
 					boost::get<std::complex<double>>(

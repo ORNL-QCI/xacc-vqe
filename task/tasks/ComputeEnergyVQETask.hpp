@@ -44,7 +44,8 @@ public:
 		auto desc = std::make_shared<options_description>(
 				"Compute Energy VQE Task Options");
 		desc->add_options()("vqe-compute-energies-multi-exec",
-				"Instead of OpenMP/MPI execution, use XACC multi-execution kernel list.");
+				"Instead of OpenMP/MPI execution, use XACC multi-execution kernel list.")
+				("vqe-compute-persist-buffer-data", value<std::string>(), "Base file name for buffer data.");
 		return desc;
 	}
 
