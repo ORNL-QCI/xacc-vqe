@@ -5,14 +5,15 @@
  *      Author: aqw
  */
 
-#ifndef VQETASK_STATEPREPARATIONEVALUATOR_HPP_
-#define VQETASK_STATEPREPARATIONEVALUATOR_HPP_
+#ifndef TASK_STATEPREPARATIONEVALUATOR_HPP_
+#define TASK_STATEPREPARATIONEVALUATOR_HPP_
 
 #include "GateInstruction.hpp"
 #include "GateFunction.hpp"
 #include <Eigen/Dense>
 #include <boost/math/constants/constants.hpp>
 #include "exprtk.hpp"
+#include <boost/algorithm/string.hpp>
 
 namespace xacc {
 namespace vqe {
@@ -84,4 +85,4 @@ public:
 }
 
 
-#endif /* VQETASK_STATEPREPARATIONEVALUATOR_HPP_ */
+#endif /* TASK_STATEPREPARATIONEVALUATOR_HPP_ */

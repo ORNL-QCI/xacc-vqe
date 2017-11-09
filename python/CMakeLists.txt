@@ -3,7 +3,7 @@ find_package(PythonLibs)
 if(PythonLibs_FOUND)
 include_directories(${CMAKE_SOURCE_DIR}/tpls/pybind11/include)
 include_directories(${PYTHON_INCLUDE_DIR})
-include_directories(${CMAKE_SOURCE_DIR}/vqetask/tasks)
+include_directories(${CMAKE_SOURCE_DIR}/task/tasks)
 
 link_directories(${XACC_LIBRARY_DIR})
 

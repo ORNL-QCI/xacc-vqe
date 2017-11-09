@@ -45,19 +45,15 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/problem)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/problem/petsctao)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/utils)
 include_directories(/usr/local/petsc/include)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/vqetask)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/task)
 
 
 add_subdirectory(ir)
 add_subdirectory(transformations)
 add_subdirectory(compiler)
 add_subdirectory(problem)
-add_subdirectory(vqetask)
+add_subdirectory(task)
 add_subdirectory(python)
-
-#link_directories(/usr/local/petsc/lib)
-#add_executable(xacc-vqe main.cpp)
-#target_link_libraries(xacc-vqe ${Boost_LIBRARIES} xacc-vqe-ir ${XACC_LIBRARIES} pthread dl ${MPI_CXX_LIBRARIES}) # petsc)
 
 add_executable(xacc-vqe xacc-vqe.cpp)
 target_link_libraries(xacc-vqe ${Boost_LIBRARIES} xacc-vqe-ir xacc-vqe-tasks ${XACC_LIBRARIES} pthread dl ${MPI_CXX_LIBRARIES}) # petsc)

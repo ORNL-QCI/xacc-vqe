@@ -28,18 +28,17 @@
  *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
-#include "ComputeEnergyVQETask.hpp"
-#include "VQEMinimizeTask.hpp"
-#include "GenerateHamiltonianStats.hpp"
-#include "Sweep1DParameter.hpp"
-#include "ComputeExpectationValues.hpp"
-
 #include "cppmicroservices/BundleActivator.h"
 #include "cppmicroservices/BundleContext.h"
 #include "cppmicroservices/ServiceProperties.h"
 
 #include <memory>
 #include <set>
+#include "ComputeEnergyVQETask.hpp"
+#include "ComputeExpectationValues.hpp"
+#include "GenerateHamiltonianStats.hpp"
+#include "Sweep1DParameter.hpp"
+#include "VQEMinimizeTask.hpp"
 
 using namespace cppmicroservices;
 
@@ -69,6 +68,7 @@ public:
 		context.RegisterService<xacc::vqe::VQETask>(c4);
 		context.RegisterService<xacc::vqe::VQETask>(c5);
 
+		context.RegisterService<xacc::OptionsProvider>(c);
 	}
 
 	/**

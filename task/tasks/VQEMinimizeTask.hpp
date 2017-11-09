@@ -1,9 +1,8 @@
 #ifndef VQETASKS_VQEMINIMIZETASK_HPP_
 #define VQETASKS_VQEMINIMIZETASK_HPP_
 
-#include "VQETask.hpp"
 #include "ComputeEnergyVQETask.hpp"
-
+#include "VQETask.hpp"
 #include "solver/neldermeadsolver.h"
 #include "solver/conjugatedgradientdescentsolver.h"
 #include "solver/gradientdescentsolver.h"

@@ -1,10 +1,11 @@
-#include "ComputeEnergyVQETask.hpp"
+#include "ComputeExpectationValues.hpp"
+
 #include "VQEProgram.hpp"
 
 namespace xacc {
 namespace vqe {
 
-VQETaskResult ComputeEnergyVQETask::execute(
+VQETaskResult ComputeExpectationValues::execute(
 		Eigen::VectorXd parameters) {
 
 	// Local Declarations
@@ -24,6 +25,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 
 	auto kernels = program->getVQEKernels();
 
+	VQETaskResult expVals;
 	if (qpu->isPhysical()) {
 
 		XACCInfo("Computing Energy with XACC Kernel Multi-Exec.");
@@ -50,18 +52,20 @@ VQETaskResult ComputeEnergyVQETask::execute(
 		auto tmpBuffers = modifiedKernelList.execute(buff);
 		nlocalqpucalls += tmpBuffers.size();
 
+		for (auto k : identityKernels) {
+			expVals.push_back({parameters, std::real(
+					boost::get<std::complex<double>>(
+							k.getIRFunction()->getParameter(0)))});
+		}
+
+
 		int counter = 0;
 		for (auto b : tmpBuffers) {
 			localExpectationValue = b->getExpectationValueZ();
-			sum += coeffs[counter] * localExpectationValue;
+			expVals.push_back({parameters, coeffs[counter] * localExpectationValue});
 			counter++;
 		}
 
-		for (auto k : identityKernels) {
-			sum += std::real(
-					boost::get<std::complex<double>>(
-							k.getIRFunction()->getParameter(0)));
-		}
 
 		for (int i = 0; i < kernels.size(); i++) {
 			if (kernels[i].getIRFunction()->nInstructions() > 0) {
@@ -69,16 +73,8 @@ VQETaskResult ComputeEnergyVQETask::execute(
 			}
 		}
 	} else {
+		for (int i = 0; i < kernels.size(); i++) {
 
-		// Execute the kernels on the appropriate QPU
-		// in parallel using OpenMP threads per
-		// every MPI rank.
-		int myStart = (rank) * kernels.size() / nRanks;
-		int myEnd = (rank + 1) * kernels.size() / nRanks;
-#pragma omp parallel for reduction (+:sum, nlocalqpucalls)
-		for (int i = myStart; i < myEnd; i++) {
-
-			double lexpval = 0.0;
 			// Get the ith Kernel
 			auto kernel = kernels[i];
 
@@ -97,49 +93,27 @@ VQETaskResult ComputeEnergyVQETask::execute(
 					nlocalqpucalls++;
 				}
 
-				lexpval = buff->getExpectationValueZ();
+				localExpectationValue = buff->getExpectationValueZ();
 
 				// The next iteration will have a different
 				// state prep circuit, so toss the current one.
 				kernel.getIRFunction()->removeInstruction(0);
 			} else {
-				lexpval = 1.0;
+				localExpectationValue = 1.0;
 			}
-
-			auto t = std::real(
-					boost::get<std::complex<double>>(
-							kernel.getIRFunction()->getParameter(0)));
 
 			// Sum up the expectation values, the Hamiltonian
 			// terms coefficient is stored in the first
 			// parameter of the Kernels IR Function representation
-			sum += t * lexpval;
+			expVals.push_back({parameters, std::real(
+					boost::get<std::complex<double>>(
+							kernel.getIRFunction()->getParameter(0)))
+					* localExpectationValue});
 		}
 
 	}
 
-	// Set the energy.
-	double currentEnergy = sum;
-
-	double result = 0.0;
-	int totalqpucalls = 0;
-	boost::mpi::all_reduce(comm, currentEnergy, result, std::plus<double>());
-	boost::mpi::all_reduce(comm, nlocalqpucalls, totalqpucalls, std::plus<double>());
-	currentEnergy = result;
-
-	totalQpuCalls += nlocalqpucalls;
-
-	std::stringstream ss;
-	ss << std::setprecision(10) << currentEnergy << " at (" << parameters.transpose() << ")";
-
-	if (rank == 0) {
-		XACCInfo("Iteration " + std::to_string(vqeIteration) + ", Computed VQE Energy = " + ss.str());
-//		XACCInfo("\tTotal QPU calls = " + std::to_string(totalQpuCalls));
-	}
-
-	vqeIteration++;
-	return std::vector<std::pair<Eigen::VectorXd, double>> { { parameters,
-			currentEnergy } };
+	return expVals;
 }
 
 

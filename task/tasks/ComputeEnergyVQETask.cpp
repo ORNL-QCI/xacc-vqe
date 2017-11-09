@@ -1,10 +1,11 @@
-#include "ComputeExpectationValues.hpp"
+#include "ComputeEnergyVQETask.hpp"
+
 #include "VQEProgram.hpp"
 
 namespace xacc {
 namespace vqe {
 
-VQETaskResult ComputeExpectationValues::execute(
+VQETaskResult ComputeEnergyVQETask::execute(
 		Eigen::VectorXd parameters) {
 
 	// Local Declarations
@@ -12,6 +13,7 @@ VQETaskResult ComputeExpectationValues::execute(
 	double sum = 0.0, localExpectationValue = 0.0;
 	int rank = comm.rank(), nlocalqpucalls = 0;
 	int nRanks = comm.size();
+	bool multiExec = false;
 
 	auto statePrep = program->getStatePreparationCircuit();
 	auto nQubits = program->getNQubits();
@@ -24,8 +26,12 @@ VQETaskResult ComputeExpectationValues::execute(
 
 	auto kernels = program->getVQEKernels();
 
-	VQETaskResult expVals;
-	if (qpu->isPhysical()) {
+	if (xacc::optionExists("vqe-compute-energies-multi-exec")
+			|| qpu->name() == "ibm") {
+		multiExec = true;
+	}
+
+	if (multiExec) {
 
 		XACCInfo("Computing Energy with XACC Kernel Multi-Exec.");
 		std::vector<double> coeffs;
@@ -51,20 +57,18 @@ VQETaskResult ComputeExpectationValues::execute(
 		auto tmpBuffers = modifiedKernelList.execute(buff);
 		nlocalqpucalls += tmpBuffers.size();
 
-		for (auto k : identityKernels) {
-			expVals.push_back({parameters, std::real(
-					boost::get<std::complex<double>>(
-							k.getIRFunction()->getParameter(0)))});
-		}
-
-
 		int counter = 0;
 		for (auto b : tmpBuffers) {
 			localExpectationValue = b->getExpectationValueZ();
-			expVals.push_back({parameters, coeffs[counter] * localExpectationValue});
+			sum += coeffs[counter] * localExpectationValue;
 			counter++;
 		}
 
+		for (auto k : identityKernels) {
+			sum += std::real(
+					boost::get<std::complex<double>>(
+							k.getIRFunction()->getParameter(0)));
+		}
 
 		for (int i = 0; i < kernels.size(); i++) {
 			if (kernels[i].getIRFunction()->nInstructions() > 0) {
@@ -72,8 +76,16 @@ VQETaskResult ComputeExpectationValues::execute(
 			}
 		}
 	} else {
-		for (int i = 0; i < kernels.size(); i++) {
 
+		// Execute the kernels on the appropriate QPU
+		// in parallel using OpenMP threads per
+		// every MPI rank.
+		int myStart = (rank) * kernels.size() / nRanks;
+		int myEnd = (rank + 1) * kernels.size() / nRanks;
+#pragma omp parallel for reduction (+:sum, nlocalqpucalls)
+		for (int i = myStart; i < myEnd; i++) {
+
+			double lexpval = 0.0;
 			// Get the ith Kernel
 			auto kernel = kernels[i];
 
@@ -92,27 +104,49 @@ VQETaskResult ComputeExpectationValues::execute(
 					nlocalqpucalls++;
 				}
 
-				localExpectationValue = buff->getExpectationValueZ();
+				lexpval = buff->getExpectationValueZ();
 
 				// The next iteration will have a different
 				// state prep circuit, so toss the current one.
 				kernel.getIRFunction()->removeInstruction(0);
 			} else {
-				localExpectationValue = 1.0;
+				lexpval = 1.0;
 			}
+
+			auto t = std::real(
+					boost::get<std::complex<double>>(
+							kernel.getIRFunction()->getParameter(0)));
 
 			// Sum up the expectation values, the Hamiltonian
 			// terms coefficient is stored in the first
 			// parameter of the Kernels IR Function representation
-			expVals.push_back({parameters, std::real(
-					boost::get<std::complex<double>>(
-							kernel.getIRFunction()->getParameter(0)))
-					* localExpectationValue});
+			sum += t * lexpval;
 		}
 
 	}
 
-	return expVals;
+	// Set the energy.
+	double currentEnergy = sum;
+
+	double result = 0.0;
+	int totalqpucalls = 0;
+	boost::mpi::all_reduce(comm, currentEnergy, result, std::plus<double>());
+	boost::mpi::all_reduce(comm, nlocalqpucalls, totalqpucalls, std::plus<double>());
+	currentEnergy = result;
+
+	totalQpuCalls += nlocalqpucalls;
+
+	std::stringstream ss;
+	ss << std::setprecision(10) << currentEnergy << " at (" << parameters.transpose() << ")";
+
+	if (rank == 0) {
+		XACCInfo("Iteration " + std::to_string(vqeIteration) + ", Computed VQE Energy = " + ss.str());
+//		XACCInfo("\tTotal QPU calls = " + std::to_string(totalQpuCalls));
+	}
+
+	vqeIteration++;
+	return std::vector<std::pair<Eigen::VectorXd, double>> { { parameters,
+			currentEnergy } };
 }
 
 

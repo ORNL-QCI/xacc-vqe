@@ -1,3 +1,4 @@
+
 /***********************************************************************************
  * Copyright (c) 2017, UT-Battelle
  * All rights reserved.
@@ -32,7 +33,7 @@
 #define BOOST_TEST_MODULE ComputeEnergyVQETaskTester
 
 #include <boost/test/included/unit_test.hpp>
-#include "ComputeEnergyVQETask.hpp"
+#include "../../task/tasks/ComputeEnergyVQETask.hpp"
 
 BOOST_AUTO_TEST_CASE(checkSimple) {
 

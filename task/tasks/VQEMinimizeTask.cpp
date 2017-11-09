@@ -1,4 +1,5 @@
 #include "VQEMinimizeTask.hpp"
+
 #include "VQEProgram.hpp"
 
 

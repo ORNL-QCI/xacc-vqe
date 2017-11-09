@@ -1,19 +1,19 @@
-#ifndef VQETASKS_SWEEP1DPARAMETER_HPP_
-#define VQETASKS_SWEEP1DPARAMETER_HPP_
+#ifndef VQETASKS_COMPUTEEXPECTATIONVALUES_HPP_
+#define VQETASKS_COMPUTEEXPECTATIONVALUES_HPP_
 
+#include "StatePreparationEvaluator.hpp"
 #include "VQETask.hpp"
-#include "ComputeEnergyVQETask.hpp"
 
 namespace xacc {
 namespace vqe {
 
-class Sweep1DParameter: public VQETask {
+class ComputeExpectationValues: public VQETask {
 
 public:
 
-	Sweep1DParameter() {}
+	ComputeExpectationValues() {}
 
-	Sweep1DParameter(std::shared_ptr<VQEProgram> prog) :
+	ComputeExpectationValues(std::shared_ptr<VQEProgram> prog) :
 			VQETask(prog) {
 	}
 
@@ -25,7 +25,7 @@ public:
 	 * @return name The string name
 	 */
 	virtual const std::string name() const {
-		return "sweep-1d";
+		return "compute-expectation-values";
 	}
 
 	/**
@@ -36,7 +36,8 @@ public:
 		return "";
 	}
 
-	std::shared_ptr<ComputeEnergyVQETask> computeTask;
+	int vqeIteration = 0;
+	int totalQpuCalls = 0;
 
 };
 }

@@ -1,7 +1,8 @@
 #include "GenerateHamiltonianStats.hpp"
-#include "VQEProgram.hpp"
+
 #include "CountGatesOfTypeVisitor.hpp"
 #include "Measure.hpp"
+#include "VQEProgram.hpp"
 
 namespace xacc {
 namespace vqe {
