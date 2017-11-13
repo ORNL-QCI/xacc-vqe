@@ -177,8 +177,6 @@ protected:
 
 			statePrepType = "custom";
 
-			XACCInfo(
-					"GENERATING STATE PREP CIRCUIT\n" + statePrepSource + "\n");
 			Program p(accelerator, statePrepSource);
 			p.build();
 

@@ -88,10 +88,12 @@ int main(int argc, char** argv) {
 	vqeTask->setVQEProgram(program);
 
 	VQETaskResult result = vqeTask->execute(parameters);
+
+	std::string msg = (task == "compute-expectation-values" ? "Expectation Value = " : "Energy = ");
 	for (auto r : result) {
 		std::stringstream ss;
 		ss << std::setprecision(12) << r.second << " at (" << r.first.transpose() << ")";
-		XACCInfo("Computed VQE Energy = " + ss.str());
+		XACCInfo(msg + ss.str());
 	}
 
 	xacc::Finalize();

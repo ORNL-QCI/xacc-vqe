@@ -44,7 +44,8 @@ public:
 		auto desc = std::make_shared<options_description>(
 				"Sweep 1D Energies");
 		desc->add_options()("vqe-sweep-persist",value<std::string>(),
-				"Persist the results to the provided CSV file.");
+				"Persist the results to the provided CSV file.")
+				("vqe-restart-index", value<std::string>(), "");
 		return desc;
 	}
 

@@ -53,16 +53,14 @@ VQETaskResult ComputeExpectationValues::execute(
 		nlocalqpucalls += tmpBuffers.size();
 
 		for (auto k : identityKernels) {
-			expVals.push_back({parameters, std::real(
-					boost::get<std::complex<double>>(
-							k.getIRFunction()->getParameter(0)))});
+			expVals.push_back({parameters, 1.0});
 		}
 
 
 		int counter = 0;
 		for (auto b : tmpBuffers) {
 			localExpectationValue = b->getExpectationValueZ();
-			expVals.push_back({parameters, coeffs[counter] * localExpectationValue});
+			expVals.push_back({parameters, localExpectationValue});
 			counter++;
 		}
 
@@ -105,10 +103,7 @@ VQETaskResult ComputeExpectationValues::execute(
 			// Sum up the expectation values, the Hamiltonian
 			// terms coefficient is stored in the first
 			// parameter of the Kernels IR Function representation
-			expVals.push_back({parameters, std::real(
-					boost::get<std::complex<double>>(
-							kernel.getIRFunction()->getParameter(0)))
-					* localExpectationValue});
+			expVals.push_back({parameters, localExpectationValue});
 		}
 
 	}
