@@ -41,17 +41,13 @@ link_directories(${XACC_LIBRARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ir)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/compiler)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/transformations)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/problem)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/problem/petsctao)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/utils)
-include_directories(/usr/local/petsc/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/task)
 
 
 add_subdirectory(ir)
 add_subdirectory(transformations)
 add_subdirectory(compiler)
-add_subdirectory(problem)
 add_subdirectory(task)
 add_subdirectory(python)
 

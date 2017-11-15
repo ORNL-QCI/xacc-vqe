@@ -5,7 +5,6 @@
 #include <pybind11/eigen.h>
 #include <pybind11/iostream.h>
 
-#include "VQEProblem.hpp"
 #include "VQEProgram.hpp"
 #include "VQETask.hpp"
 #include "VQEParameterGenerator.hpp"
