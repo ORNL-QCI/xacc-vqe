@@ -158,6 +158,9 @@ void CompositeSpinInstruction::simplify() {
 	instructions.clear();
 
 	for (auto& kv : map) {
+		if (std::fabs(std::real(kv.second->coefficient)) < 1e-12) kv.second->coefficient.real(0.0);
+		if (std::fabs(std::imag(kv.second->coefficient)) < 1e-12) kv.second->coefficient.imag(0.0);
+
 		if (kv.second->coefficient != std::complex<double>(0.0,0.0)) {
 			addInstruction(kv.second);
 		}

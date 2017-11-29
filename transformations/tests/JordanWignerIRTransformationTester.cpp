@@ -87,6 +87,171 @@ std::shared_ptr<FermionKernel> compileKernel(const std::string src) {
 	return fermionKernel;
 }
 
+BOOST_AUTO_TEST_CASE(checkOpenMP) {
+
+	const std::string code =
+			R"code(__qpu__ kernel() {
+	   0.7137758743754461
+	   -1.252477303982147 0 1 0 0
+	   0.337246551663004 0 1 1 1 1 0 0 0
+	   0.0906437679061661 0 1 1 1 3 0 2 0
+	   0.3317360224302783 0 1 2 1 0 0 2 0
+	   0.0906437679061661 0 1 2 1 2 0 0 0
+	   0.3317360224302783 0 1 3 1 1 0 2 0
+	   0.0906437679061661 0 1 3 1 3 0 0 0
+	   0.337246551663004 1 1 0 1 0 0 1 0
+	   0.0906437679061661 1 1 0 1 2 0 3 0
+	   -1.252477303982147 1 1 1 0
+	   0.3317360224302783 1 1 2 1 0 0 3 0
+	   0.0906437679061661 1 1 2 1 2 0 1 0
+	   0.3317360224302783 1 1 3 1 1 0 3 0
+	   0.0906437679061661 1 1 3 1 3 0 1 0
+	   0.0906437679061661 2 1 0 1 0 0 2 0
+	   0.3317360224302783 2 1 0 1 2 0 0 0
+	   0.0906437679061661 2 1 1 1 1 0 2 0
+	   0.3317360224302783 2 1 1 1 3 0 0 0
+	   -0.4759344611440753 2 1 2 0
+	   0.0906437679061661 2 1 3 1 1 0 0 0
+	   0.3486989747346679 2 1 3 1 3 0 2 0
+	   0.0906437679061661 3 1 0 1 0 0 3 0
+	   0.3317360224302783 3 1 0 1 2 0 1 0
+	   0.0906437679061661 3 1 1 1 1 0 3 0
+	   0.3317360224302783 3 1 1 1 3 0 1 0
+	   0.0906437679061661 3 1 2 1 0 0 1 0
+	   0.3486989747346679 3 1 2 1 2 0 3 0
+	   -0.4759344611440753 3 1 3 0
+	})code";
+
+	auto fermionKernel = compileKernel(code);
+	auto fermionir = std::make_shared<FermionIR>();
+	fermionir->addKernel(fermionKernel);
+
+	JordanWignerIRTransformation t;
+	auto ir = t.transform(fermionir);
+	auto result = t.getResult();
+
+	auto resultsStr = result.toString("");
+	boost::replace_all(resultsStr, "+", "+\n");
+	std::cout << "Transformed Fermion to Spin:\nBEGIN\n" << resultsStr << "\nEND\n\n";
+
+	std::string expected = R"expected((0.174349,0) * Z2 * Z3 +
+ (0.0453219,0) * Z0 * Z3 +
+ (0.138842,0) * Z3 +
+ (-0.120546,0) * Z0 * Z2 +
+ (-0.0602731,0) * X0 * Y1 * X2 * Y3 +
+ (0.105595,0) * X0 * Y1 * Y2 * X3 +
+ (-0.0602731,0) * Y0 * X1 * Y2 * X3 +
+ (0.168623,0) * Z0 * Z1 +
+ (0.0453219,0) * Z1 * Z2 +
+ (-0.105595,0) * X0 * X1 * Y2 * Y3 +
+ (-0.822112,0) * I +
+ (0.138842,0) * Z2 +
+ (0.53284,0) * Z0 +
+ (0.105595,0) * Y0 * X1 * X2 * Y3 +
+ (0.53284,0) * Z1 +
+ (-0.120546,0) * Z1 * Z3 +
+ (-0.0602731,0) * Y0 * Y1 * Y2 * Y3 +
+ (-0.105595,0) * Y0 * Y1 * X2 * X3 +
+ (-0.0602731,0) * X0 * X1 * X2 * X3)expected";
+
+	BOOST_VERIFY(result.nInstructions() == 19);
+
+	BOOST_VERIFY(resultsStr == expected);
+
+	std::vector<double> expectedCoeffs {
+		0.53284, // Z0
+		0.53284, // Z1
+		0.138842, // Z2
+		0.138842, // Z3
+		0.168623, // Z0 Z1
+		-0.120546,  // Z0 Z2
+		0.0453219, // Z1 Z2
+		0.0453219, // Z0 Z3
+		0.174349, // Z2 Z3
+		-0.120546, // Z1 Z3
+		-0.105595, // Y0 Y1 X2 X3
+		0.105595, // X0 Y1 Y2 X3
+		-0.0602731, // X0 Y1 X2 Y3
+		0.105595, // Y0 X1 X2 Y3
+		-0.0602731, // Y0 X1 Y2 X3
+		-0.105595, // X0 X1 Y2 Y3
+		-0.0602731, // Y0 Y1 Y2 Y3
+		-0.0602731, // X0 X1 X2 X3
+		-0.822112 // { 0, "I" }
+	};
+
+	std::vector<std::vector<std::pair<int, std::string>>> expectedTerms {
+		{
+			{ 0, "Z" }
+		},
+		{
+			{ 1, "Z" }
+		},
+		{
+			{ 2, "Z" }
+		},
+		{
+			{ 3, "Z" }
+		},
+		{
+			{ 0, "Z" }, { 1, "Z" }
+		},
+		{
+			{ 0, "Z" }, { 2, "Z" }
+		},
+		{
+			{ 1, "Z" }, { 2, "Z" }
+		},
+		{
+			{ 0, "Z" }, { 3, "Z" }
+		},
+		{
+			{ 2, "Z"}, {3, "Z"}
+		},
+		{
+			{ 1, "Z"}, {3, "Z"}
+		},
+		{
+			{ 0, "Y" }, { 1, "Y" }, { 2, "X" }, { 3, "X" }
+		},
+		{
+			{ 0, "X" }, { 1, "Y" }, { 2, "Y" }, { 3, "X" }
+		},
+		{
+			{ 0, "X" }, { 1, "Y" }, { 2, "X" }, { 3, "Y" }
+		},
+		{
+			{ 0, "Y" }, { 1, "X" }, { 2, "X" }, { 3, "Y" }
+		},
+		{
+			{ 0, "Y" }, { 1, "X" }, { 2, "Y" }, { 3, "X" }
+		},
+		{
+			{ 0, "X" }, { 1, "X" }, { 2, "Y" }, { 3, "Y" }
+		},
+		{
+			{ 0, "Y" }, { 1, "Y" }, { 2, "Y" }, { 3, "Y" }
+		},
+		{
+			{ 0, "X" }, { 1, "X" }, { 2, "X" }, { 3, "X" }
+		},
+		{
+			{ 0, "I" }
+		}
+	};
+
+	for (auto inst : result.getInstructions()) {
+		auto cast = std::dynamic_pointer_cast<SpinInstruction>(inst);
+		auto terms = cast->getTerms();
+		auto iter = std::find(expectedTerms.begin(), expectedTerms.end(), terms);
+		BOOST_VERIFY( iter
+						!= expectedTerms.end());
+		auto idx = std::distance(expectedTerms.begin(), iter);
+		BOOST_VERIFY(std::fabs(std::real(cast->coefficient) - expectedCoeffs[idx]) < 1e-6);
+	}
+
+}
+
 BOOST_AUTO_TEST_CASE(checkJWTransform) {
 
 	auto Instruction = std::make_shared<FermionInstruction>(

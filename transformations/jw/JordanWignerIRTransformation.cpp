@@ -9,6 +9,13 @@ struct CompositeSpinInstruction addJWResults(struct CompositeSpinInstruction x, 
   return x+y;
 }
 
+struct CompositeSpinInstruction multJWResults(struct CompositeSpinInstruction x, struct CompositeSpinInstruction y) {
+  return x*y;
+}
+
+#pragma omp declare reduction( * : CompositeSpinInstruction : omp_out = omp_out * omp_in ) \
+  initializer( omp_priv = omp_orig )
+
 #pragma omp declare reduction( + : CompositeSpinInstruction : omp_out = omp_out + omp_in ) \
   initializer( omp_priv = omp_orig )
 
@@ -36,7 +43,7 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 	result.clear();
 
 	// Loop over all Fermionic terms...
-#pragma omp parallel for shared(fermiKernel) reduction (+:total)
+//#pragma omp parallel for shared(fermiKernel) reduction (+:total)
 	for (int z = 0; z < fermiKernel->nInstructions(); ++z) {
 
 		auto f = fermiKernel->getInstruction(z);
@@ -49,7 +56,7 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 		// Get the params indicating if termSite is creation or annihilation
 		auto params = fermionInst->getParameters();
 
-		auto fermionCoeff = fermionInst->coefficient;
+		auto fermionCoeff = std::complex<double>(std::real(fermionInst->coefficient), 0.0);
 		auto fermionVar = fermionInst->variable;
 
 		CompositeSpinInstruction current;

@@ -131,6 +131,7 @@ const std::string FCIDumpPreprocessor::process(const std::string& source,
 
 		kernelString += "}\n";
 
+		std::cout << "KERNEL STR:\n" << kernelString << "\n";
 		return kernelString;
 
 	} else {
