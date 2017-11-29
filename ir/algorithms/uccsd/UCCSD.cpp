@@ -122,7 +122,7 @@ std::shared_ptr<Function> UCCSD::generate(
 		}
 	}
 
-//	std::cout << "KERNEL: \n" << kernel->toString("") << "\n";
+	//std::cout << "KERNEL: \n" << kernel->toString("") << "\n";
 	// Create the FermionIR to pass to our transformation.
 	auto fermionir = std::make_shared<FermionIR>();
 	fermionir->addKernel(kernel);

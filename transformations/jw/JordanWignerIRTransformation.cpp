@@ -9,10 +9,12 @@ struct CompositeSpinInstruction addJWResults(struct CompositeSpinInstruction x, 
   return x+y;
 }
 
-#pragma omp declare reduction( + : CompositeSpinInstruction : \
-        				omp_out = addJWResults(omp_out, omp_in)) \
-					initializer (omp_priv(omp_orig))
+#pragma omp declare reduction( + : CompositeSpinInstruction : omp_out = omp_out + omp_in ) \
+  initializer( omp_priv = omp_orig )
 
+//#pragma omp declare reduction( CustomAdd : CompositeSpinInstruction : \
+//       				omp_out = addJWResults(omp_out, omp_in)) 
+//initializer (omp_priv(omp_orig))
 
 std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 		std::shared_ptr<IR> ir) {
@@ -34,8 +36,9 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 	result.clear();
 
 	// Loop over all Fermionic terms...
-#pragma omp parallel for reduction (+:result)
+#pragma omp parallel for shared(fermiKernel) reduction (+:total)
 	for (int z = 0; z < fermiKernel->nInstructions(); ++z) {
+
 		auto f = fermiKernel->getInstruction(z);
 
 		auto fermionInst = std::dynamic_pointer_cast<FermionInstruction>(f);
@@ -101,10 +104,11 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 		}
 
 		auto temp = fermionCoeff * current;
-		result = result + temp;
+		total = total + temp;
 	}
 
-	result.simplify();
+	total.simplify();
+	result = total;
 
 	return generateIR();
 }

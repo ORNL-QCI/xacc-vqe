@@ -107,13 +107,15 @@ VQETaskResult ComputeEnergyVQETask::execute(
 		// every MPI rank.
 		int myStart = (rank) * kernels.size() / nRanks;
 		int myEnd = (rank + 1) * kernels.size() / nRanks;
-#pragma omp parallel for reduction (+:sum, nlocalqpucalls)
+#pragma omp parallel for shared(kernels) reduction (+: sum, nlocalqpucalls)
 		for (int i = myStart; i < myEnd; i++) {
-
-			double lexpval = 0.0;
+			
+			double lexpval = 1.0;
+			
 			// Get the ith Kernel
 			auto kernel = kernels[i];
 
+			// If not an identity kernel...
 			if (kernel.getIRFunction()->nInstructions() > 0) {
 				// Insert the state preparation circuit IR
 				// at location 0 in this Kernels IR instructions.
@@ -123,19 +125,15 @@ VQETaskResult ComputeEnergyVQETask::execute(
 				// Create a temporary buffer of qubits
 				auto buff = qpu->createBuffer("qreg", nQubits);
 
-				if (kernel.getIRFunction()->nInstructions() > 1) {
-					// Execute the kernel!
-					kernel(buff);
-					nlocalqpucalls++;
-				}
+				// Execute the kernel!
+				kernel(buff);
+				nlocalqpucalls++;
 
 				lexpval = buff->getExpectationValueZ();
 
 				// The next iteration will have a different
 				// state prep circuit, so toss the current one.
 				kernel.getIRFunction()->removeInstruction(0);
-			} else {
-				lexpval = 1.0;
 			}
 
 			auto t = std::real(
@@ -147,26 +145,21 @@ VQETaskResult ComputeEnergyVQETask::execute(
 			// parameter of the Kernels IR Function representation
 			sum += t * lexpval;
 		}
-
 	}
-
-	// Set the energy.
-	double currentEnergy = sum;
 
 	double result = 0.0;
 	int totalqpucalls = 0;
-	boost::mpi::all_reduce(comm, currentEnergy, result, std::plus<double>());
+	boost::mpi::all_reduce(comm, sum, result, std::plus<double>());
 	boost::mpi::all_reduce(comm, nlocalqpucalls, totalqpucalls, std::plus<double>());
-	currentEnergy = result;
 
-	totalQpuCalls += nlocalqpucalls;
+	double currentEnergy = result;
+	totalQpuCalls += totalqpucalls;
 
 	std::stringstream ss;
 	ss << std::setprecision(10) << currentEnergy << " at (" << parameters.transpose() << ")";
 
 	if (rank == 0) {
 		XACCInfo("Iteration " + std::to_string(vqeIteration) + ", Computed VQE Energy = " + ss.str());
-//		XACCInfo("\tTotal QPU calls = " + std::to_string(totalQpuCalls));
 	}
 
 	vqeIteration++;
