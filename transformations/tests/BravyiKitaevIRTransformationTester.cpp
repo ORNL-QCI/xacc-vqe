@@ -123,6 +123,11 @@ std::shared_ptr<FermionKernel> compileKernel(const std::string src) {
 
 BOOST_AUTO_TEST_CASE(checkH2Transform) {
 
+	auto argc = boost::unit_test::framework::master_test_suite().argc;
+	auto argv = boost::unit_test::framework::master_test_suite().argv;
+	mpi::environment env(argc, argv);
+	mpi::communicator world;
+
 	const std::string code = R"code(__qpu__ H2_sto-3g_singlet_H2_Molecule() {
         0.276761058984 1 1 0 1 0 0 1 0
         0.280200438869 2 1 0 1 0 0 2 0

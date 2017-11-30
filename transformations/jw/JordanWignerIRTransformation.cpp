@@ -1,9 +1,12 @@
 #include "JordanWignerIRTransformation.hpp"
 #include "GateFunction.hpp"
 #include <boost/math/constants/constants.hpp>
+#include <boost/mpi.hpp>
 
 namespace xacc {
 namespace vqe {
+
+using TermType = std::pair<std::complex<double>, std::vector<std::pair<int, std::string>>>;
 
 struct CompositeSpinInstruction addJWResults(struct CompositeSpinInstruction x, struct CompositeSpinInstruction y) {
   return x+y;
@@ -14,6 +17,8 @@ struct CompositeSpinInstruction addJWResults(struct CompositeSpinInstruction x, 
 
 std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 		std::shared_ptr<IR> ir) {
+
+	boost::mpi::communicator world;
 
 	// We assume we have a FermionIR instance, which contains
 	// one FermionKernel, which contains N FermionInstructions, one
@@ -31,9 +36,17 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 
 	result.clear();
 
+	int myStart = 0;
+	int myEnd = fermiKernel->nInstructions();
+
+	if (runParallel) {
+		myStart = (world.rank()) * fermiKernel->nInstructions() / world.size();
+		myEnd = (world.rank() + 1) * fermiKernel->nInstructions() / world.size();
+	}
+
 	// Loop over all Fermionic terms...
 #pragma omp parallel for shared(fermiKernel) reduction (+:total) if (runParallel)
-	for (int z = 0; z < fermiKernel->nInstructions(); ++z) {
+	for (int z = myStart; z < myEnd; ++z) {
 
 		auto f = fermiKernel->getInstruction(z);
 
@@ -102,11 +115,66 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 		auto temp = fermionCoeff * current;
 		total = total + temp;
 		total.simplify();
-//		total = total + local;
 	}
 
 	total.simplify();
-	result = total;
+
+	CompositeSpinInstruction i;
+
+	if (world.size() > 1 && runParallel) {
+		std::string globalString = "";
+
+		// FIXME DO THIS BETTER WITH BINARY VECTOR REPRESENTATION
+		auto totalAsString = total.toString("");
+
+		boost::mpi::all_reduce(world, totalAsString, globalString, add_them());
+
+		boost::char_separator<char> sep("+");
+		boost::tokenizer<boost::char_separator<char> > tokens(globalString, sep);
+		for (auto t : tokens) {
+			boost::trim(t);
+
+			std::vector<std::string> splitMult, splitComma;
+			boost::split(splitMult, t, boost::is_any_of("*"));
+
+			auto coeffStr = splitMult[0];
+			boost::replace_all(coeffStr, "(", "");
+			boost::replace_all(coeffStr, ")", "");
+			boost::split(splitComma, coeffStr, boost::is_any_of(","));
+			auto coeff = std::complex<double>(std::stod(splitComma[0]), std::stod(splitComma[1]));
+
+			std::vector<std::pair<int, std::string>> term;
+			for (int i = 1; i < splitMult.size(); i++) {
+				auto currentStr = splitMult[i];
+				boost::trim(currentStr);
+
+				if (currentStr == "I") {
+					term.push_back({0, "I"});
+				} else {
+					std::stringstream s1, s2;
+					s1 << currentStr.at(1);
+					s2 << currentStr.at(0);
+					auto idxStr = s1.str();
+					boost::trim(idxStr);
+
+					int idx = std::stoi(idxStr);
+					std::string pauli = s2.str();
+					boost::trim(pauli);
+					term.push_back( { idx, pauli});
+				}
+			}
+
+			i.addInstruction(std::make_shared<SpinInstruction>(term, coeff));
+		}
+
+		i.simplify();
+	} else {
+		i = total;
+	}
+
+	world.barrier();
+
+	result = i;
 
 	return generateIR();
 }

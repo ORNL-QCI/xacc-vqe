@@ -33,10 +33,18 @@
 
 #include <boost/test/included/unit_test.hpp>
 #include "UCCSD.hpp"
+#include <boost/mpi.hpp>
 
 using namespace xacc::vqe;
 
+using namespace boost;
+
 BOOST_AUTO_TEST_CASE(checkUCCSD) {
+
+	auto argc = boost::unit_test::framework::master_test_suite().argc;
+	auto argv = boost::unit_test::framework::master_test_suite().argv;
+	mpi::environment env(argc, argv);
+	mpi::communicator world;
 
 	auto options = xacc::RuntimeOptions::instance();
 	options->insert(std::make_pair("n-qubits", "4"));

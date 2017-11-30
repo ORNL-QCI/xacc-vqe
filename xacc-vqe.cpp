@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
 	for (auto r : result) {
 		std::stringstream ss;
 		ss << std::setprecision(12) << r.second << " at (" << r.first.transpose() << ")";
-		XACCInfo(msg + ss.str());
+		if (world.rank() == 0) XACCInfo(msg + ss.str());
 	}
 
 	xacc::Finalize();
