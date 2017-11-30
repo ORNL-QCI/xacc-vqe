@@ -31,12 +31,9 @@ std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
 
 	int nQubits = std::stoi(xacc::getOption("n-qubits"));
 
-//#pragma omp parallel
-//{
 	FenwickTree tree(nQubits);
 
 	// Loop over all Fermionic terms...
-//#pragma omp parallel for reduction (+:total)
 	for (int z = 0; z < fermiKernel->nInstructions(); ++z) {
 		auto f = fermiKernel->getInstruction(z);
 
@@ -48,7 +45,7 @@ std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
 		// Get the params indicating if termSite is creation or annihilation
 		auto params = fermionInst->getParameters();
 
-		auto fermionCoeff = fermionInst->coefficient;
+		auto fermionCoeff = std::complex<double>(std::real(fermionInst->coefficient), 0.0);
 		auto fermionVar = fermionInst->variable;
 
 		CompositeSpinInstruction ladderProduct;
@@ -61,10 +58,6 @@ std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
 			auto paritySet = tree.getParitySet(index);
 			auto ancestors = tree.getUpdateSet(index);
 			auto ancestorChildren = tree.getRemainderSet(index);
-
-			auto getSetElement = [](const std::set<std::shared_ptr<Node>>& s, const int idx) {
-				return *std::next(s.begin(), idx);
-			};
 
 			std::complex<double> dcoeff;
 			if (creationOrAnnihilation) {
@@ -98,12 +91,19 @@ std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
 			}
 		}
 
-		ladderProduct = fermionCoeff * ladderProduct;
+		// Case - we could have a current that has no
+		// instructions in it. If so add an Identity to it
+		if (ladderProduct.nInstructions() == 0) {
+			auto nullInst = std::make_shared<SpinInstruction>(
+					std::vector<std::pair<int, std::string>> { { 0, "I" } });
+			ladderProduct.addInstruction(nullInst);
+		}
 
-		total = total + ladderProduct;
+		auto tmp = fermionCoeff * ladderProduct;
 
+		total = total + tmp;
 	}
-//}
+
 	total.simplify();
 
 	result = total;
