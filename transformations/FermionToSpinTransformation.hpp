@@ -57,6 +57,8 @@ public:
 		return result;
 	}
 
+	bool runParallel = true;
+
 protected:
 
 	/**

@@ -142,6 +142,8 @@ std::shared_ptr<Function> UCCSD::generate(
 
 	XACCInfo("Done mapping UCCSD Fermion Operator to Spin. ");
 
+	std::dynamic_pointer_cast<FermionToSpinTransformation>(transform)->runParallel = false;
+
 	// Create the Spin Hamiltonian
 	auto transformedIR = transform->transform(fermionir);
 

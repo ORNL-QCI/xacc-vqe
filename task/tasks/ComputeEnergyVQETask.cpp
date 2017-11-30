@@ -134,9 +134,6 @@ VQETaskResult ComputeEnergyVQETask::execute(
 				// The next iteration will have a different
 				// state prep circuit, so toss the current one.
 				kernel.getIRFunction()->removeInstruction(0);
-			} else {
-						boost::get<std::complex<double>>(
-								kernel.getIRFunction()->getParameter(0))) << "\n";
 			}
 
 			auto t = std::real(

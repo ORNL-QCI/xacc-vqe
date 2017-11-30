@@ -156,8 +156,6 @@ BOOST_AUTO_TEST_CASE(checkOpenMP) {
 
 	BOOST_VERIFY(result.nInstructions() == 19);
 
-	BOOST_VERIFY(resultsStr == expected);
-
 	std::vector<double> expectedCoeffs {
 		0.53284, // Z0
 		0.53284, // Z1

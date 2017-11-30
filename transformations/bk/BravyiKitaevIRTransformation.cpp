@@ -31,9 +31,12 @@ std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
 
 	int nQubits = std::stoi(xacc::getOption("n-qubits"));
 
+#pragma omp parallel
+	{
 	FenwickTree tree(nQubits);
 
 	// Loop over all Fermionic terms...
+#pragma omp parallel for shared(fermiKernel) reduction (+:total) if (runParallel)
 	for (int z = 0; z < fermiKernel->nInstructions(); ++z) {
 		auto f = fermiKernel->getInstruction(z);
 
@@ -103,7 +106,7 @@ std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
 
 		total = total + tmp;
 	}
-
+	}
 	total.simplify();
 
 	result = total;
