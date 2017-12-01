@@ -117,3 +117,34 @@ BOOST_AUTO_TEST_CASE(checkVariableCoefficient) {
 	BOOST_VERIFY("(1,0) * theta * Z3 * X4 + (1,0) * theta2 * Z3 * X4" == sumInst.toString(""));
 
 }
+
+BOOST_AUTO_TEST_CASE(checkBinaryVector) {
+	SpinInstruction inst(std::vector<std::pair<int, std::string>> { { 4, "X" },
+				{ 3, "Z" }, { 9, "Y" }, { 1, "Z" } });
+
+	// This is Z1 Z3 X4 Y9
+
+	auto bv = inst.toBinaryVector(10);
+
+	BOOST_VERIFY(bv.size() == 20);
+
+	std::vector<int> expected(20);
+	expected[4] = 1;
+	expected[9] = 1;
+	expected[19] = 1;
+	expected[13] = 1;
+	expected[11] = 1;
+
+	BOOST_VERIFY(expected == bv);
+
+	SpinInstruction i(std::vector<std::pair<int, std::string>>{{0,"I"}});
+	std::vector<int> zeros(20);
+	BOOST_VERIFY(zeros == i.toBinaryVector(10));
+
+
+	i.fromBinaryVector(expected, std::complex<double>(1.0,0.0));
+
+	BOOST_VERIFY(inst.toString("") == i.toString(""));
+
+
+}

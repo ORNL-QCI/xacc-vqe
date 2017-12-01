@@ -101,7 +101,7 @@ std::shared_ptr<FermionKernel> compileKernel(const std::string src) {
 
 	_nQubits++;
 
-	xacc::setOption("n-qubits", "4");
+	xacc::setOption("n-qubits", std::to_string(_nQubits));
 	return fermionKernel;
 }
 

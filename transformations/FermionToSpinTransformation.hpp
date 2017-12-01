@@ -40,6 +40,11 @@
 #include <boost/math/constants/constants.hpp>
 #include <boost/mpi.hpp>
 
+#include <boost/serialization/complex.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/utility.hpp>
+#include "XACC.hpp"
+
 namespace xacc {
 
 namespace vqe {
@@ -50,6 +55,31 @@ std::string operator()( std::string a, std::string b) {
 }
 };
 
+using PersistedSpinInstruction = std::pair<std::complex<double>, std::vector<int>>;
+
+struct add_spin_instructions {
+	std::vector<PersistedSpinInstruction> operator()( std::vector<PersistedSpinInstruction> a, std::vector<PersistedSpinInstruction> b) {
+		std::move(b.begin(), b.end(), std::back_inserter(a));
+		int nQubits = std::stoi(xacc::getOption("n-qubits"));
+		CompositeSpinInstruction i;
+		std::vector<PersistedSpinInstruction> persistedInstructions;
+		for (auto inst : a) {
+			auto spin = std::make_shared<SpinInstruction>(std::vector<std::pair<int, std::string>> {});
+			spin->fromBinaryVector(inst.second, inst.first);
+			i.addInstruction(spin);
+		}
+
+		i.simplify();
+
+		for (auto inst : i.getInstructions()) {
+			auto casted = std::dynamic_pointer_cast<SpinInstruction>(inst);
+			auto x = casted->toBinaryVector(nQubits);
+			persistedInstructions.push_back({casted->coefficient, x});
+		}
+
+		return persistedInstructions;
+	}
+};
 /**
  */
 class FermionToSpinTransformation: public xacc::IRTransformation {
@@ -72,6 +102,24 @@ protected:
 	 * Reference to the JW result.
 	 */
 	CompositeSpinInstruction result;
+
+	CompositeSpinInstruction distributeResults(boost::mpi::communicator& world, CompositeSpinInstruction total) {
+		CompositeSpinInstruction i;
+		std::vector<PersistedSpinInstruction> persistedInstructions, globalInstructions;
+		int nQubits = std::stoi(xacc::getOption("n-qubits"));
+		for (auto inst : total.getInstructions()) {
+			auto casted = std::dynamic_pointer_cast<SpinInstruction>(inst);
+			std::vector<int> x = casted->toBinaryVector(nQubits);
+			persistedInstructions.push_back({casted->coefficient, x});
+		}
+		boost::mpi::all_reduce(world, persistedInstructions, globalInstructions, add_spin_instructions());
+		for (auto inst : globalInstructions) {
+			auto spin = std::make_shared<SpinInstruction>(std::vector<std::pair<int, std::string>> {});
+			spin->fromBinaryVector(inst.second, inst.first);
+			i.addInstruction(spin);
+		}
+		return i;
+	}
 
 	std::shared_ptr<IR> generateIR() {
 		boost::mpi::communicator world;
@@ -151,5 +199,4 @@ protected:
 }
 
 }
-
 #endif

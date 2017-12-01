@@ -2,11 +2,10 @@
 #include "GateFunction.hpp"
 #include <boost/math/constants/constants.hpp>
 #include <boost/mpi.hpp>
+#include "XACC.hpp"
 
 namespace xacc {
 namespace vqe {
-
-using TermType = std::pair<std::complex<double>, std::vector<std::pair<int, std::string>>>;
 
 struct CompositeSpinInstruction addJWResults(struct CompositeSpinInstruction x, struct CompositeSpinInstruction y) {
   return x+y;
@@ -122,52 +121,7 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 	CompositeSpinInstruction i;
 
 	if (world.size() > 1 && runParallel) {
-		std::string globalString = "";
-
-		// FIXME DO THIS BETTER WITH BINARY VECTOR REPRESENTATION
-		auto totalAsString = total.toString("");
-
-		boost::mpi::all_reduce(world, totalAsString, globalString, add_them());
-
-		boost::char_separator<char> sep("+");
-		boost::tokenizer<boost::char_separator<char> > tokens(globalString, sep);
-		for (auto t : tokens) {
-			boost::trim(t);
-
-			std::vector<std::string> splitMult, splitComma;
-			boost::split(splitMult, t, boost::is_any_of("*"));
-
-			auto coeffStr = splitMult[0];
-			boost::replace_all(coeffStr, "(", "");
-			boost::replace_all(coeffStr, ")", "");
-			boost::split(splitComma, coeffStr, boost::is_any_of(","));
-			auto coeff = std::complex<double>(std::stod(splitComma[0]), std::stod(splitComma[1]));
-
-			std::vector<std::pair<int, std::string>> term;
-			for (int i = 1; i < splitMult.size(); i++) {
-				auto currentStr = splitMult[i];
-				boost::trim(currentStr);
-
-				if (currentStr == "I") {
-					term.push_back({0, "I"});
-				} else {
-					std::stringstream s1, s2;
-					s1 << currentStr.at(1);
-					s2 << currentStr.at(0);
-					auto idxStr = s1.str();
-					boost::trim(idxStr);
-
-					int idx = std::stoi(idxStr);
-					std::string pauli = s2.str();
-					boost::trim(pauli);
-					term.push_back( { idx, pauli});
-				}
-			}
-
-			i.addInstruction(std::make_shared<SpinInstruction>(term, coeff));
-		}
-
-		i.simplify();
+		i = distributeResults(world, total);
 	} else {
 		i = total;
 	}

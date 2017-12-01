@@ -280,6 +280,73 @@ public:
 		return std::vector<InstructionParameter>{InstructionParameter(coefficient)};
 	}
 
+	std::vector<int> toBinaryVector(const int nQubits) {
+
+		std::vector<int> bv(2*nQubits);
+
+		for (auto& t : terms) {
+			if (t.second == "X") {
+
+				bv[t.first] = 1;
+
+			} else if (t.second == "Z") {
+
+				bv[nQubits+ t.first] = 1;
+
+			} else if (t.second == "Y") {
+
+				bv[t.first] = 1;
+				bv[nQubits + t.first] = 1;
+
+			} else if (t.second == "I") {
+
+				return bv;
+			}
+		}
+
+		return bv;
+	}
+
+	void fromBinaryVector(std::vector<int> vec, std::complex<double> coeff) {
+
+		coefficient = coeff;
+		int nQubits = vec.size() / 2;
+
+		terms.clear();
+
+		if (vec == std::vector<int>(vec.size())) {
+			terms.push_back({0, "I"});
+			return;
+		} else {
+			for (int i = 0; i < nQubits; i++) {
+				if (vec[i] && vec[i+nQubits]) {
+					terms.push_back({i, "Y"});
+				} else if (vec[i]) {
+					terms.push_back({i, "X"});
+				}
+			}
+
+			for (int i = nQubits; i < vec.size(); i++) if(vec[i] && !vec[i-nQubits]) terms.push_back({i-nQubits,"Z"});
+
+			std::sort(terms.begin(), terms.end(),
+					[](std::pair<int, std::string>& left,
+							std::pair<int, std::string>& right) {
+						return left.first < right.first;
+					});
+
+			terms.erase(
+					std::remove_if(terms.begin(), terms.end(),
+							[&](const std::pair<int, std::string>& element) -> bool {
+								if (terms.size() != 1) {
+									return element.second == "I";
+								}
+								return false;
+							}), terms.end());
+
+			return;
+		}
+	}
+
 	/**
 	 * Set this Instruction's parameter at the given index.
 	 *
