@@ -39,6 +39,7 @@
 #include "GenerateHamiltonianStats.hpp"
 #include "Sweep1DParameter.hpp"
 #include "VQEMinimizeTask.hpp"
+#include "BruteForceComputeGroundStateEnergy.hpp"
 
 using namespace cppmicroservices;
 
@@ -61,12 +62,14 @@ public:
 		auto c3 = std::make_shared<xacc::vqe::GenerateHamiltonianStats>();
 		auto c4 = std::make_shared<xacc::vqe::Sweep1DParameter>();
 		auto c5 = std::make_shared<xacc::vqe::ComputeExpectationValues>();
+		auto c6 = std::make_shared<xacc::vqe::BruteForceComputeGroundStateEnergy>();
 
 		context.RegisterService<xacc::vqe::VQETask>(c);
 		context.RegisterService<xacc::vqe::VQETask>(c2);
 		context.RegisterService<xacc::vqe::VQETask>(c3);
 		context.RegisterService<xacc::vqe::VQETask>(c4);
 		context.RegisterService<xacc::vqe::VQETask>(c5);
+		context.RegisterService<xacc::vqe::VQETask>(c6);
 
 		context.RegisterService<xacc::OptionsProvider>(c);
 		context.RegisterService<xacc::OptionsProvider>(c4);

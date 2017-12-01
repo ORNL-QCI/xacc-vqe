@@ -33,6 +33,7 @@
 
 #include "Function.hpp"
 #include <boost/algorithm/string.hpp>
+#include <Eigen/Dense>
 
 namespace xacc {
 
@@ -370,6 +371,9 @@ public:
 	 * adding like terms.
 	 */
 	void simplify();
+
+	Eigen::MatrixXcd toMatrix(const int nQubits);
+
 };
 
 }

@@ -116,6 +116,7 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 		total.simplify();
 	}
 
+	XACCInfo("JordanWigner done with threaded loop, now simplifying before distribution.");
 	total.simplify();
 
 	CompositeSpinInstruction i;

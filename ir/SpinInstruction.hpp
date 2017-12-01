@@ -35,7 +35,7 @@
 #include "CompositeSpinInstruction.hpp"
 #include "CommonPauliProducts.hpp"
 #include <map>
-
+#include <unsupported/Eigen/KroneckerProduct>
 namespace xacc {
 
 namespace vqe {
@@ -345,6 +345,60 @@ public:
 
 			return;
 		}
+	}
+
+	Eigen::MatrixXcd toMatrix(const int nQubits) {
+
+		int dim = std::pow(2, nQubits);
+
+		Eigen::MatrixXcd ham = Eigen::MatrixXcd::Identity(dim, dim);
+
+		if (terms.size() == 1 && terms[0] == std::pair<int, std::string> { 0,
+				"I" }) {
+			return coefficient
+					* Eigen::MatrixXcd::Identity(dim, dim);
+		}
+
+		std::complex<double> i(0, 1);
+		Eigen::MatrixXcd z(2, 2), x(2, 2), y(2, 2), I(2, 2);
+		z << 1, 0, 0, -1;
+		x << 0, 1, 1, 0;
+		y << 0, -i, i, 0;
+		I << 1, 0, 0, 1;
+
+		for (auto t : terms) {
+
+			std::vector<Eigen::MatrixXcd> productList;
+			for (int j = 0; j < nQubits; j++) {
+				productList.push_back(I);
+			}
+
+			auto qbit = t.first;
+			auto gate = t.second;
+
+			Eigen::MatrixXcd tmp;
+			if (gate == "Z") {
+				tmp = z;
+			} else if (gate == "Y") {
+				tmp = y;
+			} else if (gate == "X") {
+				tmp = x;
+			} else {
+				XACCError("Invalid gate name - " + gate);
+			}
+
+			productList.at(qbit) = tmp;
+
+			Eigen::MatrixXcd localU = productList.at(0);
+			for (int j = 1; j < productList.size(); j++) {
+				localU =
+						Eigen::kroneckerProduct(localU, productList.at(j)).eval();
+			}
+
+			ham = ham * localU;
+		}
+
+		return coefficient * ham;
 	}
 
 	/**

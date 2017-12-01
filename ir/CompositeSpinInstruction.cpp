@@ -167,6 +167,18 @@ void CompositeSpinInstruction::simplify() {
 	}
 }
 
+Eigen::MatrixXcd CompositeSpinInstruction::toMatrix(const int nQubits) {
+	int dim = std::pow(2,nQubits);
+	Eigen::MatrixXcd hamiltonian = Eigen::MatrixXcd::Zero(dim, dim);
+	for (auto instruction : getInstructions()) {
+		hamiltonian +=
+				std::dynamic_pointer_cast<SpinInstruction>(instruction)->toMatrix(
+						nQubits);
+	}
+	return hamiltonian;
+}
+
+
 }
 }
 
