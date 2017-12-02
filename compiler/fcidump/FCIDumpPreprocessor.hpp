@@ -82,7 +82,11 @@ public:
 	 * subclasses to implement.
 	 */
 	virtual std::shared_ptr<options_description> getOptions() {
-		return std::make_shared<options_description>();
+		auto desc = std::make_shared<options_description>(
+				"FCIDUMP Options");
+		desc->add_options()("vqe-fcidump-symmetry",value<std::string>(), "");
+
+		return desc;
 	}
 
 	virtual bool handleOptions(variables_map& map) {

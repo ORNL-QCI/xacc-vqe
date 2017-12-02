@@ -32,7 +32,9 @@ VQETaskResult BruteForceComputeGroundStateEnergy::execute(
 	std::stringstream ss;
 	ss << eigenvalues.transpose();
 	if (world.rank() == 0) XACCInfo("HamiltonianEigenvalues:\n" + ss.str());
-	return VQETaskResult{};
+
+	return std::vector<std::pair<Eigen::VectorXd, double>> { { parameters,
+			std::real(eigenvalues(0)) } };
 }
 
 }

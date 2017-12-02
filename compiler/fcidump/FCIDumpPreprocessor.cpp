@@ -82,15 +82,15 @@ const std::string FCIDumpPreprocessor::process(const std::string& source,
 						for (int s = 0; s < nOrbitals; s++) {
 
 							hpqrs(2 * p, 2 * q + 1, 2 * r + 1, 2 * s) =
-									h.getVmat(p, q, r, s) / 2.0;
+									h.getVmat(p, q, s, r) / 2.0;
 							hpqrs(2 * p + 1, 2 * q, 2 * r, 2 * s + 1) =
-									h.getVmat(p, q, r, s) / 2.0;
+									h.getVmat(p, q, s, r) / 2.0;
 
 							if (p != q && r != s) {
 								hpqrs(2 * p, 2 * q, 2 * r, 2 * s) = h.getVmat(p,
-										q, r, s) / 2.0;
+										q, s, r) / 2.0;
 								hpqrs(2 * p + 1, 2 * q + 1, 2 * r + 1,
-										2 * s + 1) = h.getVmat(p, q, r, s)
+										2 * s + 1) = h.getVmat(p, q, s, r)
 										/ 2.0;
 							}
 						}
