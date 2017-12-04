@@ -1,5 +1,6 @@
 #include "BruteForceComputeGroundStateEnergy.hpp"
 #include "FermionToSpinTransformation.hpp"
+#include <iostream>
 
 namespace xacc {
 namespace vqe {

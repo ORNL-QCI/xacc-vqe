@@ -50,7 +50,6 @@ public:
 		}
 
 		// Create a buffer of qubits
-		nQubits = std::stoi(xacc::getOption("n-qubits"));
 
 		std::vector<double> coeffs;
 		// If nKernels > 1, we have non-fermioncompiler kernels
@@ -60,6 +59,9 @@ public:
 			if (xacc::optionExists("vqe-kernels-compiler")) {
 				xacc::setCompiler(xacc::getOption("vqe-kernels-compiler"));
 			}
+			XACCError("You must set the number of qubits (--n-qubits arg) "
+					"when using custom kernels file.");
+			nQubits = std::stoi(xacc::getOption("n-qubits"));
 			userProvidedKernels = true;
 			accelerator->createBuffer("qreg", nQubits);
 		}
@@ -68,6 +70,8 @@ public:
 
 		// Start compilation
 		Program::build();
+
+		nQubits = std::stoi(xacc::getOption("n-qubits"));
 
 		// Get the Kernels that were created
 		kernels = getRuntimeKernels();
@@ -99,10 +103,14 @@ public:
 			}
 		}
 
-		statePrep = createStatePreparationCircuit();
+		// We don't need state prep if we are brute
+		// force computing ground state energy
+		if (xacc::getOption("vqe-task") != "vqe-bf-gse") {
+			statePrep = createStatePreparationCircuit();
 
-		// Set the number of VQE parameters
-		nParameters = statePrep->nParameters();
+			// Set the number of VQE parameters
+			nParameters = statePrep->nParameters();
+		}
 
 	}
 

@@ -67,6 +67,8 @@ const std::string FCIDumpPreprocessor::process(const std::string& source,
 			auto nOrbitals = h.getL();
 			auto econst = h.getEconst();
 
+			xacc::setOption("n-qubits", std::to_string(2*nOrbitals));
+
 			Eigen::Tensor<double, 2> hpq(2 * nOrbitals, 2 * nOrbitals);
 			Eigen::Tensor<double, 4> hpqrs(2 * nOrbitals, 2 * nOrbitals,
 					2 * nOrbitals, 2 * nOrbitals);
