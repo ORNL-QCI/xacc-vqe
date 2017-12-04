@@ -25,17 +25,33 @@ VQETaskResult BruteForceComputeGroundStateEnergy::execute(
 	auto hamiltonianInstruction = std::dynamic_pointer_cast<
 			FermionToSpinTransformation>(transform)->getResult();
 
-	Eigen::MatrixXcd ham = hamiltonianInstruction.toMatrix(nQubits);
+	auto calc = ServiceRegistry::instance()->getService<
+			GroundStateEnergyCalculator>("vqe-eigen-gs-calculator");
 
+	if (xacc::optionExists("vqe-ground-state-calculator")) {
+		auto str = xacc::getOption("vqe-ground-state-calculator");
+		calc = ServiceRegistry::instance()->getService<
+				GroundStateEnergyCalculator>(str);
+
+	}
+
+	auto energy = calc->computeGroundStateEnergy(hamiltonianInstruction,
+			nQubits);
+	return std::vector<std::pair<Eigen::VectorXd, double>> { { parameters,
+			energy } };
+}
+
+double EigenMatrixXcdGroundStateCalculator::computeGroundStateEnergy(
+		CompositeSpinInstruction& inst, const int nQubits) {
+	boost::mpi::communicator world;
+	Eigen::MatrixXcd ham = inst.toMatrix(nQubits);
 	Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> es(ham);
 	Eigen::VectorXcd eigenvalues = es.eigenvalues();
-
 	std::stringstream ss;
 	ss << eigenvalues.transpose();
-	if (world.rank() == 0) XACCInfo("HamiltonianEigenvalues:\n" + ss.str());
-
-	return std::vector<std::pair<Eigen::VectorXd, double>> { { parameters,
-			std::real(eigenvalues(0)) } };
+	if (world.rank() == 0)
+		XACCInfo("HamiltonianEigenvalues:\n" + ss.str());
+	return std::real(eigenvalues(0));
 }
 
 }

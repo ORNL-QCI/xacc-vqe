@@ -2,6 +2,7 @@
 #define VQETASKS_BRUTEFORCECOMPUTEGROUNDSTATEENERGY_HPP_
 
 #include "VQETask.hpp"
+#include "CompositeSpinInstruction.hpp"
 
 namespace xacc {
 namespace vqe {
@@ -35,6 +36,34 @@ public:
 		return "";
 	}
 
+};
+
+class GroundStateEnergyCalculator : public Identifiable {
+
+public:
+
+	virtual double computeGroundStateEnergy(CompositeSpinInstruction& inst,
+			const int nQubits) = 0;
+	virtual ~GroundStateEnergyCalculator() {}
+};
+
+class EigenMatrixXcdGroundStateCalculator: public GroundStateEnergyCalculator {
+public:
+
+	virtual double computeGroundStateEnergy(CompositeSpinInstruction& inst,
+			const int nQubits);
+
+	virtual const std::string name() const {
+		return "vqe-eigen-gs-calculator";
+	}
+
+	/**
+	 * Return the description of this instance
+	 * @return description The description of this object.
+	 */
+	virtual const std::string description() const {
+		return "";
+	}
 };
 
 }
