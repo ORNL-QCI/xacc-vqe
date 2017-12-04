@@ -24,7 +24,7 @@ public:
 	 * @return name The string name
 	 */
 	virtual const std::string name() const {
-		return "vqe-compute-ground-state-energy";
+		return "vqe-bf-gse";
 	}
 
 	/**
