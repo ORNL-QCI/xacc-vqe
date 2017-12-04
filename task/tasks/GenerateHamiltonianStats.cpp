@@ -3,6 +3,7 @@
 #include "CountGatesOfTypeVisitor.hpp"
 #include "Measure.hpp"
 #include "VQEProgram.hpp"
+#include "FermionToSpinTransformation.hpp"
 
 namespace xacc {
 namespace vqe {
@@ -18,6 +19,19 @@ VQETaskResult GenerateHamiltonianStats::execute(
 
 	if (comm.rank() == 0) {
 		std::ofstream out("gen_hamiltonian_stats_out.txt");
+
+		std::shared_ptr<IRTransformation> transform;
+		if (xacc::optionExists("fermion-transformation")) {
+			auto transformStr = xacc::getOption("fermion-transformation");
+			transform = ServiceRegistry::instance()->getService<IRTransformation>(
+					transformStr);
+		} else {
+			transform = ServiceRegistry::instance()->getService<IRTransformation>(
+					"jordan-wigner");
+		}
+
+		auto hamiltonianInstruction = std::dynamic_pointer_cast<
+				FermionToSpinTransformation>(transform)->getResult();
 
 		std::stringstream s;
 		s << "Number of Qubits = " << xacc::getOption("n-qubits") << "\n";
@@ -66,6 +80,10 @@ VQETaskResult GenerateHamiltonianStats::execute(
 			s << "N k-Local Terms (k,N) = (" << std::to_string(it.first)
 			<< ", " << std::to_string(it.second) << ")" << "\n";
 		}
+
+		auto resultsStr = hamiltonianInstruction.toString("");
+		boost::replace_all(resultsStr, "+", "+\n");
+		s << "\nHamiltonian:\n" << resultsStr << "\n";
 
 		out << s.str();
 		out.flush();

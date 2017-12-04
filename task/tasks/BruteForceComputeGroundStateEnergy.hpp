@@ -36,6 +36,21 @@ public:
 		return "";
 	}
 
+	/**
+	 * Return an empty options_description, this is for
+	 * subclasses to implement.
+	 */
+	virtual std::shared_ptr<options_description> getOptions() {
+		auto desc = std::make_shared<options_description>(
+				"Compute Ground State Energy Options");
+		desc->add_options()("vqe-ground-state-calculator", value<std::string>(), "");
+		return desc;
+	}
+
+	virtual bool handleOptions(variables_map& map) {
+		return false;
+	}
+
 };
 
 class GroundStateEnergyCalculator : public Identifiable {

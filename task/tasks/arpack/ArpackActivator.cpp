@@ -34,12 +34,7 @@
 
 #include <memory>
 #include <set>
-#include "ComputeEnergyVQETask.hpp"
-#include "ComputeExpectationValues.hpp"
-#include "GenerateHamiltonianStats.hpp"
-#include "Sweep1DParameter.hpp"
-#include "VQEMinimizeTask.hpp"
-#include "BruteForceComputeGroundStateEnergy.hpp"
+#include "ArpackppGroundStateEnergyCalculator.hpp"
 
 using namespace cppmicroservices;
 
@@ -47,35 +42,17 @@ namespace {
 
 /**
  */
-class US_ABI_LOCAL VQETaskActivator: public BundleActivator {
+class US_ABI_LOCAL ArpackActivator: public BundleActivator {
 
 public:
 
-	VQETaskActivator() {
+	ArpackActivator() {
 	}
 
 	/**
 	 */
 	void Start(BundleContext context) {
-		auto c = std::make_shared<xacc::vqe::ComputeEnergyVQETask>();
-		auto c2 = std::make_shared<xacc::vqe::VQEMinimizeTask>();
-		auto c3 = std::make_shared<xacc::vqe::GenerateHamiltonianStats>();
-		auto c4 = std::make_shared<xacc::vqe::Sweep1DParameter>();
-		auto c5 = std::make_shared<xacc::vqe::ComputeExpectationValues>();
-		auto c6 = std::make_shared<xacc::vqe::BruteForceComputeGroundStateEnergy>();
-		auto c7 = std::make_shared<xacc::vqe::EigenMatrixXcdGroundStateCalculator>();
-
-		context.RegisterService<xacc::vqe::VQETask>(c);
-		context.RegisterService<xacc::vqe::VQETask>(c2);
-		context.RegisterService<xacc::vqe::VQETask>(c3);
-		context.RegisterService<xacc::vqe::VQETask>(c4);
-		context.RegisterService<xacc::vqe::VQETask>(c5);
-		context.RegisterService<xacc::vqe::VQETask>(c6);
-
-		context.RegisterService<xacc::OptionsProvider>(c);
-		context.RegisterService<xacc::OptionsProvider>(c4);
-		context.RegisterService<xacc::OptionsProvider>(c6);
-
+		auto c7 = std::make_shared<xacc::vqe::ArpackppGroundStateEnergyCalculator>();
 		context.RegisterService<xacc::vqe::GroundStateEnergyCalculator>(c7);
 	}
 
@@ -88,4 +65,4 @@ public:
 
 }
 
-CPPMICROSERVICES_EXPORT_BUNDLE_ACTIVATOR(VQETaskActivator)
+CPPMICROSERVICES_EXPORT_BUNDLE_ACTIVATOR(ArpackActivator)

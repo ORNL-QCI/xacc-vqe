@@ -1,0 +1,6 @@
+{
+  "bundle.symbolic_name" : "xacc_vqe_arpack",
+  "bundle.activator" : true,
+  "bundle.name" : "XACC VQE Arpack support",
+  "bundle.description" : "This bundle provides VQE arpack support."
+}

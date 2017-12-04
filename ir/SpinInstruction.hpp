@@ -36,6 +36,7 @@
 #include "CommonPauliProducts.hpp"
 #include <map>
 #include <unsupported/Eigen/KroneckerProduct>
+
 namespace xacc {
 
 namespace vqe {
@@ -345,6 +346,72 @@ public:
 
 			return;
 		}
+	}
+
+	Eigen::SparseMatrix<std::complex<double>> toSparseMatrix(const int nQubits) {
+		int dim = std::pow(2, nQubits);
+
+		using Triplet = Eigen::Triplet<std::complex<double>>;
+		using SparseMat = Eigen::SparseMatrix<std::complex<double>>;
+		std::vector<Triplet> init;
+		for (int i = 0; i < dim; i++) {
+			init.push_back(Triplet(i,i,1));
+		}
+		SparseMat ham(dim,dim);
+		ham.setFromTriplets(init.begin(), init.end());
+
+		if (terms.size() == 1 && terms[0] == std::pair<int, std::string> { 0,
+				"I" }) {
+			return coefficient
+					* ham;
+		}
+
+		std::complex<double> i(0, 1);
+		SparseMat z(2, 2), x(2, 2), y(2, 2), I(2, 2);
+		std::vector<Triplet> zCoeffs{Triplet(0,0,1), Triplet(1,1,-1)};
+		std::vector<Triplet> xCoeffs{Triplet(0,1,1), Triplet(1,0,1)};
+		std::vector<Triplet> yCoeffs{Triplet(0,1,-i), Triplet(1, 0, -i)};
+		std::vector<Triplet> ICoeffs{Triplet(0, 0, 1), Triplet(1, 1, 1)};
+
+		z.setFromTriplets(zCoeffs.begin(), zCoeffs.end());
+		x.setFromTriplets(xCoeffs.begin(), xCoeffs.end());
+		y.setFromTriplets(yCoeffs.begin(), yCoeffs.end());
+		I.setFromTriplets(ICoeffs.begin(), ICoeffs.end());
+
+		for (auto t : terms) {
+
+			std::vector<SparseMat> productList;
+			for (int j = 0; j < nQubits; j++) {
+				productList.push_back(I);
+			}
+
+			auto qbit = t.first;
+			auto gate = t.second;
+
+			SparseMat tmp;
+			if (gate == "Z") {
+				tmp = z;
+			} else if (gate == "Y") {
+				tmp = y;
+			} else if (gate == "X") {
+				tmp = x;
+			} else {
+				XACCError("Invalid gate name - " + gate);
+			}
+
+			productList.at(qbit) = tmp;
+
+			SparseMat localU = productList.at(0);
+			for (int j = 1; j < productList.size(); j++) {
+				localU =
+						Eigen::kroneckerProduct(localU, productList.at(j)).eval();
+			}
+
+			ham = ham * localU;
+		}
+
+		return coefficient * ham;
+
 	}
 
 	Eigen::MatrixXcd toMatrix(const int nQubits) {

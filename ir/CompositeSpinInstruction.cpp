@@ -178,6 +178,17 @@ Eigen::MatrixXcd CompositeSpinInstruction::toMatrix(const int nQubits) {
 	return hamiltonian;
 }
 
+Eigen::SparseMatrix<std::complex<double>> CompositeSpinInstruction::toSparseMatrix(const int nQubits) {
+	Eigen::SparseMatrix<std::complex<double>> ham = std::dynamic_pointer_cast<
+			SpinInstruction>(getInstruction(0))->toSparseMatrix(nQubits);
+	for (int i = 1; i < nInstructions(); i++) {
+		auto inst = getInstruction(i);
+		ham += std::dynamic_pointer_cast<SpinInstruction>(inst)->toSparseMatrix(
+				nQubits);
+	}
+
+	return ham;
+}
 
 }
 }

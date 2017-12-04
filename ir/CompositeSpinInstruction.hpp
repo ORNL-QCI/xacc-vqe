@@ -34,6 +34,7 @@
 #include "Function.hpp"
 #include <boost/algorithm/string.hpp>
 #include <Eigen/Dense>
+#include <Eigen/Sparse>
 
 namespace xacc {
 
@@ -373,6 +374,8 @@ public:
 	void simplify();
 
 	Eigen::MatrixXcd toMatrix(const int nQubits);
+	Eigen::SparseMatrix<std::complex<double>> toSparseMatrix(const int nQubits);
+
 
 };
 
