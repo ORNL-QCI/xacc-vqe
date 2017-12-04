@@ -27,6 +27,13 @@ VQETaskResult GenerateHamiltonianStats::execute(
 		s << "Number of Variational Parameters = "
 				<< std::to_string(nParameters) << "\n";
 
+		s << "Fermion-to-Spin Transformation = ";
+	        if (xacc::optionExists("fermion-transformation")) {
+			s << xacc::getOption("fermion-transformation") << "\n";
+        	} else {
+			s << "jordan-wigner\n";
+	        }
+
 		XACCInfo("Number of Qubits = " + xacc::getOption("n-qubits"));
 		XACCInfo(
 				"Number of Hamiltonian Terms = "

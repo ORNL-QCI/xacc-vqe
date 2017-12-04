@@ -55,6 +55,7 @@ const std::string FCIDumpPreprocessor::process(const std::string& source,
 			int symGroup = 7;
 			if (xacc::optionExists("vqe-fcidump-symmetry")) {
 				symGroup = std::stoi(xacc::getOption("vqe-fcidump-symmetry"));
+				XACCInfo("Setting Symmetry Group to " + std::to_string(symGroup));
 			}
 
 			std::ofstream tmpFile(".tmp.fcidump");
