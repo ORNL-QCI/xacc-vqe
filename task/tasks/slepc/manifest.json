@@ -1,0 +1,6 @@
+{
+  "bundle.symbolic_name" : "xacc_vqe_slepc",
+  "bundle.activator" : true,
+  "bundle.name" : "XACC VQE Slepc support",
+  "bundle.description" : "This bundle provides VQE slepc support."
+}

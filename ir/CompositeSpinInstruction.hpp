@@ -375,6 +375,7 @@ public:
 
 	Eigen::MatrixXcd toMatrix(const int nQubits);
 	Eigen::SparseMatrix<std::complex<double>> toSparseMatrix(const int nQubits);
+	Eigen::SparseMatrix<double> toSparseRealMatrix(const int nQubits);
 
 
 };

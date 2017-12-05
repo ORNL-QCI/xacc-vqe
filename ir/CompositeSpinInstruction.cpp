@@ -190,6 +190,16 @@ Eigen::SparseMatrix<std::complex<double>> CompositeSpinInstruction::toSparseMatr
 	return ham;
 }
 
+Eigen::SparseMatrix<double> CompositeSpinInstruction::toSparseRealMatrix(const int nQubits) {
+	Eigen::SparseMatrix<double> ham = std::dynamic_pointer_cast<
+			SpinInstruction>(getInstruction(0))->toSparseRealMatrix(nQubits);
+	for (int i = 1; i < nInstructions(); i++) {
+		auto inst = getInstruction(i);
+		ham += std::dynamic_pointer_cast<SpinInstruction>(inst)->toSparseRealMatrix(
+				nQubits);
+	}
+	return ham;
+}
 }
 }
 

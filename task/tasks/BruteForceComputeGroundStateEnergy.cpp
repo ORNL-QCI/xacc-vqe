@@ -44,9 +44,11 @@ VQETaskResult BruteForceComputeGroundStateEnergy::execute(
 double EigenMatrixXcdGroundStateCalculator::computeGroundStateEnergy(
 		CompositeSpinInstruction& inst, const int nQubits) {
 	boost::mpi::communicator world;
-	Eigen::MatrixXcd ham = inst.toMatrix(nQubits);
-	Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> es(ham);
-	Eigen::VectorXcd eigenvalues = es.eigenvalues();
+	Eigen::SparseMatrix<double> ham = inst.toSparseRealMatrix(
+			nQubits);
+	Eigen::SelfAdjointEigenSolver<Eigen::SparseMatrix<double>> es(
+			ham);
+	auto eigenvalues = es.eigenvalues();
 	std::stringstream ss;
 	ss << eigenvalues.transpose();
 	if (world.rank() == 0)

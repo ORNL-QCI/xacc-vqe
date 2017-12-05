@@ -348,17 +348,29 @@ public:
 		}
 	}
 
-	Eigen::SparseMatrix<std::complex<double>> toSparseMatrix(const int nQubits) {
-		int dim = std::pow(2, nQubits);
+	Eigen::SparseMatrix<double> toSparseRealMatrix(const int nQubits) {
+		Eigen::SparseMatrix<std::complex<double>> mat = toSparseMatrix(nQubits);
+		std::vector<Eigen::Triplet<double>> triplets;
+		for (int k = 0; k < mat.outerSize(); ++k) {
+			for (Eigen::SparseMatrix<std::complex<double>>::InnerIterator it(mat, k); it; ++it) {
+				if (it.value() != std::complex<double>(0.0, 0.0)) {
+					triplets.push_back(Eigen::Triplet<double>(it.row(), it.col(), std::real(it.value())));
+				}
+			}
+		}
+		Eigen::SparseMatrix<double>  spRealMat(mat.rows(), mat.cols());
+		spRealMat.setFromTriplets(triplets.begin(), triplets.end());
+		return spRealMat;
+	}
 
+	Eigen::SparseMatrix<std::complex<double>> toSparseMatrix(const int nQubits) {
+
+		int dim = std::pow(2, nQubits);
 		using Triplet = Eigen::Triplet<std::complex<double>>;
 		using SparseMat = Eigen::SparseMatrix<std::complex<double>>;
-		std::vector<Triplet> init;
-		for (int i = 0; i < dim; i++) {
-			init.push_back(Triplet(i,i,1));
-		}
+
 		SparseMat ham(dim,dim);
-		ham.setFromTriplets(init.begin(), init.end());
+		ham.setIdentity();
 
 		if (terms.size() == 1 && terms[0] == std::pair<int, std::string> { 0,
 				"I" }) {
@@ -370,7 +382,7 @@ public:
 		SparseMat z(2, 2), x(2, 2), y(2, 2), I(2, 2);
 		std::vector<Triplet> zCoeffs{Triplet(0,0,1), Triplet(1,1,-1)};
 		std::vector<Triplet> xCoeffs{Triplet(0,1,1), Triplet(1,0,1)};
-		std::vector<Triplet> yCoeffs{Triplet(0,1,-i), Triplet(1, 0, -i)};
+		std::vector<Triplet> yCoeffs{Triplet(0,1,-i), Triplet(1, 0, i)};
 		std::vector<Triplet> ICoeffs{Triplet(0, 0, 1), Triplet(1, 1, 1)};
 
 		z.setFromTriplets(zCoeffs.begin(), zCoeffs.end());
@@ -411,7 +423,6 @@ public:
 		}
 
 		return coefficient * ham;
-
 	}
 
 	Eigen::MatrixXcd toMatrix(const int nQubits) {
