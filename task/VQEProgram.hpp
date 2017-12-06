@@ -59,8 +59,6 @@ public:
 			if (xacc::optionExists("vqe-kernels-compiler")) {
 				xacc::setCompiler(xacc::getOption("vqe-kernels-compiler"));
 			}
-			XACCError("You must set the number of qubits (--n-qubits arg) "
-					"when using custom kernels file.");
 			nQubits = std::stoi(xacc::getOption("n-qubits"));
 			userProvidedKernels = true;
 			accelerator->createBuffer("qreg", nQubits);

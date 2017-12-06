@@ -15,8 +15,9 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/task/tasks)
 
 include_directories(/projects/petsc/arch-linux2-c-debug/include)
-include_directories(/projects/slepc/arch-linux2-c-debug/include)
-include_directories(/projects/slepc/include)
+include_directories(/projects/petsc/include)
+include_directories(/projects/slepc-3.8.2/arch-linux2-c-debug/include)
+include_directories(/projects/slepc-3.8.2/include)
 
 file (GLOB_RECURSE HEADERS *.hpp)
 
@@ -53,7 +54,7 @@ usFunctionEmbedResources(TARGET ${LIBRARY_NAME}
     manifest.json
   )
 
-target_link_libraries(${LIBRARY_NAME} ${Boost_LIBRARIES} ${XACC_LIBRARIES} ${PYTHON_LIBRARY} xacc-vqe-ir ${MPI_CXX_LIBRARIES}) # /projects/petsc/arch-linux2-c-debug/lib/libpetsc.so /projects/slepc/arch-linux2-c-debug/lib/libslepc.so)
+target_link_libraries(${LIBRARY_NAME} ${Boost_LIBRARIES} ${XACC_LIBRARIES} ${PYTHON_LIBRARY} xacc-vqe-ir ${MPI_CXX_LIBRARIES} /projects/petsc/arch-linux2-c-debug/lib/libpetsc.so /projects/slepc-3.8.2/arch-linux2-c-debug/lib/libslepc.so)
 
 install(TARGETS ${LIBRARY_NAME} DESTINATION ${XACC_LIBRARY_DIR}/plugins/misc)
 

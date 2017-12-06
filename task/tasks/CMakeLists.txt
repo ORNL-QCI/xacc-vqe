@@ -1,2 +1,2 @@
 #add_subdirectory(arpack)
-#add_subdirectory(slepc)
+add_subdirectory(slepc)
