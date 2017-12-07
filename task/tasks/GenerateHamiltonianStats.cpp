@@ -18,7 +18,11 @@ VQETaskResult GenerateHamiltonianStats::execute(
 	auto nParameters = program->getNParameters();
 
 	if (comm.rank() == 0) {
-		std::ofstream out("gen_hamiltonian_stats_out.txt");
+		std::string defaultFileName = "gen_hamiltonian_stats_out.txt";
+		if (xacc::optionExists("vqe-profile-name")) {
+			defaultFileName = xacc::getOption("vqe-profile-name");
+		}
+		std::ofstream out(defaultFileName);
 
 		std::shared_ptr<IRTransformation> transform;
 		if (xacc::optionExists("fermion-transformation")) {
@@ -37,25 +41,30 @@ VQETaskResult GenerateHamiltonianStats::execute(
 		s << "Number of Qubits = " << xacc::getOption("n-qubits") << "\n";
 		s << "Number of Hamiltonian Terms = "
 				<< std::to_string(kernels.size()) << "\n";
-		s << "State Prep Type: " << statePrepType << "\n";
-		s << "Number of Variational Parameters = "
-				<< std::to_string(nParameters) << "\n";
 
+		if (nParameters > 0) {
+			s << "State Prep Type: " << statePrepType << "\n";
+			s << "Number of Variational Parameters = "
+					<< std::to_string(nParameters) << "\n";
+		}
 		s << "Fermion-to-Spin Transformation = ";
-	        if (xacc::optionExists("fermion-transformation")) {
+		if (xacc::optionExists("fermion-transformation")) {
 			s << xacc::getOption("fermion-transformation") << "\n";
-        	} else {
+		} else {
 			s << "jordan-wigner\n";
-	        }
+		}
 
 		XACCInfo("Number of Qubits = " + xacc::getOption("n-qubits"));
 		XACCInfo(
 				"Number of Hamiltonian Terms = "
 						+ std::to_string(kernels.size()));
-		XACCInfo("State Prep Type: " + statePrepType);
-		XACCInfo(
-				"Number of Variational Parameters = "
-						+ std::to_string(nParameters));
+
+		if (nParameters > 0) {
+			XACCInfo("State Prep Type: " + statePrepType);
+			XACCInfo(
+					"Number of Variational Parameters = "
+							+ std::to_string(nParameters));
+		}
 		std::unordered_map<int, int> countKLocals;
 		for (auto k : kernels) {
 			// There is a measurement for each of the pauli's

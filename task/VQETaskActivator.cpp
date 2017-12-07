@@ -64,6 +64,7 @@ public:
 		auto c5 = std::make_shared<xacc::vqe::ComputeExpectationValues>();
 		auto c6 = std::make_shared<xacc::vqe::BruteForceComputeGroundStateEnergy>();
 		auto c7 = std::make_shared<xacc::vqe::EigenMatrixXcdGroundStateCalculator>();
+		auto c8 = std::make_shared<xacc::vqe::VQEDummyAccelerator>();
 
 		context.RegisterService<xacc::vqe::VQETask>(c);
 		context.RegisterService<xacc::vqe::VQETask>(c2);
@@ -72,9 +73,12 @@ public:
 		context.RegisterService<xacc::vqe::VQETask>(c5);
 		context.RegisterService<xacc::vqe::VQETask>(c6);
 
+		context.RegisterService<xacc::Accelerator>(c8);
+
 		context.RegisterService<xacc::OptionsProvider>(c);
 		context.RegisterService<xacc::OptionsProvider>(c4);
 		context.RegisterService<xacc::OptionsProvider>(c6);
+		context.RegisterService<xacc::OptionsProvider>(c3);
 
 		context.RegisterService<xacc::vqe::GroundStateEnergyCalculator>(c7);
 	}

@@ -13,6 +13,49 @@
 namespace xacc {
 namespace vqe {
 
+/**
+ * When users just want to run the brute force energy calculator
+ * or generate Hamiltonian profiles, they don't actually need
+ * a real Accelerator. So here we provide a dummy one just in case,
+ * this simplifies the build process for xacc-vqe.
+ */
+class VQEDummyAccelerator : public xacc::Accelerator {
+public:
+	virtual void initialize() {}
+	virtual AcceleratorType getType() { return AcceleratorType::qpu_gate; }
+	virtual std::vector<std::shared_ptr<IRTransformation>> getIRTransformations() {
+		return std::vector<std::shared_ptr<IRTransformation>> {};
+	}
+	virtual void execute(std::shared_ptr<AcceleratorBuffer> buffer,
+				const std::shared_ptr<Function> function) {
+		XACCError("Error - you have tried to execute the VQEDummyAccelerator. "
+				"Please use a real Accelerator.");
+	}
+	virtual std::vector<std::shared_ptr<AcceleratorBuffer>> execute(
+			std::shared_ptr<AcceleratorBuffer> buffer,
+			const std::vector<std::shared_ptr<Function>> functions) {
+		XACCError("Error - you have tried to execute the VQEDummyAccelerator. "
+						"Please use a real Accelerator.");
+	}
+	virtual std::shared_ptr<AcceleratorBuffer> createBuffer(
+				const std::string& varId) {
+		XACCError("Error - you have tried to create an AcceleratorBuffer "
+				"with the VQEDummyAccelerator. "
+						"Please use a real Accelerator.");
+	}
+	virtual std::shared_ptr<AcceleratorBuffer> createBuffer(
+			const std::string& varId, const int size) {
+		XACCError("Error - you have tried to create an AcceleratorBuffer "
+				"with the VQEDummyAccelerator. "
+						"Please use a real Accelerator.");
+	}
+	virtual bool isValidBufferSize(const int NBits) {
+		return false;
+	}
+	virtual const std::string name() const { return "vqe-dummy"; }
+	virtual const std::string description() const {return "";}
+};
+
 class VQEProgram: public xacc::Program {
 
 public:
@@ -58,6 +101,10 @@ public:
 			xacc::setCompiler("scaffold");
 			if (xacc::optionExists("vqe-kernels-compiler")) {
 				xacc::setCompiler(xacc::getOption("vqe-kernels-compiler"));
+			}
+			if (!xacc::optionExists("n-qubits")) {
+				XACCError("You must provide --n-qubits arg if "
+						"running with custom hamiltonian kernels.");
 			}
 			nQubits = std::stoi(xacc::getOption("n-qubits"));
 			userProvidedKernels = true;
