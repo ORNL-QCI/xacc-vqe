@@ -42,7 +42,7 @@ Eigen::SparseMatrix<std::complex<double>> SpinInstruction::toSparseMatrix(const 
 	x.setFromTriplets(xCoeffs.begin(), xCoeffs.end());
 	y.setFromTriplets(yCoeffs.begin(), yCoeffs.end());
 
-#pragma omp parallel for shared(terms) reduction (*:ham)
+#pragma omp parallel for reduction (*:ham)
 	for (int i = 0; i < terms.size(); i++) {
 
 		auto t = terms[i];
