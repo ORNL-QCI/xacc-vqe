@@ -1,7 +1,23 @@
 #include "SpinInstruction.hpp"
+#include <boost/mpi.hpp>
+#include <boost/serialization/complex.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/utility.hpp>
 
 namespace xacc {
 namespace vqe {
+
+using PersistedTriplet = std::pair<std::pair<int,int>, std::complex<double>>;
+
+using Triplet = Eigen::Triplet<std::complex<double>>;
+using SparseMat = Eigen::SparseMatrix<std::complex<double>>;
+
+struct add_triplets {
+	std::vector<PersistedTriplet> operator()( std::vector<PersistedTriplet> a, std::vector<PersistedTriplet> b) {
+		std::move(b.begin(), b.end(), std::back_inserter(a));
+		return a;
+	}
+};
 
 CompositeSpinInstruction::CompositeSpinInstruction() {
 }
@@ -179,15 +195,35 @@ Eigen::MatrixXcd CompositeSpinInstruction::toMatrix(const int nQubits) {
 }
 
 Eigen::SparseMatrix<std::complex<double>> CompositeSpinInstruction::toSparseMatrix(const int nQubits) {
-	Eigen::SparseMatrix<std::complex<double>> ham = std::dynamic_pointer_cast<
-			SpinInstruction>(getInstruction(0))->toSparseMatrix(nQubits);
-	for (int i = 1; i < nInstructions(); i++) {
+	std::size_t dim = 1;
+	std::size_t two = 2;
+	for (int i = 0; i < nQubits; i++)
+		dim *= two;
+
+	Eigen::SparseMatrix<std::complex<double>> ham (dim, dim);
+	boost::mpi::communicator world;
+	int myStart = (world.rank()) * (nInstructions()) / world.size();
+	int	myEnd = (world.rank() + 1) * (nInstructions()) / world.size();
+	for (int i = myStart; i < myEnd; i++) {
 		auto inst = getInstruction(i);
 		ham += std::dynamic_pointer_cast<SpinInstruction>(inst)->toSparseMatrix(
 				nQubits);
 	}
 
-	return ham;
+	std::vector<PersistedTriplet> resultTriplets, myTriplets;
+	for (int k = 0; k < ham.outerSize(); ++k) {
+		for (SparseMat::InnerIterator it(ham, k); it; ++it) {
+			myTriplets.push_back({{it.row(), it.col()},it.value()});
+		}
+	}
+	boost::mpi::all_reduce(world, myTriplets, resultTriplets, add_triplets());
+	std::vector<Triplet> ts;
+	for (auto t : resultTriplets) {
+		ts.push_back(Triplet(t.first.first, t.first.second, t.second));
+	}
+	SparseMat ret(ham.rows(), ham.cols());
+	ret.setFromTriplets(ts.begin(), ts.end());
+	return ret;
 }
 
 Eigen::SparseMatrix<double> CompositeSpinInstruction::toSparseRealMatrix(const int nQubits) {
