@@ -1,7 +1,8 @@
 
-#find_package(Arpackpp) 
+find_package(PETSc) 
+find_package(SLEPc)
 
-#if (ARPACKPP_FOUND) 
+if (PETSC_FOUND AND SLEPC_FOUND) 
 
 set (PACKAGE_NAME "XACC Slepc Ground State Energy Calculator")
 set (PACKAGE_DESCIPTION "")
@@ -62,4 +63,4 @@ install(TARGETS ${LIBRARY_NAME} DESTINATION ${XACC_LIBRARY_DIR}/plugins/misc)
 #file (GLOB test_files tests/*.cpp)
 #add_tests("${test_files}" "${CMAKE_CURRENT_SOURCE_DIR}" "${Boost_LIBRARIES};pthread;dl;xacc-vqe-ir;xacc-vqe-tasks;xacc-vqe-irtransformations")
 
-#endif()
+endif()

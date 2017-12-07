@@ -73,7 +73,7 @@ install(TARGETS ${LIBRARY_NAME} DESTINATION ${XACC_LIBRARY_DIR}/plugins/compiler
 file (GLOB test_files tests/*.cpp)
 add_tests("${test_files}" "${CMAKE_CURRENT_SOURCE_DIR}" "${Boost_LIBRARIES};pthread;dl;xacc-vqe-ir;xacc-vqe-fermion-compiler")
 
-if (EXISTS /usr/local/include/chemps2/Hamiltonian.h OR EXISTS ${CheMPS2_ROOT}/chemps2/Hamiltonian.h)
+if (EXISTS /usr/local/include/chemps2/Hamiltonian.h OR EXISTS ${CheMPS2_ROOT}/include/chemps2/Hamiltonian.h)
    message(STATUS "Found CheMPS2, adding FCIDUMP Preprocessor")
    add_subdirectory(fcidump)
 endif()
