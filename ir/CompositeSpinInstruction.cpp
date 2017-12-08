@@ -202,28 +202,13 @@ Eigen::SparseMatrix<std::complex<double>> CompositeSpinInstruction::toSparseMatr
 
 	Eigen::SparseMatrix<std::complex<double>> ham (dim, dim);
 	boost::mpi::communicator world;
-	int myStart = (world.rank()) * (nInstructions()) / world.size();
-	int	myEnd = (world.rank() + 1) * (nInstructions()) / world.size();
-	for (int i = myStart; i < myEnd; i++) {
+	for (int i = 0; i < nInstructions(); i++) {
 		auto inst = getInstruction(i);
 		ham += std::dynamic_pointer_cast<SpinInstruction>(inst)->toSparseMatrix(
 				nQubits);
 	}
 
-	std::vector<PersistedTriplet> resultTriplets, myTriplets;
-	for (int k = 0; k < ham.outerSize(); ++k) {
-		for (SparseMat::InnerIterator it(ham, k); it; ++it) {
-			myTriplets.push_back({{it.row(), it.col()},it.value()});
-		}
-	}
-	boost::mpi::all_reduce(world, myTriplets, resultTriplets, add_triplets());
-	std::vector<Triplet> ts;
-	for (auto t : resultTriplets) {
-		ts.push_back(Triplet(t.first.first, t.first.second, t.second));
-	}
-	SparseMat ret(ham.rows(), ham.cols());
-	ret.setFromTriplets(ts.begin(), ts.end());
-	return ret;
+	return ham;
 }
 
 Eigen::SparseMatrix<double> CompositeSpinInstruction::toSparseRealMatrix(const int nQubits) {

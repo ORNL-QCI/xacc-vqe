@@ -35,6 +35,7 @@
 #include <boost/test/included/unit_test.hpp>
 #include "SpinInstruction.hpp"
 #include <boost/algorithm/string.hpp>
+#include "XACC.hpp"
 
 using namespace xacc::vqe;
 
@@ -149,3 +150,64 @@ BOOST_AUTO_TEST_CASE(checkBinaryVector) {
 
 }
 
+BOOST_AUTO_TEST_CASE(checkBigMatrix) {
+
+	using SparseMat = Eigen::SparseMatrix<std::complex<double>>;
+	using Triplet = Eigen::Triplet<std::complex<double>>;
+
+	int nQubits = 4;
+
+	std::complex<double> i(0, 1);
+	SparseMat z(2, 2), x(2, 2), y(2, 2), I(2, 2);
+	std::vector<Triplet> zCoeffs{Triplet(0,0,1), Triplet(1,1,-1)};
+	std::vector<Triplet> xCoeffs{Triplet(0,1,1), Triplet(1,0,1)};
+	std::vector<Triplet> yCoeffs{Triplet(0,1,-i), Triplet(1, 0, i)};
+
+	z.setFromTriplets(zCoeffs.begin(), zCoeffs.end());
+	x.setFromTriplets(xCoeffs.begin(), xCoeffs.end());
+	y.setFromTriplets(yCoeffs.begin(), yCoeffs.end());
+
+	std::size_t dim = 1;
+	std::size_t two = 2;
+	for (int i = 0; i < nQubits; i++)
+		dim *= two;
+
+	std::vector<SparseMat> Zs, Xs, Ys;
+
+	for (int i = 0; i < nQubits; i++) {
+
+		std::size_t d1 = 1, d2 = 1;
+		for (int j = 0; j < i; j++) d1 *= two;
+		for (int j = 0; j < nQubits-i-1; j++) d2 *= two;
+
+		std::cout << "Creating Matrices for qbit " << i << "\n";
+
+		SparseMat i1(d1,d1), iNi(d2,d2);
+		i1.setIdentity();
+		iNi.setIdentity();
+
+		SparseMat zi =
+				Eigen::kroneckerProduct(i1,
+						Eigen::kroneckerProduct(z, iNi).eval().pruned()).eval().pruned();
+		zi.makeCompressed();
+
+		SparseMat xi =
+				Eigen::kroneckerProduct(i1,
+						Eigen::kroneckerProduct(x, iNi).eval().pruned()).eval().pruned();
+		xi.makeCompressed();
+		SparseMat yi =
+				Eigen::kroneckerProduct(i1,
+						Eigen::kroneckerProduct(y, iNi).eval().pruned()).eval().pruned();
+		yi.makeCompressed();
+
+		BOOST_VERIFY(zi.rows() == dim);
+		BOOST_VERIFY(zi.cols() == dim);
+		BOOST_VERIFY(yi.rows() == dim);
+		BOOST_VERIFY(yi.cols() == dim);
+		BOOST_VERIFY(xi.rows() == dim);
+		BOOST_VERIFY(xi.cols() == dim);
+
+	}
+
+
+}
