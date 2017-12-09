@@ -117,7 +117,7 @@ double SlepcGroundStateEnergyCalculator::computeGroundStateEnergy(
 	MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY);
 
-	MatView(A, PETSC_VIEWER_STDOUT_WORLD);
+	//MatView(A, PETSC_VIEWER_STDOUT_WORLD);
 	EPSCreate(PETSC_COMM_WORLD, &eps);
 	EPSSetOperators(eps, A, NULL);
 	EPSSetProblemType(eps, EPS_HEP);
