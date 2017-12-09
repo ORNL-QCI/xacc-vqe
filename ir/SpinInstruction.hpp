@@ -215,6 +215,44 @@ public:
 		return "qubit-instruction";
 	}
 
+	const int countTermsOfType(const std::string& gate) {
+		int count = 0;
+		for (auto t : terms) {
+			if (t.second == gate) {
+				count++;
+			}
+		}
+
+		return count;
+	}
+
+	bool isIdentity() {
+		return terms.size() == 1 && terms[0] == std::pair<int, std::string> { 0,
+				"I" };
+	}
+
+	bool isDiagonal() {
+		return countTermsOfType("Z") == terms.size();
+	}
+
+	const std::pair<std::string, std::complex<double>> computeActionOnBits(const std::string& bitString) {
+		std::complex<double> i(0,1);
+		std::complex<double> newCoeff = coefficient;
+		std::string newBits = bitString;
+		for (auto t : terms) {
+			auto idx = t.first;
+			auto gate = t.second;
+			if (gate == "Z") {
+				newCoeff *= newBits[idx] == '1' ? -1 : 1;
+			} else if (gate == "X") {
+				newBits[idx] = (newBits[idx] == '1' ? '0' : '1');
+			} else if (gate == "Y") {
+				newCoeff *= newBits[idx] == '1' ? -i : i;
+				newBits[idx] = (newBits[idx] == '1' ? '0' : '1');
+			}
+		}
+		return std::make_pair(newBits, newCoeff);
+	}
 
 	/**
 	 * Persist this Instruction to an assembly-like

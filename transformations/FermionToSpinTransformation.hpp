@@ -127,9 +127,9 @@ protected:
 		// Create a new GateQIR to hold the spin based terms
 		auto newIr = std::make_shared<xacc::quantum::GateQIR>();
 		int counter = 0;
-//		auto resultsStr = result.toString("");
-//		boost::replace_all(resultsStr, "+", "+\n");
-//		if (world.rank() == 0) std::cout << "Transformed Fermion to Spin:\nBEGIN\n" << resultsStr << "\nEND\n\n";
+		auto resultsStr = result.toString("");
+		boost::replace_all(resultsStr, "+", "+\n");
+		if (world.rank() == 0) std::cout << "Transformed Fermion to Spin:\nBEGIN\n" << resultsStr << "\nEND\n\n";
 		auto pi = boost::math::constants::pi<double>();
 
 		// Populate GateQIR now...
@@ -138,7 +138,7 @@ protected:
 			// Cast to a Spin Instruction
 			auto spinInst = std::dynamic_pointer_cast<SpinInstruction>(inst);
 
-			if (std::fabs(std::real(spinInst->coefficient)) > 1e-9) {
+//			if (std::fabs(std::real(spinInst->coefficient)) > 1e-9) {
 
 				int isIdentity = 0;
 				if (*spinInst.get() == SpinInstruction( { { 0, "I" } })) {
@@ -191,7 +191,7 @@ protected:
 				newIr->addKernel(gateFunction);
 				counter++;
 			}
-		}
+//		}
 		return newIr;
 	}
 };

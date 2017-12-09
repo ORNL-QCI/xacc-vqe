@@ -209,5 +209,28 @@ BOOST_AUTO_TEST_CASE(checkBigMatrix) {
 
 	}
 
+}
+
+BOOST_AUTO_TEST_CASE(checkAction) {
+
+	SpinInstruction inst(std::vector<std::pair<int, std::string>> { { 0, "X" },
+					{ 1, "Z" }, { 2, "Y" }, { 3, "Z" } }, std::complex<double>(2.2,0));
+
+	auto result = inst.computeActionOnBits("0110");
+
+	BOOST_VERIFY(result.first == "1100");
+	BOOST_VERIFY(result.second == std::complex<double>(0,2.2));
+
+	std::cout << "HELLO:\n" << result.first << ", " << result.second << "\n";
+
+	SpinInstruction inst2(std::vector<std::pair<int, std::string>> { { 0, "X" },
+					{ 1, "Z" }, { 2, "Y" }, { 3, "Y" } }, std::complex<double>(2.2,0));
+
+	auto result2 = inst2.computeActionOnBits("0110");
+
+	std::cout << "HELLO:\n" << result2.first << ", " << result2.second << "\n";
+
+	BOOST_VERIFY(result2.first == "1101");
+	BOOST_VERIFY(result2.second == std::complex<double>(-2.2,0));
 
 }
