@@ -36,12 +36,15 @@ double SlepcGroundStateEnergyCalculator::computeGroundStateEnergy(
 	for (int i = 0; i < nQubits; i++)
 		dim *= two;
 
-	std::unordered_map<IndexPair, std::complex<double>, boost::hash<IndexPair> > nonZeros;
+	std::unordered_map<IndexPair,
+					std::complex<double>,
+					boost::hash<IndexPair> > nonZeros;
 
 	// We know there will be diagonal enties
 	for (int i = 0; i < dim; i++)
 		nonZeros.insert(
-				std::make_pair(IndexPair { i, i }, std::complex<double>(0, 0)));
+				std::make_pair(IndexPair { i, i },
+						std::complex<double>(0, 0)));
 
 	// Generate all bit strings
 	std::vector<std::string> bitStrings;
@@ -55,6 +58,21 @@ double SlepcGroundStateEnergyCalculator::computeGroundStateEnergy(
 	}
 
 	if (rank == 0) XACCInfo("Building up list of nonZeros.");
+
+#pragma omp parallel
+	{
+
+		std::unordered_map<IndexPair,
+						std::complex<double>,
+						boost::hash<IndexPair> > localNonZeros;
+
+		// We know there will be diagonal enties
+		for (int i = 0; i < dim; i++)
+			localNonZeros.insert(
+					std::make_pair(IndexPair { i, i },
+							std::complex<double>(0, 0)));
+
+#pragma omp for
 	for (int i = 0; i < inst.nInstructions(); i++) {
 		std::shared_ptr<SpinInstruction> spinInst = std::dynamic_pointer_cast<
 				SpinInstruction>(inst.getInstruction(i));
@@ -63,7 +81,7 @@ double SlepcGroundStateEnergyCalculator::computeGroundStateEnergy(
 		std::pair<std::string, std::complex<double>> newBitStrCoeff;
 
 		if (spinInst->isIdentity()) {
-			for (auto& kv : nonZeros) {
+			for (auto& kv : localNonZeros) {
 				if (kv.first.first == kv.first.second) {
 					kv.second += spinInst->coefficient;
 				}
@@ -72,20 +90,33 @@ double SlepcGroundStateEnergyCalculator::computeGroundStateEnergy(
 			for (std::uint64_t j = 0; j < dim; j++) {
 				p = std::make_pair(j, j);
 				newBitStrCoeff = spinInst->computeActionOnBits(bitStrings[j]);
-				nonZeros[p] += newBitStrCoeff.second;
+				localNonZeros[p] += newBitStrCoeff.second;
 			}
 		} else {
 			for (std::uint64_t j = 1; j < dim; j++) {
 				newBitStrCoeff = spinInst->computeActionOnBits(bitStrings[j]);
 				std::uint64_t i = std::stol(newBitStrCoeff.first, nullptr, 2);
 				p = std::make_pair(i, j);
-				if (nonZeros.find(p) != nonZeros.end()) {
-					nonZeros[p] += newBitStrCoeff.second;
+				if (localNonZeros.find(p) != localNonZeros.end()) {
+					localNonZeros[p] += newBitStrCoeff.second;
 				} else {
-					nonZeros.insert(std::make_pair(p, newBitStrCoeff.second));
+					localNonZeros.insert(std::make_pair(p, newBitStrCoeff.second));
 				}
 			}
 		}
+	}
+
+#pragma omp critical
+	{
+		for (auto& kv : localNonZeros) {
+			if (nonZeros.find(kv.first) != nonZeros.end()) {
+				nonZeros[kv.first] += kv.second;
+			} else {
+				nonZeros.insert(std::make_pair(kv.first, kv.second));
+			}
+		}
+	}
+
 	}
 	if (rank == 0) XACCInfo("Done building up list of nonZeros.");
 
