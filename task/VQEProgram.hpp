@@ -151,7 +151,8 @@ public:
 		// We don't need state prep if we are brute
 		// force computing ground state energy
 		if (xacc::getOption("vqe-task") != "vqe-bf-gse" &&
-				xacc::getOption("vqe-task") != "vqe-profile") {
+				xacc::getOption("vqe-task") != "vqe-profile" &&
+				xacc::getOption("vqe-task") != "vqe-openfermion-eigenspectrum") {
 			statePrep = createStatePreparationCircuit();
 
 			// Set the number of VQE parameters

@@ -40,6 +40,7 @@
 #include "Sweep1DParameter.hpp"
 #include "VQEMinimizeTask.hpp"
 #include "BruteForceComputeGroundStateEnergy.hpp"
+#include "GenerateOpenFermionEigenspectrumScript.hpp"
 
 using namespace cppmicroservices;
 
@@ -65,6 +66,7 @@ public:
 		auto c6 = std::make_shared<xacc::vqe::BruteForceComputeGroundStateEnergy>();
 		auto c7 = std::make_shared<xacc::vqe::EigenMatrixXcdGroundStateCalculator>();
 		auto c8 = std::make_shared<xacc::vqe::VQEDummyAccelerator>();
+		auto c9 = std::make_shared<xacc::vqe::GenerateOpenFermionEigenspectrumScript>();
 
 		context.RegisterService<xacc::vqe::VQETask>(c);
 		context.RegisterService<xacc::vqe::VQETask>(c2);
@@ -72,6 +74,7 @@ public:
 		context.RegisterService<xacc::vqe::VQETask>(c4);
 		context.RegisterService<xacc::vqe::VQETask>(c5);
 		context.RegisterService<xacc::vqe::VQETask>(c6);
+		context.RegisterService<xacc::vqe::VQETask>(c9);
 
 		context.RegisterService<xacc::Accelerator>(c8);
 
