@@ -235,7 +235,7 @@ public:
 		return countTermsOfType("Z") == terms.size();
 	}
 
-	const std::pair<std::string, std::complex<double>> computeActionOnBits(const std::string& bitString) {
+	const std::pair<std::string, std::complex<double>> computeActionOnKet(const std::string& bitString) {
 		std::complex<double> i(0,1);
 		std::complex<double> newCoeff = coefficient;
 		std::string newBits = bitString;
@@ -254,6 +254,26 @@ public:
 		return std::make_pair(newBits, newCoeff);
 	}
 
+	const std::pair<std::string, std::complex<double>> computeActionOnBra(const std::string& bitString) {
+		std::complex<double> i(0,1);
+		std::complex<double> newCoeff = coefficient;
+		std::string newBits = bitString;
+
+		for (auto t : terms) {
+			auto idx = t.first;
+			auto gate = t.second;
+			if (gate == "Z") {
+				newCoeff *= newBits[idx] == '1' ? -1 : 1;
+			} else if (gate == "X") {
+				newBits[idx] = (newBits[idx] == '1' ? '0' : '1');
+			} else if (gate == "Y") {
+				newCoeff *= newBits[idx] == '1' ? i : -i;
+				newBits[idx] = (newBits[idx] == '1' ? '0' : '1');
+			}
+		}
+		return std::make_pair(newBits, newCoeff);
+
+	}
 	/**
 	 * Persist this Instruction to an assembly-like
 	 * string.

@@ -19,7 +19,7 @@ double SlepcGroundStateEnergyCalculator::computeGroundStateEnergy(
 	boost::mpi::communicator world;
 	int rank = world.rank();
 	int nRanks = world.size();
-	double gsReal;
+	std::complex<double> gsReal;
 	static char help[] = "";
 	std::vector<std::string> argvVec;
 	std::vector<char*> cstrs;
@@ -36,111 +36,75 @@ double SlepcGroundStateEnergyCalculator::computeGroundStateEnergy(
 	for (int i = 0; i < nQubits; i++)
 		dim *= two;
 
-	std::unordered_map<IndexPair,
-					std::complex<double>,
-					boost::hash<IndexPair> > nonZeros;
-
-	// We know there will be diagonal enties
-	for (int i = 0; i < dim; i++)
-		nonZeros.insert(
-				std::make_pair(IndexPair { i, i },
-						std::complex<double>(0, 0)));
-
 	// Generate all bit strings
-	std::vector<std::string> bitStrings;
+	std::vector<std::string> bitStrings(dim);
+#pragma omp parallel for
 	for (std::uint64_t j = 0; j < dim; j++) {
 
 		std::stringstream s;
 		for (int k = nQubits - 1; k >= 0; k--) {
 			s << ((j >> k) & 1);
 		}
-		bitStrings.push_back(s.str());
+		bitStrings[j] = s.str();
 	}
 
-	if (rank == 0) XACCInfo("Building up list of nonZeros.");
-
-#pragma omp parallel
-	{
-
-		std::unordered_map<IndexPair,
-						std::complex<double>,
-						boost::hash<IndexPair> > localNonZeros;
-
-		// We know there will be diagonal enties
-		for (int i = 0; i < dim; i++)
-			localNonZeros.insert(
-					std::make_pair(IndexPair { i, i },
-							std::complex<double>(0, 0)));
-
-#pragma omp for
-	for (int i = 0; i < inst.nInstructions(); i++) {
-		std::shared_ptr<SpinInstruction> spinInst = std::dynamic_pointer_cast<
-				SpinInstruction>(inst.getInstruction(i));
-
-		IndexPair p;
-		std::pair<std::string, std::complex<double>> newBitStrCoeff;
-
-		if (spinInst->isIdentity()) {
-			for (auto& kv : localNonZeros) {
-				if (kv.first.first == kv.first.second) {
-					kv.second += spinInst->coefficient;
-				}
-			}
-		} else if (spinInst->isDiagonal()) {
-			for (std::uint64_t j = 0; j < dim; j++) {
-				p = std::make_pair(j, j);
-				newBitStrCoeff = spinInst->computeActionOnBits(bitStrings[j]);
-				localNonZeros[p] += newBitStrCoeff.second;
-			}
-		} else {
-			for (std::uint64_t j = 1; j < dim; j++) {
-				newBitStrCoeff = spinInst->computeActionOnBits(bitStrings[j]);
-				std::uint64_t i = std::stol(newBitStrCoeff.first, nullptr, 2);
-				p = std::make_pair(i, j);
-				if (localNonZeros.find(p) != localNonZeros.end()) {
-					localNonZeros[p] += newBitStrCoeff.second;
-				} else {
-					localNonZeros.insert(std::make_pair(p, newBitStrCoeff.second));
-				}
-			}
-		}
-	}
-
-#pragma omp critical
-	{
-		for (auto& kv : localNonZeros) {
-			if (nonZeros.find(kv.first) != nonZeros.end()) {
-				nonZeros[kv.first] += kv.second;
-			} else {
-				nonZeros.insert(std::make_pair(kv.first, kv.second));
-			}
-		}
-	}
-
-	}
-	if (rank == 0) XACCInfo("Done building up list of nonZeros.");
+	SlepcInitialize(&argc, &argv, (char*) 0, help);
 
 	Mat A;
 	EPS eps;
 	EPSType type;
-	PetscInt n = dim, Istart, Iend;
-
-	SlepcInitialize(&argc, &argv, (char*) 0, help);
+	PetscInt Istart, Iend;
 
 	MatCreate(PETSC_COMM_WORLD, &A);
-	MatSetSizes(A, PETSC_DECIDE, PETSC_DECIDE, n, n);
+	MatSetSizes(A, PETSC_DECIDE, PETSC_DECIDE, dim, dim);
 	MatSetFromOptions(A);
 	MatSetUp(A);
 
 	MatGetOwnershipRange(A, &Istart, &Iend);
-	for (auto& kv : nonZeros) {
-		int r = kv.first.first;
-		int col = kv.first.second;
-		double val = std::real(kv.second);
-		if (std::fabs(val) > 1e-12) {
-			// Only add our rank's values
-			if (r >= Istart && r < Iend) {
-				MatSetValue(A, r, col, val, INSERT_VALUES);
+
+	auto nTerms = inst.nInstructions();
+
+	// Get Identity coefficient
+	std::complex<double> identityCoeff(0.0, 0.0);
+	for (int i = 0; i < nTerms; i++) {
+		std::shared_ptr<SpinInstruction> spinInst = std::dynamic_pointer_cast<
+				SpinInstruction>(inst.getInstruction(i));
+		if (spinInst->isIdentity()) {
+			identityCoeff = spinInst->coefficient;
+			break;
+		}
+	}
+
+	for (std::uint64_t myRow = Istart; myRow < Iend; myRow++) {
+
+		XACCInfo(
+				"Matrix Construction for rank " + std::to_string(rank)
+						+ ", row " + std::to_string(myRow));
+
+		if (identityCoeff != std::complex<double>(0.0, 0.0)) {
+			MatSetValue(A, myRow, myRow, identityCoeff, ADD_VALUES);
+		}
+
+		for (int i = 0; i < nTerms; i++) {
+
+			std::shared_ptr<SpinInstruction> spinInst =
+					std::dynamic_pointer_cast<SpinInstruction>(
+							inst.getInstruction(i));
+			std::pair<std::string, std::complex<double>> newBitStrCoeff;
+
+			if (!spinInst->isIdentity()) {
+				if (spinInst->isDiagonal()) {
+					newBitStrCoeff = spinInst->computeActionOnBra(
+							bitStrings[myRow]);
+					MatSetValue(A, myRow, myRow, newBitStrCoeff.second,
+							ADD_VALUES);
+				} else {
+					newBitStrCoeff = spinInst->computeActionOnBra(
+							bitStrings[myRow]);
+					std::uint64_t k = std::stol(newBitStrCoeff.first, nullptr,
+							2);
+					MatSetValue(A, myRow, k, newBitStrCoeff.second, ADD_VALUES);
+				}
 			}
 		}
 	}
@@ -148,7 +112,8 @@ double SlepcGroundStateEnergyCalculator::computeGroundStateEnergy(
 	MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY);
 
-	//MatView(A, PETSC_VIEWER_STDOUT_WORLD);
+//	MatView(A, PETSC_VIEWER_STDOUT_WORLD);
+
 	EPSCreate(PETSC_COMM_WORLD, &eps);
 	EPSSetOperators(eps, A, NULL);
 	EPSSetProblemType(eps, EPS_HEP);
