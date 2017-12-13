@@ -190,6 +190,8 @@ public:
 		return r;
 	}
 
+	void compress();
+
 	/**
 	 * CompositeSpinInstructions do not contain parameters. This
 	 * method is not implmeneted. An error will be thrown if invoked.

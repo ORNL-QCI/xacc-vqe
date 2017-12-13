@@ -103,10 +103,19 @@ const std::string FCIDumpPreprocessor::process(const std::string& source,
 
 			std::remove(".tmp.fcidump");
 
-			std::stringstream zz;
+			bool genOfScript = xacc::optionExists("generate-openfermion-transform-script");
+			std::stringstream zz, ofscript;
 			zz << "__qpu__ kernel() {\n" << "   " << std::setprecision(16)
 					<< econst << "\n";
 			kernelString = zz.str();
+
+			if (genOfScript) {
+				ofscript << "from openfermion.ops import FermionOperator\n";
+				ofscript << "from openfermion.ops import QubitOperator\n";
+				ofscript << "from openfermion.utils import eigenspectrum\n";
+				ofscript << "from openfermion.transforms import jordan_wigner, bravyi_kitaev\n";
+				ofscript << "op = FermionOperator('', " << econst << ") + \\\n";
+			}
 
 			for (int p = 0; p < 2 * nOrbitals; p++) {
 				for (int q = 0; q < 2 * nOrbitals; q++) {
@@ -115,6 +124,18 @@ const std::string FCIDumpPreprocessor::process(const std::string& source,
 						ss << std::setprecision(16) << "   " << hpq(p, q) << " "
 								<< p << " 1 " << q << " 0\n";
 						kernelString += ss.str();
+
+						if (genOfScript) {
+							if (q == 2 * nOrbitals - 1
+									&& p == 2 * nOrbitals - 1) {
+								ofscript << "   FermionOperator('" << p << "^ "
+										<< q << "', " << hpq(p, q) << ")\n";
+							} else {
+								ofscript << "   FermionOperator('" << p << "^ "
+										<< q << "', " << hpq(p, q)
+										<< ") + \\\n";
+							}
+						}
 					}
 
 					for (int r = 0; r < 2 * nOrbitals; r++) {
@@ -126,6 +147,20 @@ const std::string FCIDumpPreprocessor::process(const std::string& source,
 										<< " 1 " << q << " 1 " << r << " 0 "
 										<< s << " 0\n";
 								kernelString += ss.str();
+
+								if (genOfScript) {
+									if (q == 2 * nOrbitals - 1
+											&& p == 2 * nOrbitals - 1 && r == 2*nOrbitals-1 && s == 2*nOrbitals-1) {
+										ofscript << "   FermionOperator('" << p
+												<< "^ " << q << "^ " << r << " " << s << "', "
+												<< hpqrs(p, q, r, s) << ")\n";
+									} else {
+										ofscript << "   FermionOperator('" << p
+												<< "^ " << q << "^ " << r << " "
+												<< s << "', "
+												<< hpqrs(p, q, r, s) << ") + \\\n";
+									}
+								}
 							}
 						}
 					}
@@ -133,6 +168,26 @@ const std::string FCIDumpPreprocessor::process(const std::string& source,
 			}
 
 			kernelString += "}\n";
+
+			if (genOfScript) {
+				std::string transformStr;
+				if (xacc::optionExists("fermion-transformation")) {
+					transformStr = xacc::getOption("fermion-transformation");
+				} else {
+					transformStr = "jordan-wigner";
+				}
+
+				ofscript << "transformedOp = "
+						<< (transformStr == "jordan-wigner" ?
+								"jordan_wigner" : "bravyi_kitaev") << "(op)\n";
+				ofscript << "es = eigenspectrum(op)\n";
+				ofscript << "print('Energies = ', es)\n";
+
+				std::ofstream out("gen_openfermion_transform_script.py");
+				out << ofscript.str();
+				out.close();
+			}
+
 		}
 
 		boost::mpi::broadcast(world, kernelString, 0);

@@ -5,9 +5,9 @@
 namespace xacc {
 namespace vqe {
 
-
-struct CompositeSpinInstruction addBKResults(struct CompositeSpinInstruction x, struct CompositeSpinInstruction y) {
-  return x+y;
+struct CompositeSpinInstruction addBKResults(struct CompositeSpinInstruction x,
+		struct CompositeSpinInstruction y) {
+	return x + y;
 }
 
 #pragma omp declare reduction( + : CompositeSpinInstruction : \
@@ -16,13 +16,6 @@ struct CompositeSpinInstruction addBKResults(struct CompositeSpinInstruction x, 
 
 std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
 		std::shared_ptr<IR> ir) {
-
-	// We assume we have a FermionIR instance, which contains
-	// one FermionKernel, which contains N FermionInstructions, one
-	// for each term in the hamiltonian.
-
-	// We want to map that to a Hamiltonian composed of pauli matrices
-	// But, we want each term of that to be a separate IR Function.
 
 	boost::mpi::communicator world;
 
@@ -46,6 +39,7 @@ std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
 	// Loop over all Fermionic terms...
 #pragma omp parallel for shared(fermiKernel) reduction (+:total) if (runParallel)
 	for (int z = myStart; z < myEnd; ++z) {
+
 		auto f = fermiKernel->getInstruction(z);
 
 		auto fermionInst = std::dynamic_pointer_cast<FermionInstruction>(f);
@@ -56,10 +50,14 @@ std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
 		// Get the params indicating if termSite is creation or annihilation
 		auto params = fermionInst->getParameters();
 
-		auto fermionCoeff = std::complex<double>(std::real(fermionInst->coefficient), 0.0);
 		auto fermionVar = fermionInst->variable;
 
 		CompositeSpinInstruction ladderProduct;
+		auto nullInst = std::make_shared<SpinInstruction>(
+				std::vector<std::pair<int, std::string>> { { 0, "I" } },
+				fermionInst->coefficient, fermionVar);
+		ladderProduct.addInstruction(nullInst);
+
 		for (int i = 0; i < termSites.size(); i++) {
 
 			auto creationOrAnnihilation = boost::get<int>(params[i]);
@@ -70,7 +68,7 @@ std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
 			auto ancestors = tree.getUpdateSet(index);
 			auto ancestorChildren = tree.getRemainderSet(index);
 
-			std::complex<double> dcoeff;
+			std::complex<double> dcoeff, ccoeff(.5,0);
 			if (creationOrAnnihilation) {
 				dcoeff = std::complex<double>(0,-.5);
 			} else {
@@ -89,30 +87,12 @@ std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
 				cTerms.push_back({a->index, "X"});
 			}
 
-			SpinInstruction d_majorana(dTerms, dcoeff), c_majorana(cTerms, std::complex<double>(0.5,0.0));
-			if (i == termSites.size() - 1) {
-				d_majorana.variable = fermionVar;
-				c_majorana.variable = fermionVar;
-			}
+			SpinInstruction d_majorana(dTerms, dcoeff), c_majorana(cTerms, ccoeff);
 			auto sum = c_majorana + d_majorana;
-			if (i == 0) {
-				ladderProduct = sum;
-			} else {
-				ladderProduct = ladderProduct * sum;
-			}
+			ladderProduct = ladderProduct * sum;
 		}
 
-		// Case - we could have a current that has no
-		// instructions in it. If so add an Identity to it
-		if (ladderProduct.nInstructions() == 0) {
-			auto nullInst = std::make_shared<SpinInstruction>(
-					std::vector<std::pair<int, std::string>> { { 0, "I" } });
-			ladderProduct.addInstruction(nullInst);
-		}
-
-		auto tmp = fermionCoeff * ladderProduct;
-
-		total = total + tmp;
+		total = total + ladderProduct;
 		total.simplify();
 	}
 	total.simplify();
@@ -129,6 +109,7 @@ std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
 
 	result = i;
 
+	result.compress();
 	return generateIR();
 }
 

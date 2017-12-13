@@ -106,3 +106,35 @@ BOOST_AUTO_TEST_CASE(checkIdentity) {
 	compInst = compInst + i2;
 
 }
+
+BOOST_AUTO_TEST_CASE(checkHelpMe) {
+
+	SpinInstruction sum1(std::vector<std::pair<int, std::string>> { { 0, "X" } },
+				std::complex<double>(.5, 0));
+	SpinInstruction sum2(std::vector<std::pair<int, std::string>> { { 0, "Y" } },
+					std::complex<double>(0, 0.5));
+	SpinInstruction current1(std::vector<std::pair<int, std::string>> { { 0, "X" } },
+				std::complex<double>(-.62215, 0));
+	SpinInstruction current2(std::vector<std::pair<int, std::string>> { { 0, "Y" } },
+					std::complex<double>(0, 0.62215));
+
+	CompositeSpinInstruction sum, current;
+	sum.addInstruction(std::make_shared<SpinInstruction>(sum1));
+	sum.addInstruction(std::make_shared<SpinInstruction>(sum2));
+
+	current.addInstruction(std::make_shared<SpinInstruction>(current1));
+	current.addInstruction(std::make_shared<SpinInstruction>(current2));
+
+//	UM: (0.5,0) * X0 + (0,0.5) * Y0
+//	Current: (-0.62215,0) * X0 + (0,0.62215) * Y0
+
+	std::cout << "SUM: " << sum.toString("") << "\n";
+	std::cout << "Current: " << current.toString("") << "\n";
+	auto x = current * sum;
+
+	std::cout << "RESULT: " << x.toString("") << "\n";
+
+	std::cout << (std::complex<double>(1,0) * std::complex<double>(0,1)) << "\n";
+
+
+}

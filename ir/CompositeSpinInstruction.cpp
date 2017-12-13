@@ -22,6 +22,23 @@ struct add_triplets {
 CompositeSpinInstruction::CompositeSpinInstruction() {
 }
 
+void CompositeSpinInstruction::compress() {
+	std::list<InstPtr> newInsts;
+
+	for (auto i : instructions) {
+		auto c = std::dynamic_pointer_cast<SpinInstruction>(i)->coefficient;
+		if (std::fabs(std::imag(c)) < 1e-12) {
+			c = std::complex<double>(std::real(c), 0.0);
+		}
+		if (std::fabs(std::real(c)) > 1e-12) {
+			newInsts.push_back(i);
+		}
+	}
+
+	instructions.clear();
+	instructions = newInsts;
+}
+
 bool CompositeSpinInstruction::operator==(SpinInstruction &b) {
 	if (nInstructions() > 1) {
 		return false;
@@ -41,14 +58,27 @@ bool CompositeSpinInstruction::operator ==(CompositeSpinInstruction &b) {
 		return false;
 	}
 
+	bool found = false;
 	for (int i = 0; i < nInstructions(); i++) {
 		auto casted1 = std::dynamic_pointer_cast<SpinInstruction>(
 				getInstruction(i));
-		auto casted2 = std::dynamic_pointer_cast<SpinInstruction>(
-				b.getInstruction(i));
-		if (casted1 != casted2) {
+
+		for (int j = 0; j < nInstructions(); j++) {
+			auto casted2 = std::dynamic_pointer_cast<SpinInstruction>(
+					b.getInstruction(j));
+
+			if (casted1 == casted2) {
+				found = true;
+				break;
+			}
+
+		}
+
+		if (!found) {
 			return false;
 		}
+
+		found = false;
 	}
 
 	return true;

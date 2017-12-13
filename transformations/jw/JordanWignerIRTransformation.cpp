@@ -1,38 +1,27 @@
 #include "JordanWignerIRTransformation.hpp"
-#include "GateFunction.hpp"
-#include <boost/math/constants/constants.hpp>
-#include <boost/mpi.hpp>
 #include "XACC.hpp"
+
 
 namespace xacc {
 namespace vqe {
 
-struct CompositeSpinInstruction addJWResults(struct CompositeSpinInstruction x, struct CompositeSpinInstruction y) {
-  return x+y;
+struct CompositeSpinInstruction addJWResults(struct CompositeSpinInstruction x,
+		struct CompositeSpinInstruction y) {
+	return x + y;
 }
 
-#pragma omp declare reduction( + : CompositeSpinInstruction : omp_out = omp_out + omp_in ) \
-  initializer( omp_priv = omp_orig )
+#pragma omp declare reduction( + : CompositeSpinInstruction : \
+		omp_out = addJWResults(omp_out, omp_in)) \
+		initializer( omp_priv(omp_orig))
 
 std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 		std::shared_ptr<IR> ir) {
 
 	boost::mpi::communicator world;
 
-	// We assume we have a FermionIR instance, which contains
-	// one FermionKernel, which contains N FermionInstructions, one
-	// for each term in the hamiltonian.
-
-	// We want to map that to a Hamiltonian composed of pauli matrices
-	// But, we want each term of that to be a separate IR Function.
-
-	// Create a new GateQIR to hold the spin based terms
-	auto newIr = std::make_shared<xacc::quantum::GateQIR>();
-
 	auto fermiKernel = ir->getKernels()[0];
 
 	CompositeSpinInstruction total;
-
 	result.clear();
 
 	int myStart = 0;
@@ -57,66 +46,46 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 		// Get the params indicating if termSite is creation or annihilation
 		auto params = fermionInst->getParameters();
 
-		auto fermionCoeff = std::complex<double>(std::real(fermionInst->coefficient), 0.0);
 		auto fermionVar = fermionInst->variable;
 
 		CompositeSpinInstruction current;
+		auto nullInst = std::make_shared<SpinInstruction>(
+				std::vector<std::pair<int, std::string>> { { 0, "I" } },
+				 fermionVar);
+		current.addInstruction(nullInst);
+
 		for (int i = 0; i < termSites.size(); i++) {
+			auto creationOrAnnihilation = boost::get<int>(params[i]);
+
+			int index = termSites[i];
+
+			std::complex<double> ycoeff, xcoeff(.5,0);
+			if (creationOrAnnihilation) {
+				ycoeff = std::complex<double>(0,-.5);
+			} else {
+				ycoeff = std::complex<double>(0,.5);
+			}
+
 			// Create Zi's
-			std::vector<std::pair<int, std::string>> zs;
-			for (int j = 0; j <= termSites[i]-1; j++) {
-				zs.push_back({j, "Z"});
+			std::vector<std::pair<int, std::string>> zx, zy;
+			for (int j = 0; j < index; j++) {
+				zx.push_back({j, "Z"});
+				zy.push_back({j, "Z"});
 			}
 
-			SpinInstruction zSpins(zs);
-			CompositeSpinInstruction sigPlusMinus;
-			auto xi = std::make_shared<SpinInstruction>(
-					std::vector<std::pair<int, std::string>> { { termSites[i],
-							"X" } });
-			sigPlusMinus.addInstruction(xi);
+			zx.push_back({index, "X"});
+			zy.push_back({index, "Y"});
 
-			if (boost::get<int>(params[i])) { // If this is a creation operator
-				// Create sigmaPlus
-				auto iyi = std::make_shared<SpinInstruction>(
-						std::vector<std::pair<int, std::string>> { {
-								termSites[i], "Y" } },
-						std::complex<double>(0, -1));
-				sigPlusMinus.addInstruction(iyi);
-			} else {
-				auto negiyi = std::make_shared<SpinInstruction>(
-						std::vector<std::pair<int, std::string>> { {
-								termSites[i], "Y" } },
-						std::complex<double>(0, 1));
-				sigPlusMinus.addInstruction(negiyi);
-			}
-
-			auto temp = 0.5 * sigPlusMinus;
-			if (i == termSites.size() - 1) {
-				zSpins.variable = fermionVar;
-			}
-			temp = zSpins * temp;
-
-			if (i == 0) {
-				current = temp;
-			} else {
-				current = current * temp;
-			}
+			SpinInstruction xcomp(zx, xcoeff), ycomp(zy, ycoeff);
+			auto sum = xcomp + ycomp;
+			current = current * sum;
 		}
-
-		// Case - we could have a current that has no
-		// instructions in it. If so add an Identity to it
-		if (current.nInstructions() == 0) {
-			auto nullInst = std::make_shared<SpinInstruction>(
-					std::vector<std::pair<int, std::string>> { { 0, "I" } });
-			current.addInstruction(nullInst);
-		}
-
-		auto temp = fermionCoeff * current;
-		total = total + temp;
+		current *= fermionInst->coefficient;
+		total = total + current;
 		total.simplify();
 	}
 
-	if (world.rank() == 0) XACCInfo("JordanWigner done with threaded loop, now simplifying before distribution.");
+//	if (world.rank() == 0) XACCInfo("JordanWigner done with threaded loop, now simplifying before distribution.");
 	total.simplify();
 
 	CompositeSpinInstruction i;
@@ -129,7 +98,10 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 
 	world.barrier();
 
+
 	result = i;
+
+	result.compress();
 
 	return generateIR();
 }

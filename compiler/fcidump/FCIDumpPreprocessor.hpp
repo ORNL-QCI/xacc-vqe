@@ -84,7 +84,8 @@ public:
 	virtual std::shared_ptr<options_description> getOptions() {
 		auto desc = std::make_shared<options_description>(
 				"FCIDUMP Options");
-		desc->add_options()("vqe-fcidump-symmetry",value<std::string>(), "");
+		desc->add_options()("vqe-fcidump-symmetry",value<std::string>(), "")
+				("generate-openfermion-transform-script", "");
 
 		return desc;
 	}

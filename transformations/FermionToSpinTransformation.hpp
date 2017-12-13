@@ -49,12 +49,6 @@ namespace xacc {
 
 namespace vqe {
 
-struct add_them{
-std::string operator()( std::string a, std::string b) {
-	 return a + " + " + b;
-}
-};
-
 using PersistedSpinInstruction = std::pair<std::complex<double>, std::vector<int>>;
 
 struct add_spin_instructions {
@@ -131,7 +125,7 @@ protected:
 		boost::replace_all(resultsStr, "+", "+\n");
 		if (world.rank() == 0) std::cout << "Transformed Fermion to Spin:\nBEGIN\n" << resultsStr << "\nEND\n\n";
 		auto pi = boost::math::constants::pi<double>();
-
+//		exit(0);
 		// Populate GateQIR now...
 		for (auto inst : result.getInstructions()) {
 
