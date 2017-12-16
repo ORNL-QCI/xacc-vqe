@@ -51,7 +51,7 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 		CompositeSpinInstruction current;
 		auto nullInst = std::make_shared<SpinInstruction>(
 				std::vector<std::pair<int, std::string>> { { 0, "I" } },
-				 fermionVar);
+				fermionInst->coefficient, fermionVar);
 		current.addInstruction(nullInst);
 
 		for (int i = 0; i < termSites.size(); i++) {
@@ -80,7 +80,7 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 			auto sum = xcomp + ycomp;
 			current = current * sum;
 		}
-		current *= fermionInst->coefficient;
+
 		total = total + current;
 		total.simplify();
 	}
