@@ -30,7 +30,7 @@ void CompositeSpinInstruction::compress() {
 		if (std::fabs(std::imag(c)) < 1e-12) {
 			c = std::complex<double>(std::real(c), 0.0);
 		}
-		if (std::fabs(std::real(c)) > 1e-12) {
+		if (std::abs(c) > 1e-12) {
 			newInsts.push_back(i);
 		}
 	}
@@ -67,7 +67,7 @@ bool CompositeSpinInstruction::operator ==(CompositeSpinInstruction &b) {
 			auto casted2 = std::dynamic_pointer_cast<SpinInstruction>(
 					b.getInstruction(j));
 
-			if (casted1 == casted2) {
+			if (casted1->operator ==(*casted2.get())) {
 				found = true;
 				break;
 			}
@@ -182,16 +182,20 @@ void CompositeSpinInstruction::simplify() {
 	std::unordered_map<std::string, std::shared_ptr<SpinInstruction>> map;
 	for (int i = 0; i < nInstructions(); ++i) {
 		auto inst = std::dynamic_pointer_cast<SpinInstruction>(
-								getInstruction(i));
+				getInstruction(i));
 		auto terms = inst->getTerms();
 		std::string key;
-		for (auto t : terms) {
-			if (t.second != "I") {
+
+		if (inst->isIdentity()) {
+			key = inst->variable+"I";
+		} else {
+			key = inst->variable;
+			for (auto t : terms) {
 				key += t.second + std::to_string(t.first);
-			} else {
-				key = "I";
 			}
 		}
+
+		boost::trim(key);
 
 		auto search = map.find(key);
 		if (search != map.end()) {

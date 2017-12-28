@@ -1,4 +1,3 @@
-
 /***********************************************************************************
  * Copyright (c) 2016, UT-Battelle
  * All rights reserved.
@@ -57,7 +56,7 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 	SpinInstruction i2(std::vector<std::pair<int, std::string>> { { 4, "X" },
 			{ 3, "Z" } });
 	auto sumInst = inst + i2;
-	std::string expected = "(1,0) * Z1 * Z3 * X4 * Y9 + (1,0) * Z3 * X4";
+	std::string expected = "(1,0) * Z3 * X4 + (1,0) * Z1 * Z3 * X4 * Y9";
 	BOOST_VERIFY(expected == sumInst.toString(""));
 
 	SpinInstruction i3(std::vector<std::pair<int, std::string>> { { 3, "X" } });
@@ -81,6 +80,7 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 
 	// Plus with same terms
 	sumInst = inst + 2.2 * inst;
+	std::cout << inst.toString("") << ", " << sumInst.toString("") << "\n";
 	BOOST_VERIFY("(3.2,0) * Z1 * Z3 * X4 * Y9" == sumInst.toString(""));
 
 	SpinInstruction i4(std::vector<std::pair<int, std::string>> { { 0, "Z" } });
@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(checkVariableCoefficient) {
 
 	BOOST_VERIFY(i2 != inst);
 	auto sumInst = inst + i2;
-	BOOST_VERIFY("(1,0) * theta * Z3 * X4 + (1,0) * theta2 * Z3 * X4" == sumInst.toString(""));
+	BOOST_VERIFY("(1,0) * theta2 * Z3 * X4 + (1,0) * theta * Z3 * X4" == sumInst.toString(""));
 
 }
 
@@ -232,5 +232,28 @@ BOOST_AUTO_TEST_CASE(checkAction) {
 
 	BOOST_VERIFY(result2.first == "1101");
 	BOOST_VERIFY(result2.second == std::complex<double>(-2.2,0));
+
+}
+
+BOOST_AUTO_TEST_CASE(checkComplexTerms) {
+	SpinInstruction inst({{1,"X"}, {3,"Y"}, {8,"Z"}}, std::complex<double>(0.5,0.0)),
+			inst2({{1,"Z"}, {3,"X"}, {8,"Z"}}, std::complex<double>(1.2,0.0)),
+			inst3({{1,"Z"}, {3,"Y"}, {9,"Z"}}, std::complex<double>(0.0,1.4)),
+			c({{0,"I"}}, std::complex<double>(.25+1.2*1.2, 0.0)
+					+ std::complex<double>(0,1.4)*std::complex<double>(0,1.4)),
+			c2({{1,"Y"},{3,"Z"}}, std::complex<double>(0,2)*std::complex<double>(0,1)*std::complex<double>(.5,0)*std::complex<double>(1.2,0));
+
+	auto op = inst+inst2+inst3;
+
+	auto res = op*op;
+	std::cout << "RES: " << res.toString("") << "\n";
+	res.simplify();
+	std::cout << "Simplified: " << res.toString("") << "\n";
+
+	auto t = c + c2;
+	t.simplify();
+	std::cout << "TSimp: " << t.toString("") << "\n";
+
+	BOOST_VERIFY(t == res);
 
 }

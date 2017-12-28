@@ -75,11 +75,9 @@ double SlepcGroundStateEnergyCalculator::computeGroundStateEnergy(
 		}
 	}
 
+	if (rank == 0) XACCInfo(
+			"Building Matrix for SLEPc.");
 	for (std::uint64_t myRow = Istart; myRow < Iend; myRow++) {
-
-		XACCInfo(
-				"Matrix Construction for rank " + std::to_string(rank)
-						+ ", row " + std::to_string(myRow));
 
 		if (identityCoeff != std::complex<double>(0.0, 0.0)) {
 			MatSetValue(A, myRow, myRow, identityCoeff, ADD_VALUES);
@@ -111,6 +109,9 @@ double SlepcGroundStateEnergyCalculator::computeGroundStateEnergy(
 
 	MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY);
+	if (rank == 0) XACCInfo(
+			"Done building Matrix for SLEPc.");
+
 
 //	MatView(A, PETSC_VIEWER_STDOUT_WORLD);
 

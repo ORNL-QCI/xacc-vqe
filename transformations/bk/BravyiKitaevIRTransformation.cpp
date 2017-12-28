@@ -60,7 +60,7 @@ std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
 
 		for (int i = 0; i < termSites.size(); i++) {
 
-			auto creationOrAnnihilation = boost::get<int>(params[i]);
+			auto isCreation = boost::get<int>(params[i]);
 
 			auto index = termSites[i];
 
@@ -69,7 +69,7 @@ std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
 			auto ancestorChildren = tree.getRemainderSet(index);
 
 			std::complex<double> dcoeff, ccoeff(.5,0);
-			if (creationOrAnnihilation) {
+			if (isCreation) {
 				dcoeff = std::complex<double>(0,-.5);
 			} else {
 				dcoeff = std::complex<double>(0,.5);
@@ -90,6 +90,7 @@ std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
 			SpinInstruction d_majorana(dTerms, dcoeff), c_majorana(cTerms, ccoeff);
 			auto sum = c_majorana + d_majorana;
 			ladderProduct = ladderProduct * sum;
+			ladderProduct.simplify();
 		}
 
 		total = total + ladderProduct;

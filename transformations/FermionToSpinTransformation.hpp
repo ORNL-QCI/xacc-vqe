@@ -134,10 +134,10 @@ protected:
 
 //			if (std::fabs(std::real(spinInst->coefficient)) > 1e-9) {
 
-				int isIdentity = 0;
-				if (*spinInst.get() == SpinInstruction( { { 0, "I" } })) {
-					isIdentity = 1;
-				}
+//				int isIdentity = 0;
+//				if (spinInst->isIdentity()) {
+//					isIdentity = 1;
+//				}
 
 				// Create a GateFunction and specify that it has
 				// a parameter that is the Spin Instruction coefficient
@@ -146,7 +146,7 @@ protected:
 						"term" + std::to_string(counter),
 						std::vector<InstructionParameter> { InstructionParameter(
 								spinInst->coefficient), InstructionParameter(
-										isIdentity) });
+										spinInst->isIdentity() ? 1 : 0) });
 
 				// Loop over all terms in the Spin Instruction
 				// and create instructions to run on the Gate QPU.
@@ -177,7 +177,7 @@ protected:
 
 				}
 
-				if (!isIdentity) {
+				if (!spinInst->isIdentity()) {
 					for (auto m : measurements) {
 						gateFunction->addInstruction(m);
 					}

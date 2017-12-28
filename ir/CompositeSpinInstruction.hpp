@@ -56,8 +56,6 @@ protected:
 	 */
 	std::list<InstPtr> instructions;
 
-	bool autoSimplify = true;
-
 public:
 
 	/**
@@ -65,14 +63,14 @@ public:
 	 */
 	CompositeSpinInstruction();
 
-	CompositeSpinInstruction(bool autoSimp) : autoSimplify(autoSimp) {}
+	CompositeSpinInstruction(bool autoSimp) {}
 
 	/**
 	 * The Copy constructor
 	 * @param i
 	 */
 	CompositeSpinInstruction(const CompositeSpinInstruction& i) :
-			instructions(i.instructions), autoSimplify(i.autoSimplify) {
+			instructions(i.instructions) {
 	}
 
 	/**

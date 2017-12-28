@@ -36,6 +36,7 @@
 #include "CommonPauliProducts.hpp"
 #include <map>
 #include <unsupported/Eigen/KroneckerProduct>
+#include "XACC.hpp"
 
 namespace xacc {
 
@@ -86,6 +87,11 @@ public:
 	SpinInstruction(const SpinInstruction& i) :
 			pauliProducts(i.pauliProducts), terms(i.terms), coefficient(
 					i.coefficient), variable(i.variable) {
+		std::sort(terms.begin(), terms.end(),
+				[](std::pair<int, std::string>& left,
+						std::pair<int, std::string>& right) {
+			return left.first < right.first;
+		});
 
 		terms.erase(
 				std::remove_if(terms.begin(), terms.end(),
@@ -339,7 +345,7 @@ public:
 		return std::vector<InstructionParameter>{InstructionParameter(coefficient)};
 	}
 
-	std::vector<int> toBinaryVector(const int nQubits) {
+	std::vector<int> toBinaryVector(const int nQubits) const {
 
 		std::vector<int> bv(2*nQubits);
 
@@ -590,6 +596,7 @@ public:
 		for (int i = 0; i < terms.size(); i++) {
 			if ((terms[i].first != b.terms[i].first)
 					|| (terms[i].second != b.terms[i].second)) {
+
 				// If these two gates are both I's then we don't care about
 				// the qubits they operate on
 				if (terms[i].second == "I" &&
@@ -736,15 +743,16 @@ public:
 	 */
 	CompositeSpinInstruction operator+(const SpinInstruction &b) const {
 		CompositeSpinInstruction ret;
-		if (operator==(b)) {
-			auto newCoeff = coefficient + b.coefficient;
-			auto ptr = std::make_shared<SpinInstruction>(*this);
-			ptr->coefficient = newCoeff;
-			ret.addInstruction(ptr);
-		} else {
+//		if (operator==(b)) {
+//			auto newCoeff = coefficient + b.coefficient;
+//			auto ptr = std::make_shared<SpinInstruction>(*this);
+//			ptr->coefficient = newCoeff;
+//			ret.addInstruction(ptr);
+//		} else {
 			ret.addInstruction(std::make_shared<SpinInstruction>(*this));
 			ret.addInstruction(std::make_shared<SpinInstruction>(b));
-		}
+//		}
+			ret.simplify();
 		return ret;
 	}
 
@@ -763,30 +771,6 @@ private:
 	/**
 	 * Replace Pauli products with equivalent single Pauli
 	 * as given in the CommonPauliProducts class
-	 * @param si The SpinInstruction to modify.
-	 * @return newInst A new SpinInstruction
-	 */
-	SpinInstruction replaceCommonPauliProducts(SpinInstruction& si) {
-		auto newCoeff = coefficient;
-		auto newVar = variable;
-		std::vector<std::pair<int, std::string>> newTerms;
-		for (int i = 0; i < si.terms.size(); i++) {
-			newTerms.push_back(
-					std::make_pair(si.terms[i].first,si.terms[i].second));
-		}
-
-		std::sort(newTerms.begin(), newTerms.end(),
-				[](std::pair<int, std::string>& left,
-						std::pair<int, std::string>& right) {
-			return left.first < right.first;
-		});
-
-		return replaceCommonPauliProducts(newTerms, newCoeff, newVar);
-	}
-
-	/**
-	 * Replace Pauli products with equivalent single Pauli
-	 * as given in the CommonPauliProducts class
 	 * @param newTerms
 	 * @param newCoeff
 	 * @return
@@ -795,7 +779,13 @@ private:
 			std::vector<std::pair<int, std::string>>& newTerms,
 			std::complex<double> newCoeff, std::string newVar = "") const {
 
-		for (int i = 0; i < newTerms.size() - 1; i++) {
+//		std::stringstream s,ss;
+//		s << newCoeff << " ";
+//		for(const auto& t : newTerms) s << t.second << t.first << " ";
+//		std::cout << "Before: " << s.str() << "\n";
+
+		int i = 0;
+		while(i < newTerms.size() - 1) {
 			auto qubit1 = newTerms[i].first;
 			auto qubit2 = newTerms[i + 1].first;
 			if (qubit1 == qubit2) {
@@ -810,10 +800,27 @@ private:
 							newGate);
 					newCoeff *= coeff;
 				}
+			} else {
+				i++;
 			}
 		}
 
-		return SpinInstruction(newTerms, newCoeff, newVar);
+		std::vector<std::pair<int, std::string>> nt;
+		for (const auto& t : newTerms) {
+			if (t.second != "I") {
+				nt.push_back({t.first, t.second});
+			}
+		}
+
+		if (nt.empty()) {
+			nt.push_back({0, "I"});
+		}
+
+//		ss << newCoeff << " ";
+//		for(const auto& t : nt) ss << t.second << t.first << " ";
+//		std::cout << "After: " << ss.str() << "\n";
+
+		return SpinInstruction(nt, newCoeff, newVar);
 	}
 };
 }

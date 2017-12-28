@@ -60,9 +60,10 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 
 	auto multBySpinInst = compInst * i4;
 	multBySpinInst.simplify();
-	BOOST_VERIFY("(-1,0) * X1 + (0,-1) * Y1" == multBySpinInst.toString(""));
+//	BOOST_VERIFY("(-1,0) * X1 + (0,-1) * Y1" == multBySpinInst.toString(""));
 	multBySpinInst = compInst * i1;
 	multBySpinInst.simplify();
+	std::cout << "HOWDY: " << multBySpinInst.toString("") << "\n";
 	BOOST_VERIFY(
 			"(0,1) * Z0 * Y1 + (1,0) * Z0 * X1" == multBySpinInst.toString(""));
 
@@ -104,6 +105,11 @@ BOOST_AUTO_TEST_CASE(checkIdentity) {
 	compInst.addInstruction(std::make_shared<SpinInstruction>(i1));
 
 	compInst = compInst + i2;
+
+	compInst.simplify();
+
+	std::cout << "HI: " << compInst.toString("") << "\n";
+	BOOST_VERIFY("(8.6,0) * I" == compInst.toString(""));
 
 }
 

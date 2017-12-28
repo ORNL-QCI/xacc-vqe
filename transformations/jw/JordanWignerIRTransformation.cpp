@@ -55,12 +55,12 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 		current.addInstruction(nullInst);
 
 		for (int i = 0; i < termSites.size(); i++) {
-			auto creationOrAnnihilation = boost::get<int>(params[i]);
+			auto isCreation = boost::get<int>(params[i]);
 
 			int index = termSites[i];
 
 			std::complex<double> ycoeff, xcoeff(.5,0);
-			if (creationOrAnnihilation) {
+			if (isCreation) {
 				ycoeff = std::complex<double>(0,-.5);
 			} else {
 				ycoeff = std::complex<double>(0,.5);
@@ -79,13 +79,15 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 			SpinInstruction xcomp(zx, xcoeff), ycomp(zy, ycoeff);
 			auto sum = xcomp + ycomp;
 			current = current * sum;
+			current.simplify();
+//			current.compress();
 		}
 
 		total = total + current;
 		total.simplify();
+//		total.compress();
 	}
 
-//	if (world.rank() == 0) XACCInfo("JordanWigner done with threaded loop, now simplifying before distribution.");
 	total.simplify();
 
 	CompositeSpinInstruction i;
@@ -97,7 +99,6 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 	}
 
 	world.barrier();
-
 
 	result = i;
 
