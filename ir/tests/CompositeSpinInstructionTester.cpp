@@ -38,11 +38,11 @@
 using namespace xacc::vqe;
 
 BOOST_AUTO_TEST_CASE(checkConstruction) {
-	SpinInstruction i1(std::vector<std::pair<int, std::string>> { { 0, "Z" } });
-	SpinInstruction i2(std::vector<std::pair<int, std::string>> { { 1, "X" } });
-	SpinInstruction i3(std::vector<std::pair<int, std::string>> { { 1, "Y" } }, std::complex<double>(0,1));
-	SpinInstruction i4(std::vector<std::pair<int, std::string>> { { 1, "Z" } });
-	SpinInstruction i5(std::vector<std::pair<int, std::string>> { { 1, "Y" } }, std::complex<double>(0,-1));
+	SpinInstruction i1({ { 0, "Z" } });
+	SpinInstruction i2({ { 1, "X" } });
+	SpinInstruction i3({ { 1, "Y" } }, std::complex<double>(0,1));
+	SpinInstruction i4({ { 1, "Z" } });
+	SpinInstruction i5({ { 1, "Y" } }, std::complex<double>(0,-1));
 
 	CompositeSpinInstruction compInst, compInst2, compInst3;
 	compInst.addInstruction(std::make_shared<SpinInstruction>(i2));
@@ -60,46 +60,46 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 
 	auto multBySpinInst = compInst * i4;
 	multBySpinInst.simplify();
-//	BOOST_VERIFY("(-1,0) * X1 + (0,-1) * Y1" == multBySpinInst.toString(""));
+	BOOST_VERIFY("(-1,0) X1 + (0,-1) Y1" == multBySpinInst.toString());
 	multBySpinInst = compInst * i1;
 	multBySpinInst.simplify();
-	std::cout << "HOWDY: " << multBySpinInst.toString("") << "\n";
+	std::cout << "HOWDY: " << multBySpinInst.toString() << "\n";
 	BOOST_VERIFY(
-			"(0,1) * Z0 * Y1 + (1,0) * Z0 * X1" == multBySpinInst.toString(""));
+			"(0,1) Z0 Y1 + (1,0) Z0 X1" == multBySpinInst.toString());
 
 	auto multByComposite = compInst * compInst;
 	multByComposite.simplify();
-	BOOST_VERIFY("(0,0)" == multByComposite.toString(""));
+	BOOST_VERIFY("(0,0)" == multByComposite.toString());
 
 	auto t = compInst3 * compInst3;
 	t.simplify();
 	BOOST_VERIFY(
-			"(2,0) * Z0 * X1 + (2,0) * I"
-					== t.toString(""));
+			"(2,0) Z0 X1 + (2,0) I"
+					== t.toString());
 
 	auto test = compInst * 4.4;
-	BOOST_VERIFY("(4.4,0) * X1 + (0,4.4) * Y1" == test.toString(""));
+	BOOST_VERIFY("(4.4,0) X1 + (0,4.4) Y1" == test.toString());
 	BOOST_VERIFY(
-			"(4.4,0) * X1 + (0,4.4) * Y1" == (4.4 * compInst).toString(""));
+			"(4.4,0) X1 + (0,4.4) Y1" == (4.4 * compInst).toString());
 
 	test = compInst * std::complex<double>(4.4, 0);
-	BOOST_VERIFY("(4.4,0) * X1 + (0,4.4) * Y1" == test.toString(""));
+	BOOST_VERIFY("(4.4,0) X1 + (0,4.4) Y1" == test.toString());
 	BOOST_VERIFY(
-			"(4.4,0) * X1 + (0,4.4) * Y1"
-					== (std::complex<double>(4.4, 0) * compInst).toString(""));
+			"(4.4,0) X1 + (0,4.4) Y1"
+					== (std::complex<double>(4.4, 0) * compInst).toString());
 
 	// Test Addition now
 
 	auto added = compInst + compInst3;
 	added.simplify();
-	BOOST_VERIFY("(1,0) * Z0 + (2,0) * X1 + (0,1) * Y1" == added.toString(""));
+	BOOST_VERIFY("(1,0) Z0 + (2,0) X1 + (0,1) Y1" == added.toString());
 
 }
 
 BOOST_AUTO_TEST_CASE(checkIdentity) {
-	SpinInstruction i1(std::vector<std::pair<int, std::string>> { { 0, "I" } },
+	SpinInstruction i1({ },
 			std::complex<double>(3.3, 0));
-	SpinInstruction i2(std::vector<std::pair<int, std::string>> { { 0, "I" } },
+	SpinInstruction i2({ },
 			std::complex<double>(5.3, 0));
 	CompositeSpinInstruction compInst;
 	compInst.addInstruction(std::make_shared<SpinInstruction>(i1));
@@ -108,39 +108,41 @@ BOOST_AUTO_TEST_CASE(checkIdentity) {
 
 	compInst.simplify();
 
-	std::cout << "HI: " << compInst.toString("") << "\n";
-	BOOST_VERIFY("(8.6,0) * I" == compInst.toString(""));
+	std::cout << "HI: " << compInst.toString() << "\n";
+	BOOST_VERIFY("(8.6,0) I" == compInst.toString());
+	BOOST_VERIFY(SpinInstruction({}, std::complex<double>(8.6,0)) == compInst);
+
 
 }
 
 BOOST_AUTO_TEST_CASE(checkHelpMe) {
 
-	SpinInstruction sum1(std::vector<std::pair<int, std::string>> { { 0, "X" } },
-				std::complex<double>(.5, 0));
-	SpinInstruction sum2(std::vector<std::pair<int, std::string>> { { 0, "Y" } },
-					std::complex<double>(0, 0.5));
-	SpinInstruction current1(std::vector<std::pair<int, std::string>> { { 0, "X" } },
-				std::complex<double>(-.62215, 0));
-	SpinInstruction current2(std::vector<std::pair<int, std::string>> { { 0, "Y" } },
-					std::complex<double>(0, 0.62215));
-
-	CompositeSpinInstruction sum, current;
-	sum.addInstruction(std::make_shared<SpinInstruction>(sum1));
-	sum.addInstruction(std::make_shared<SpinInstruction>(sum2));
-
-	current.addInstruction(std::make_shared<SpinInstruction>(current1));
-	current.addInstruction(std::make_shared<SpinInstruction>(current2));
-
-//	UM: (0.5,0) * X0 + (0,0.5) * Y0
-//	Current: (-0.62215,0) * X0 + (0,0.62215) * Y0
-
-	std::cout << "SUM: " << sum.toString("") << "\n";
-	std::cout << "Current: " << current.toString("") << "\n";
-	auto x = current * sum;
-
-	std::cout << "RESULT: " << x.toString("") << "\n";
-
-	std::cout << (std::complex<double>(1,0) * std::complex<double>(0,1)) << "\n";
+//	SpinInstruction sum1({ { 0, "X" } },
+//				std::complex<double>(.5, 0));
+//	SpinInstruction sum2({ { 0, "Y" } },
+//					std::complex<double>(0, 0.5));
+//	SpinInstruction current1({ { 0, "X" } },
+//				std::complex<double>(-.62215, 0));
+//	SpinInstruction current2({ { 0, "Y" } },
+//					std::complex<double>(0, 0.62215));
+//
+//	CompositeSpinInstruction sum, current;
+//	sum.addInstruction(std::make_shared<SpinInstruction>(sum1));
+//	sum.addInstruction(std::make_shared<SpinInstruction>(sum2));
+//
+//	current.addInstruction(std::make_shared<SpinInstruction>(current1));
+//	current.addInstruction(std::make_shared<SpinInstruction>(current2));
+//
+////	UM: (0.5,0) * X0 + (0,0.5) * Y0
+////	Current: (-0.62215,0) * X0 + (0,0.62215) * Y0
+//
+//	std::cout << "SUM: " << sum.toString() << "\n";
+//	std::cout << "Current: " << current.toString() << "\n";
+//	auto x = current * sum;
+//
+//	std::cout << "RESULT: " << x.toString() << "\n";
+//
+//	std::cout << (std::complex<double>(1,0) * std::complex<double>(0,1)) << "\n";
 
 
 }

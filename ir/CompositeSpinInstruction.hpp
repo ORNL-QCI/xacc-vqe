@@ -167,6 +167,10 @@ public:
 		return std::vector<int> { };
 	}
 
+	virtual const std::string toString() {
+		return toString("");
+	}
+
 	/**
 	 * Return an assembly-like string representation for this function .
 	 * @param bufferVarName

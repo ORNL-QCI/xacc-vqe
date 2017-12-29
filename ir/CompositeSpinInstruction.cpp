@@ -173,46 +173,38 @@ CompositeSpinInstruction CompositeSpinInstruction::operator+(CompositeSpinInstru
 CompositeSpinInstruction CompositeSpinInstruction::operator+(SpinInstruction& b) {
 	CompositeSpinInstruction ret(*this);
 	ret.addInstruction(std::make_shared<SpinInstruction>(b));
-//	ret.simplify();
+	ret.simplify();
 	return ret;
 }
 
 void CompositeSpinInstruction::simplify() {
 
-	std::unordered_map<std::string, std::shared_ptr<SpinInstruction>> map;
-	for (int i = 0; i < nInstructions(); ++i) {
-		auto inst = std::dynamic_pointer_cast<SpinInstruction>(
-				getInstruction(i));
-		auto terms = inst->getTerms();
-		std::string key;
-
-		if (inst->isIdentity()) {
-			key = inst->variable+"I";
-		} else {
-			key = inst->variable;
-			for (auto t : terms) {
-				key += t.second + std::to_string(t.first);
-			}
-		}
-
-		boost::trim(key);
-
-		auto search = map.find(key);
-		if (search != map.end()) {
-			search->second->coefficient += inst->coefficient;
-		} else {
-			map[key] = inst;
-		}
+	std::unordered_map<std::string, std::vector<InstPtr>> common;
+	for (const auto& i : instructions) {
+		auto id = i->getName();
+		common[id].push_back(i);
 	}
 
 	instructions.clear();
 
-	for (auto& kv : map) {
-		if (std::fabs(std::real(kv.second->coefficient)) < 1e-12) kv.second->coefficient.real(0.0);
-		if (std::fabs(std::imag(kv.second->coefficient)) < 1e-12) kv.second->coefficient.imag(0.0);
+	for (auto& kv : common) {
+		if (kv.second.size() == 1) {
+			if (std::abs(
+					boost::get<std::complex<double>>(
+									kv.second[0]->getParameter(0))) > 1e-12) {
+				instructions.push_back(kv.second[0]);
+			}
+		} else {
+			std::complex<double> newcoeff(0,0);
+			for (auto& i : kv.second) {
+				newcoeff += boost::get<std::complex<double>>(i->getParameter(0));
+			}
 
-		if (kv.second->coefficient != std::complex<double>(0.0,0.0)) {
-			addInstruction(kv.second);
+			if (std::abs(newcoeff) > 1e-12) {
+				InstructionParameter p(newcoeff);
+				kv.second[0]->setParameter(0, p);
+				instructions.push_back(kv.second[0]);
+			}
 		}
 	}
 }

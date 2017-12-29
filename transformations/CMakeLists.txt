@@ -8,7 +8,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/uccsd)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/bk)
 
 file (GLOB_RECURSE HEADERS *.hpp)
-file (GLOB SRC *.cpp jw/*.cpp bk/*.cpp uccsd/*.cpp)
+file (GLOB SRC *.cpp jw/*.cpp bk/*.cpp)
 
 # Set up dependencies to resources to track changes
 usFunctionGetResourceSource(TARGET ${LIBRARY_NAME} OUT SRC)
@@ -47,5 +47,5 @@ install(TARGETS ${LIBRARY_NAME} DESTINATION ${XACC_LIBRARY_DIR}/plugins/transfor
 
 # Gather tests
 file (GLOB test_files tests/*.cpp)
-add_tests("${test_files}" "${CMAKE_CURRENT_SOURCE_DIR}" "${Boost_LIBRARIES};pthread;dl;xacc-vqe-ir;xacc-vqe-irtransformations")
+#add_tests("${test_files}" "${CMAKE_CURRENT_SOURCE_DIR}" "${Boost_LIBRARIES};pthread;dl;xacc-vqe-ir;xacc-vqe-irtransformations")
 

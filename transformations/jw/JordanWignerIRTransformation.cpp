@@ -50,7 +50,7 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 
 		CompositeSpinInstruction current;
 		auto nullInst = std::make_shared<SpinInstruction>(
-				std::vector<std::pair<int, std::string>> { { 0, "I" } },
+				std::map<int, std::string> { },
 				fermionInst->coefficient, fermionVar);
 		current.addInstruction(nullInst);
 
@@ -67,17 +67,16 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 			}
 
 			// Create Zi's
-			std::vector<std::pair<int, std::string>> zx, zy;
+			std::map<int, std::string> zx, zy;
 			for (int j = 0; j < index; j++) {
-				zx.push_back({j, "Z"});
-				zy.push_back({j, "Z"});
+				zx.insert({j, "Z"});
+				zy.insert({j, "Z"});
 			}
 
-			zx.push_back({index, "X"});
-			zy.push_back({index, "Y"});
+			SpinInstruction sx({{index,"X"}}), sy({{index, "Y"}});
 
 			SpinInstruction xcomp(zx, xcoeff), ycomp(zy, ycoeff);
-			auto sum = xcomp + ycomp;
+			auto sum = xcomp*sx + ycomp*sy;
 			current = current * sum;
 			current.simplify();
 //			current.compress();
@@ -102,7 +101,7 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 
 	result = i;
 
-	result.compress();
+//	result.compress();
 
 	return generateIR();
 }

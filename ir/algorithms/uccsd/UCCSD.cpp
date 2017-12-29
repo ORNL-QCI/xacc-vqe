@@ -170,8 +170,12 @@ std::shared_ptr<Function> UCCSD::generate(
 			auto temp = compositeResult.getInstruction(instIdx);
 			auto spinInst = std::dynamic_pointer_cast<SpinInstruction>(temp);
 			// Get the individual pauli terms
-			auto terms = spinInst->getTerms();
+			auto termsMap = spinInst->getTerms();
 
+			std::vector<std::pair<int,std::string>> terms;
+			for (auto& kv : termsMap) {
+				terms.push_back({kv.first, kv.second});
+			}
 			// The largest qubit index is on the last term
 			int largestQbitIdx = terms[terms.size() - 1].first;
 			auto tempFunction = std::make_shared<xacc::quantum::GateFunction>(

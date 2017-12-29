@@ -63,7 +63,9 @@ protected:
 	/**
 	 * The Pauli gates this SpinInstruction models.
 	 */
-	std::vector<std::pair<int, std::string>> terms;
+//	std::vector<std::pair<int, std::string>> terms;
+
+	std::map<int, std::string> terms;
 
 	/**
 	 * A convenience mapping for common
@@ -76,9 +78,12 @@ public:
 	/**
 	 * The coefficient multiplying this SpinInstruction.
 	 */
-	std::complex<double> coefficient;
+	std::complex<double> coefficient = std::complex<double>(1,0);
 
 	std::string variable = "";
+
+	SpinInstruction() {
+	}
 
 	/**
 	 * The copy constructor
@@ -87,24 +92,6 @@ public:
 	SpinInstruction(const SpinInstruction& i) :
 			pauliProducts(i.pauliProducts), terms(i.terms), coefficient(
 					i.coefficient), variable(i.variable) {
-		std::sort(terms.begin(), terms.end(),
-				[](std::pair<int, std::string>& left,
-						std::pair<int, std::string>& right) {
-			return left.first < right.first;
-		});
-
-		terms.erase(
-				std::remove_if(terms.begin(), terms.end(),
-						[&](const std::pair<int, std::string>& element) -> bool {
-							if (terms.size() != 1) {
-								return element.second == "I";
-							}
-							return false;
-						}), terms.end());
-
-		if (terms.empty()) {
-			terms.push_back({0,"I"});
-		}
 	}
 
 	/**
@@ -113,49 +100,12 @@ public:
 	 *
 	 * @param operators The pauli operators making up this SpinInstruction
 	 */
-	SpinInstruction(std::vector<std::pair<int, std::string>> operators) :
+	SpinInstruction(std::map<int, std::string> operators) :
 			terms(operators), coefficient(std::complex<double>(1, 0)) {
-		std::sort(terms.begin(), terms.end(),
-				[](std::pair<int, std::string>& left,
-						std::pair<int, std::string>& right) {
-			return left.first < right.first;
-		});
-
-		terms.erase(
-				std::remove_if(terms.begin(), terms.end(),
-						[&](const std::pair<int, std::string>& element) -> bool {
-							if (terms.size() != 1) {
-								return element.second == "I";
-							}
-							return false;
-						}), terms.end());
-
-		if (terms.empty()) {
-			terms.push_back({0,"I"});
-		}
 	}
 
-	SpinInstruction(std::vector<std::pair<int, std::string>> operators, std::string var) :
+	SpinInstruction(std::map<int, std::string> operators, std::string var) :
 			terms(operators), coefficient(std::complex<double>(1, 0)), variable(var) {
-		std::sort(terms.begin(), terms.end(),
-				[](std::pair<int, std::string>& left,
-						std::pair<int, std::string>& right) {
-			return left.first < right.first;
-		});
-
-		terms.erase(
-				std::remove_if(terms.begin(), terms.end(),
-						[&](const std::pair<int, std::string>& element) -> bool {
-							if (terms.size() != 1) {
-								return element.second == "I";
-							}
-							return false;
-						}), terms.end());
-
-		if (terms.empty()) {
-			terms.push_back({0,"I"});
-		}
-
 	}
 
 	/**
@@ -165,51 +115,14 @@ public:
 	 * @param operators
 	 * @param coeff
 	 */
-	SpinInstruction(std::vector<std::pair<int, std::string>> operators,
+	SpinInstruction(std::map<int, std::string> operators,
 			std::complex<double> coeff) :
 			terms(operators), coefficient(coeff) {
-		std::sort(terms.begin(), terms.end(),
-				[](std::pair<int, std::string>& left,
-						std::pair<int, std::string>& right) {
-			return left.first < right.first;
-		});
-
-		terms.erase(
-				std::remove_if(terms.begin(), terms.end(),
-						[&](const std::pair<int, std::string>& element) -> bool {
-							if (terms.size() != 1) {
-								return element.second == "I";
-							}
-							return false;
-						}), terms.end());
-
-		if (terms.empty()) {
-			terms.push_back({0,"I"});
-		}
-
 	}
 
-	SpinInstruction(std::vector<std::pair<int, std::string>> operators,
+	SpinInstruction(std::map<int, std::string> operators,
 			std::complex<double> coeff, std::string var) :
 			terms(operators), coefficient(coeff), variable(var) {
-		std::sort(terms.begin(), terms.end(),
-				[](std::pair<int, std::string>& left,
-						std::pair<int, std::string>& right) {
-			return left.first < right.first;
-		});
-
-		terms.erase(
-				std::remove_if(terms.begin(), terms.end(),
-						[&](const std::pair<int, std::string>& element) -> bool {
-							if (terms.size() != 1) {
-								return element.second == "I";
-							}
-							return false;
-						}), terms.end());
-
-		if (terms.empty()) {
-			terms.push_back({0,"I"});
-		}
 	}
 
 	/**
@@ -218,12 +131,22 @@ public:
 	 * @return name The name of this Instruction
 	 */
 	virtual const std::string getName() {
-		return "qubit-instruction";
+		if (isIdentity()) {
+			return variable+"I";
+		} else {
+			std::stringstream s;
+			s << variable;
+			for (auto& t : terms) {
+				if (t.second != "I")
+					s << t.second << t.first;
+			}
+			return s.str();
+		}
 	}
 
 	const int countTermsOfType(const std::string& gate) {
 		int count = 0;
-		for (auto t : terms) {
+		for (auto& t : terms) {
 			if (t.second == gate) {
 				count++;
 			}
@@ -232,54 +155,24 @@ public:
 		return count;
 	}
 
-	bool isIdentity() {
-		return terms.size() == 1 && terms[0] == std::pair<int, std::string> { 0,
-				"I" };
+	bool isIdentity() const {
+		return terms.empty();
 	}
 
 	bool isDiagonal() {
 		return countTermsOfType("Z") == terms.size();
 	}
 
-	const std::pair<std::string, std::complex<double>> computeActionOnKet(const std::string& bitString) {
-		std::complex<double> i(0,1);
-		std::complex<double> newCoeff = coefficient;
-		std::string newBits = bitString;
-		for (auto t : terms) {
-			auto idx = t.first;
-			auto gate = t.second;
-			if (gate == "Z") {
-				newCoeff *= newBits[idx] == '1' ? -1 : 1;
-			} else if (gate == "X") {
-				newBits[idx] = (newBits[idx] == '1' ? '0' : '1');
-			} else if (gate == "Y") {
-				newCoeff *= newBits[idx] == '1' ? -i : i;
-				newBits[idx] = (newBits[idx] == '1' ? '0' : '1');
-			}
-		}
-		return std::make_pair(newBits, newCoeff);
+	const std::pair<std::string, std::complex<double>> computeActionOnKet(
+			const std::string& bitString);
+
+	const std::pair<std::string, std::complex<double>> computeActionOnBra(
+			const std::string& bitString);
+
+	virtual const std::string toString() {
+		return toString("");
 	}
 
-	const std::pair<std::string, std::complex<double>> computeActionOnBra(const std::string& bitString) {
-		std::complex<double> i(0,1);
-		std::complex<double> newCoeff = coefficient;
-		std::string newBits = bitString;
-
-		for (auto t : terms) {
-			auto idx = t.first;
-			auto gate = t.second;
-			if (gate == "Z") {
-				newCoeff *= newBits[idx] == '1' ? -1 : 1;
-			} else if (gate == "X") {
-				newBits[idx] = (newBits[idx] == '1' ? '0' : '1');
-			} else if (gate == "Y") {
-				newCoeff *= newBits[idx] == '1' ? i : -i;
-				newBits[idx] = (newBits[idx] == '1' ? '0' : '1');
-			}
-		}
-		return std::make_pair(newBits, newCoeff);
-
-	}
 	/**
 	 * Persist this Instruction to an assembly-like
 	 * string.
@@ -289,22 +182,32 @@ public:
 	 */
 	virtual const std::string toString(const std::string& bufferVarName) {
 		std::stringstream ss;
-		ss << coefficient << " * ";
+		ss << coefficient << " ";
 		if (!variable.empty()) {
-			ss << variable << " * ";
+			ss << variable << " ";
 		}
-		for (auto t : terms) {
-			if ("I" == t.second) {
-				ss << "I * ";
-			} else {
-				ss << t.second << t.first
-						<< " * ";
+
+		if (isIdentity()) {
+			ss << "I";
+			return ss.str();
+		} else {
+			for (auto& t : terms) {
+				ss << t.second << t.first << " ";
 			}
+			auto r = ss.str().substr(0, ss.str().size() - 1);
+			boost::trim(r);
+			return r;
 		}
-		auto r = ss.str().substr(0, ss.str().size() - 2);
-		boost::trim(r);
-		return r;
 	}
+
+	Eigen::SparseMatrix<std::complex<double>> toSparseMatrix(
+			const int nQubits);
+	std::vector<int> toBinaryVector(const int nQubits) const;
+	void fromBinaryVector(std::vector<int> vec,
+			std::complex<double> coeff);
+	Eigen::SparseMatrix<double> toSparseRealMatrix(
+			const int nQubits);
+	Eigen::MatrixXcd toMatrix(const int nQubits);
 
 	/**
 	 * Return the indices of the bits that this Instruction
@@ -314,7 +217,7 @@ public:
 	 */
 	virtual const std::vector<int> bits() {
 		std::vector<int> qbits;
-		for (auto t : terms) {
+		for (auto& t : terms) {
 			qbits.push_back(t.first);
 		}
 		return qbits;
@@ -345,146 +248,6 @@ public:
 		return std::vector<InstructionParameter>{InstructionParameter(coefficient)};
 	}
 
-	std::vector<int> toBinaryVector(const int nQubits) const {
-
-		std::vector<int> bv(2*nQubits);
-
-		for (auto& t : terms) {
-			if (t.second == "X") {
-
-				bv[t.first] = 1;
-
-			} else if (t.second == "Z") {
-
-				bv[nQubits+ t.first] = 1;
-
-			} else if (t.second == "Y") {
-
-				bv[t.first] = 1;
-				bv[nQubits + t.first] = 1;
-
-			} else if (t.second == "I") {
-
-				return bv;
-			}
-		}
-
-		return bv;
-	}
-
-	void fromBinaryVector(std::vector<int> vec, std::complex<double> coeff) {
-
-		coefficient = coeff;
-		int nQubits = vec.size() / 2;
-
-		terms.clear();
-
-		if (vec == std::vector<int>(vec.size())) {
-			terms.push_back({0, "I"});
-			return;
-		} else {
-			for (int i = 0; i < nQubits; i++) {
-				if (vec[i] && vec[i+nQubits]) {
-					terms.push_back({i, "Y"});
-				} else if (vec[i]) {
-					terms.push_back({i, "X"});
-				}
-			}
-
-			for (int i = nQubits; i < vec.size(); i++) if(vec[i] && !vec[i-nQubits]) terms.push_back({i-nQubits,"Z"});
-
-			std::sort(terms.begin(), terms.end(),
-					[](std::pair<int, std::string>& left,
-							std::pair<int, std::string>& right) {
-						return left.first < right.first;
-					});
-
-			terms.erase(
-					std::remove_if(terms.begin(), terms.end(),
-							[&](const std::pair<int, std::string>& element) -> bool {
-								if (terms.size() != 1) {
-									return element.second == "I";
-								}
-								return false;
-							}), terms.end());
-
-			return;
-		}
-	}
-
-	Eigen::SparseMatrix<double> toSparseRealMatrix(const int nQubits) {
-		Eigen::SparseMatrix<std::complex<double>> mat = toSparseMatrix(nQubits);
-		std::vector<Eigen::Triplet<double>> triplets;
-		for (int k = 0; k < mat.outerSize(); ++k) {
-			for (Eigen::SparseMatrix<std::complex<double>>::InnerIterator it(mat, k); it; ++it) {
-				if (it.value() != std::complex<double>(0.0, 0.0)) {
-					triplets.push_back(Eigen::Triplet<double>(it.row(), it.col(), std::real(it.value())));
-				}
-			}
-		}
-		Eigen::SparseMatrix<double>  spRealMat(mat.rows(), mat.cols());
-		spRealMat.setFromTriplets(triplets.begin(), triplets.end());
-		return spRealMat;
-	}
-
-	using Triplet = Eigen::Triplet<std::complex<double>>;
-	using SparseMat = Eigen::SparseMatrix<std::complex<double>>;
-
-	Eigen::SparseMatrix<std::complex<double>> toSparseMatrix(const int nQubits);
-
-	Eigen::MatrixXcd toMatrix(const int nQubits) {
-
-		int dim = std::pow(2, nQubits);
-
-		Eigen::MatrixXcd ham = Eigen::MatrixXcd::Identity(dim, dim);
-
-		if (terms.size() == 1 && terms[0] == std::pair<int, std::string> { 0,
-				"I" }) {
-			return coefficient
-					* Eigen::MatrixXcd::Identity(dim, dim);
-		}
-
-		std::complex<double> i(0, 1);
-		Eigen::MatrixXcd z(2, 2), x(2, 2), y(2, 2), I(2, 2);
-		z << 1, 0, 0, -1;
-		x << 0, 1, 1, 0;
-		y << 0, -i, i, 0;
-		I << 1, 0, 0, 1;
-
-		for (auto t : terms) {
-
-			std::vector<Eigen::MatrixXcd> productList;
-			for (int j = 0; j < nQubits; j++) {
-				productList.push_back(I);
-			}
-
-			auto qbit = t.first;
-			auto gate = t.second;
-
-			Eigen::MatrixXcd tmp;
-			if (gate == "Z") {
-				tmp = z;
-			} else if (gate == "Y") {
-				tmp = y;
-			} else if (gate == "X") {
-				tmp = x;
-			} else {
-				XACCError("Invalid gate name - " + gate);
-			}
-
-			productList.at(qbit) = tmp;
-
-			Eigen::MatrixXcd localU = productList.at(0);
-			for (int j = 1; j < productList.size(); j++) {
-				localU =
-						Eigen::kroneckerProduct(localU, productList.at(j)).eval();
-			}
-
-			ham = ham * localU;
-		}
-
-		return coefficient * ham;
-	}
 
 	/**
 	 * Set this Instruction's parameter at the given index.
@@ -577,7 +340,18 @@ public:
 		return !operator==(b);
 	}
 
-
+	const std::string id() const {
+		if (isIdentity()) {
+			return "I";
+		} else {
+			std::stringstream s;
+			for (auto& t : terms) {
+				if (t.second != "I")
+					s << t.second << t.first;
+			}
+			return s.str();
+		}
+	}
 	/**
 	 * Return true if the given SpinInstruction is equal to this one
 	 *
@@ -585,29 +359,7 @@ public:
 	 * @return equal
 	 */
 	bool operator ==(const SpinInstruction &b) const {
-		if (b.terms.size() != terms.size()) {
-			return false;
-		}
-
-		if (variable != b.variable) {
-			return false;
-		}
-
-		for (int i = 0; i < terms.size(); i++) {
-			if ((terms[i].first != b.terms[i].first)
-					|| (terms[i].second != b.terms[i].second)) {
-
-				// If these two gates are both I's then we don't care about
-				// the qubits they operate on
-				if (terms[i].second == "I" &&
-						b.terms[i].second == "I") {
-					continue;
-				}
-
-				return false;
-			}
-		}
-		return true;
+		return variable == b.variable && id() == b.id();
 	}
 
 	/**
@@ -633,7 +385,7 @@ public:
 		std::stringstream ss;
 		if (!variable.empty()) {
 			if (!b.variable.empty()) {
-				ss << variable << " * " << b.variable;
+				ss << variable << " " << b.variable;
 			} else {
 				ss << variable;
 			}
@@ -645,24 +397,25 @@ public:
 
 		auto newVar = ss.str();
 
-		std::vector<std::pair<int, std::string>> newTerms;
-		for (int i = 0; i < terms.size(); i++) {
-			newTerms.push_back(
-					std::make_pair(terms[i].first, terms[i].second));
+		CommonPauliProducts products;
+		std::map<int, std::string> newTerms = terms;
+		for (auto& kv : b.terms) {
+			if (newTerms.count(kv.first)) {
+				// This means, we have a Pi in both
+				// so we need to check its product
+				auto gate_coeff = products[{newTerms[kv.first], kv.second}];
+				if (gate_coeff.second != "I") {
+					newTerms[kv.first] = gate_coeff.second;
+				} else {
+					newTerms.erase(kv.first);
+				}
+				newCoeff *= gate_coeff.first;
+			} else if (kv.second != "I"){
+				newTerms[kv.first] = kv.second;
+			}
 		}
-		for (int i = 0; i < b.terms.size(); i++) {
-			newTerms.push_back(
-					std::make_pair(b.terms[i].first,b.terms[i].second));
-		}
 
-		std::sort(newTerms.begin(), newTerms.end(),
-				[](std::pair<int, std::string>& left,
-						std::pair<int, std::string>& right) {
-			return left.first < right.first;
-		});
-
-		return replaceCommonPauliProducts(newTerms, newCoeff, newVar);
-
+		return SpinInstruction(newTerms, newCoeff, newVar);
 	}
 
 	/**
@@ -731,6 +484,8 @@ public:
 			ret.addInstruction(std::make_shared<SpinInstruction>(newspinInst));
 		}
 
+		ret.simplify();
+
 		return ret;
 	}
 
@@ -743,20 +498,13 @@ public:
 	 */
 	CompositeSpinInstruction operator+(const SpinInstruction &b) const {
 		CompositeSpinInstruction ret;
-//		if (operator==(b)) {
-//			auto newCoeff = coefficient + b.coefficient;
-//			auto ptr = std::make_shared<SpinInstruction>(*this);
-//			ptr->coefficient = newCoeff;
-//			ret.addInstruction(ptr);
-//		} else {
-			ret.addInstruction(std::make_shared<SpinInstruction>(*this));
-			ret.addInstruction(std::make_shared<SpinInstruction>(b));
-//		}
-			ret.simplify();
+		ret.addInstruction(std::make_shared<SpinInstruction>(*this));
+		ret.addInstruction(std::make_shared<SpinInstruction>(b));
+		ret.simplify();
 		return ret;
 	}
 
-	std::vector<std::pair<int, std::string>> getTerms() {
+	std::map<int, std::string> getTerms() {
 		return terms;
 	}
 
@@ -766,62 +514,6 @@ public:
 	 */
 	EMPTY_DEFINE_VISITABLE()
 
-private:
-
-	/**
-	 * Replace Pauli products with equivalent single Pauli
-	 * as given in the CommonPauliProducts class
-	 * @param newTerms
-	 * @param newCoeff
-	 * @return
-	 */
-	SpinInstruction replaceCommonPauliProducts(
-			std::vector<std::pair<int, std::string>>& newTerms,
-			std::complex<double> newCoeff, std::string newVar = "") const {
-
-//		std::stringstream s,ss;
-//		s << newCoeff << " ";
-//		for(const auto& t : newTerms) s << t.second << t.first << " ";
-//		std::cout << "Before: " << s.str() << "\n";
-
-		int i = 0;
-		while(i < newTerms.size() - 1) {
-			auto qubit1 = newTerms[i].first;
-			auto qubit2 = newTerms[i + 1].first;
-			if (qubit1 == qubit2) {
-				auto gate1 = newTerms[i].second;
-				auto gate2 = newTerms[i + 1].second;
-				auto gPair = std::make_pair(gate1, gate2);
-				if (pauliProducts.find(gPair) != pauliProducts.end()) {
-					newTerms.erase(newTerms.begin() + i + 1);
-					auto coeff = pauliProducts.at(gPair).first;
-					auto newGate = pauliProducts.at(gPair).second;
-					newTerms.at(i) = std::make_pair(qubit1,
-							newGate);
-					newCoeff *= coeff;
-				}
-			} else {
-				i++;
-			}
-		}
-
-		std::vector<std::pair<int, std::string>> nt;
-		for (const auto& t : newTerms) {
-			if (t.second != "I") {
-				nt.push_back({t.first, t.second});
-			}
-		}
-
-		if (nt.empty()) {
-			nt.push_back({0, "I"});
-		}
-
-//		ss << newCoeff << " ";
-//		for(const auto& t : nt) ss << t.second << t.first << " ";
-//		std::cout << "After: " << ss.str() << "\n";
-
-		return SpinInstruction(nt, newCoeff, newVar);
-	}
 };
 }
 }

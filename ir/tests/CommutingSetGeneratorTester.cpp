@@ -39,29 +39,29 @@ using namespace xacc::vqe;
 
 BOOST_AUTO_TEST_CASE(checkCommutingSets) {
 
-	auto inst1 = std::make_shared<SpinInstruction>(std::vector<std::pair<int, std::string>> { { 0, "Y" },
+	auto inst1 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 0, "Y" },
 			{ 1, "Z" }, { 2, "X" } });
-	auto inst2 = std::make_shared<SpinInstruction>(std::vector<std::pair<int, std::string>> { { 0, "X" },
+	auto inst2 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 0, "X" },
 			 { 1, "Z" }, {2, "Y"} });
-	auto inst3 = std::make_shared<SpinInstruction>(std::vector<std::pair<int, std::string>> { { 1, "Y" },
+	auto inst3 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 1, "Y" },
 			{ 2, "Z" }, { 3, "X"} });
-	auto inst4 = std::make_shared<SpinInstruction>(std::vector<std::pair<int, std::string>> { { 1, "X" },
+	auto inst4 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 1, "X" },
 			{ 2, "Z" }, {3, "Y"} });
-	auto inst5 = std::make_shared<SpinInstruction>(std::vector<std::pair<int, std::string>> { { 0, "Y" },
+	auto inst5 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 0, "Y" },
 			{ 1, "Y" }, {2, "Y"}, {3, "X"} });
-	auto inst6 = std::make_shared<SpinInstruction>(std::vector<std::pair<int, std::string>> { { 0, "Y" },
+	auto inst6 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 0, "Y" },
 			{ 1, "X" }, {2, "Y"}, {3, "Y"} });
-	auto inst7 = std::make_shared<SpinInstruction>(std::vector<std::pair<int, std::string>> { { 0, "X" },
+	auto inst7 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 0, "X" },
 			{ 1, "X" }, {2, "Y"}, {3, "X"} });
-	auto inst8 = std::make_shared<SpinInstruction>(std::vector<std::pair<int, std::string>> { { 0, "X" },
+	auto inst8 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 0, "X" },
 			{ 1, "Y" }, {2, "Y"}, {3, "Y"} });
-	auto inst9 = std::make_shared<SpinInstruction>(std::vector<std::pair<int, std::string>> { { 0, "Y" },
+	auto inst9 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 0, "Y" },
 			{ 1, "X" }, {2, "X"}, {3, "X"} });
-	auto inst10 = std::make_shared<SpinInstruction>(std::vector<std::pair<int, std::string>> { { 0, "Y" },
+	auto inst10 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 0, "Y" },
 				{ 1, "Y" }, {2, "X"}, {3, "Y"} });
-	auto inst11 = std::make_shared<SpinInstruction>(std::vector<std::pair<int, std::string>> { { 0, "X" },
+	auto inst11 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 0, "X" },
 				{ 1, "Y" }, {2, "X"}, {3, "X"} });
-	auto inst12 = std::make_shared<SpinInstruction>(std::vector<std::pair<int, std::string>> { { 0, "X" },
+	auto inst12 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 0, "X" },
 				{ 1, "X" }, {2, "X"}, {3, "Y"} });
 
 	CompositeSpinInstruction composite;
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(checkCommutingSets) {
 	composite.addInstruction(inst7);
 	composite.addInstruction(inst4);
 
-	auto str = composite.toString("");
+	auto str = composite.toString();
 	boost::replace_all(str, "+", "+\n");
 	std::cout << "OP:\n" << str << "\n";
 	CommutingSetGenerator gen;

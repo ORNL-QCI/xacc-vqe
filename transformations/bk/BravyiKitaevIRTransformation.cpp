@@ -54,7 +54,7 @@ std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
 
 		CompositeSpinInstruction ladderProduct;
 		auto nullInst = std::make_shared<SpinInstruction>(
-				std::vector<std::pair<int, std::string>> { { 0, "I" } },
+				std::map<int, std::string> { },
 				fermionInst->coefficient, fermionVar);
 		ladderProduct.addInstruction(nullInst);
 
@@ -87,8 +87,15 @@ std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
 				cTerms.push_back({a->index, "X"});
 			}
 
-			SpinInstruction d_majorana(dTerms, dcoeff), c_majorana(cTerms, ccoeff);
-			auto sum = c_majorana + d_majorana;
+			SpinInstruction d({},dcoeff), c({},ccoeff);
+			for (auto t : dTerms) {
+				d = d * SpinInstruction({{t.first,t.second}});
+			}
+			for (auto t : cTerms) {
+				c = c * SpinInstruction({{t.first,t.second}});
+			}
+
+			auto sum = c + d;
 			ladderProduct = ladderProduct * sum;
 			ladderProduct.simplify();
 		}

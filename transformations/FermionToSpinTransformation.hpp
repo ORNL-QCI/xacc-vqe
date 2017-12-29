@@ -58,7 +58,7 @@ struct add_spin_instructions {
 		CompositeSpinInstruction i;
 		std::vector<PersistedSpinInstruction> persistedInstructions;
 		for (auto inst : a) {
-			auto spin = std::make_shared<SpinInstruction>(std::vector<std::pair<int, std::string>> {});
+			auto spin = std::make_shared<SpinInstruction>();
 			spin->fromBinaryVector(inst.second, inst.first);
 			i.addInstruction(spin);
 		}
@@ -108,7 +108,7 @@ protected:
 		}
 		boost::mpi::all_reduce(world, persistedInstructions, globalInstructions, add_spin_instructions());
 		for (auto inst : globalInstructions) {
-			auto spin = std::make_shared<SpinInstruction>(std::vector<std::pair<int, std::string>> {});
+			auto spin = std::make_shared<SpinInstruction>();
 			spin->fromBinaryVector(inst.second, inst.first);
 			i.addInstruction(spin);
 		}
@@ -151,7 +151,13 @@ protected:
 				// Loop over all terms in the Spin Instruction
 				// and create instructions to run on the Gate QPU.
 				std::vector<std::shared_ptr<xacc::quantum::GateInstruction>> measurements;
-				auto terms = spinInst->getTerms();
+				auto termsMap = spinInst->getTerms();
+
+				std::vector<std::pair<int,std::string>> terms;
+				for (auto& kv : termsMap) {
+					terms.push_back({kv.first, kv.second});
+				}
+
 				for (int i = terms.size() - 1; i >= 0; i--) {
 					auto qbit = terms[i].first;
 					auto gateName = terms[i].second;
