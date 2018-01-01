@@ -36,17 +36,17 @@ double SlepcGroundStateEnergyCalculator::computeGroundStateEnergy(
 	for (int i = 0; i < nQubits; i++)
 		dim *= two;
 
-	// Generate all bit strings
-	std::vector<std::string> bitStrings(dim);
-#pragma omp parallel for
-	for (std::uint64_t j = 0; j < dim; j++) {
-
-		std::stringstream s;
-		for (int k = nQubits - 1; k >= 0; k--) {
-			s << ((j >> k) & 1);
-		}
-		bitStrings[j] = s.str();
-	}
+//	// Generate all bit strings
+//	std::vector<std::string> bitStrings(dim);
+//#pragma omp parallel for
+//	for (std::uint64_t j = 0; j < dim; j++) {
+//
+//		std::stringstream s;
+//		for (int k = nQubits - 1; k >= 0; k--) {
+//			s << ((j >> k) & 1);
+//		}
+//		bitStrings[j] = s.str();
+//	}
 
 	SlepcInitialize(&argc, &argv, (char*) 0, help);
 
@@ -64,46 +64,23 @@ double SlepcGroundStateEnergyCalculator::computeGroundStateEnergy(
 
 	auto nTerms = inst.nInstructions();
 
-	// Get Identity coefficient
-	std::complex<double> identityCoeff(0.0, 0.0);
-	for (int i = 0; i < nTerms; i++) {
-		std::shared_ptr<SpinInstruction> spinInst = std::dynamic_pointer_cast<
-				SpinInstruction>(inst.getInstruction(i));
-		if (spinInst->isIdentity()) {
-			identityCoeff = spinInst->coefficient;
-			break;
-		}
-	}
-
 	if (rank == 0) XACCInfo(
 			"Building Matrix for SLEPc.");
-	for (std::uint64_t myRow = Istart; myRow < Iend; myRow++) {
 
-		if (identityCoeff != std::complex<double>(0.0, 0.0)) {
-			MatSetValue(A, myRow, myRow, identityCoeff, ADD_VALUES);
-		}
+	for (std::uint64_t myRow = Istart; myRow < Iend; myRow++) {
 
 		for (int i = 0; i < nTerms; i++) {
 
 			std::shared_ptr<SpinInstruction> spinInst =
 					std::dynamic_pointer_cast<SpinInstruction>(
 							inst.getInstruction(i));
-			std::pair<std::string, std::complex<double>> newBitStrCoeff;
 
-			if (!spinInst->isIdentity()) {
-				if (spinInst->isDiagonal()) {
-					newBitStrCoeff = spinInst->computeActionOnBra(
-							bitStrings[myRow]);
-					MatSetValue(A, myRow, myRow, newBitStrCoeff.second,
-							ADD_VALUES);
-				} else {
-					newBitStrCoeff = spinInst->computeActionOnBra(
-							bitStrings[myRow]);
-					std::uint64_t k = std::stol(newBitStrCoeff.first, nullptr,
-							2);
-					MatSetValue(A, myRow, k, newBitStrCoeff.second, ADD_VALUES);
-				}
-			}
+			std::stringstream s;
+			for (int k = nQubits - 1; k >= 0; k--) s << ((myRow >> k) & 1);
+			auto rowBitStr = s.str();
+			auto newBitStrCoeff = spinInst->computeActionOnBra(rowBitStr);
+			std::uint64_t k = std::stol(newBitStrCoeff.first, nullptr, 2);
+			MatSetValue(A, myRow, k, newBitStrCoeff.second, ADD_VALUES);
 		}
 	}
 
@@ -113,7 +90,7 @@ double SlepcGroundStateEnergyCalculator::computeGroundStateEnergy(
 			"Done building Matrix for SLEPc.");
 
 
-//	MatView(A, PETSC_VIEWER_STDOUT_WORLD);
+	MatView(A, PETSC_VIEWER_STDOUT_WORLD);
 
 	EPSCreate(PETSC_COMM_WORLD, &eps);
 	EPSSetOperators(eps, A, NULL);
