@@ -90,7 +90,7 @@ double SlepcGroundStateEnergyCalculator::computeGroundStateEnergy(
 			"Done building Matrix for SLEPc.");
 
 
-	MatView(A, PETSC_VIEWER_STDOUT_WORLD);
+//	MatView(A, PETSC_VIEWER_STDOUT_WORLD);
 
 	EPSCreate(PETSC_COMM_WORLD, &eps);
 	EPSSetOperators(eps, A, NULL);
