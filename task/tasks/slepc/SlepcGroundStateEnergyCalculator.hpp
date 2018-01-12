@@ -7,7 +7,7 @@ namespace xacc {
 namespace vqe {
 
 class SlepcGroundStateEnergyCalculator: public GroundStateEnergyCalculator {
-	virtual double computeGroundStateEnergy(CompositeSpinInstruction& inst,
+	virtual double computeGroundStateEnergy(PauliOperator& inst,
 			const int nQubits);
 
 	virtual const std::string name() const {

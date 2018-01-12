@@ -174,11 +174,11 @@ const std::string FCIDumpPreprocessor::process(const std::string& source,
 				if (xacc::optionExists("fermion-transformation")) {
 					transformStr = xacc::getOption("fermion-transformation");
 				} else {
-					transformStr = "jordan-wigner";
+					transformStr = "jw";
 				}
 
 				ofscript << "transformedOp = "
-						<< (transformStr == "jordan-wigner" ?
+						<< (transformStr == "jw" || transformStr == "ejw" ?
 								"jordan_wigner" : "bravyi_kitaev") << "(op)\n";
 				ofscript << "es = eigenspectrum(op)\n";
 				ofscript << "print('Energies = ', es)\n";
@@ -192,6 +192,7 @@ const std::string FCIDumpPreprocessor::process(const std::string& source,
 
 		boost::mpi::broadcast(world, kernelString, 0);
 
+//		std::cout << kernelString << "\n";
 		return kernelString;
 
 	} else {

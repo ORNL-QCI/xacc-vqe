@@ -150,11 +150,11 @@ std::shared_ptr<Function> UCCSD::generate(
 	auto compositeResult =
 			std::dynamic_pointer_cast<FermionToSpinTransformation>(transform)->getResult();
 
+	std::unordered_map<std::string, Term> terms = compositeResult.getTerms();
 	// Convert imaginary part to real part
-	for (auto term : compositeResult.getInstructions()) {
-		auto castedTerm = std::dynamic_pointer_cast<SpinInstruction>(term);
-		castedTerm->coefficient = std::complex<double>(
-				std::imag(castedTerm->coefficient), 0);
+	for (auto& term : terms) {
+		std::complex<double> tmp = std::get<0>(term.second);
+		term.second.coeff() = std::complex<double>(std::imag(tmp), 0);
 	}
 
 	CommutingSetGenerator gen;
@@ -164,13 +164,12 @@ std::shared_ptr<Function> UCCSD::generate(
 			variables);
 
 	// Perform Trotterization...
-	for (auto s : commutingSets) {
+	for (auto s : commutingSets.first) {
 
 		for (auto instIdx : s) {
-			auto temp = compositeResult.getInstruction(instIdx);
-			auto spinInst = std::dynamic_pointer_cast<SpinInstruction>(temp);
+			Term spinInst = commutingSets.second[instIdx]; //std::dynamic_pointer_cast<SpinInstruction>(temp);
 			// Get the individual pauli terms
-			auto termsMap = spinInst->getTerms();
+			auto termsMap = std::get<2>(spinInst);
 
 			std::vector<std::pair<int,std::string>> terms;
 			for (auto& kv : termsMap) {
@@ -213,8 +212,8 @@ std::shared_ptr<Function> UCCSD::generate(
 				if (i == terms.size() - 1) {
 					// FIXME DONT FORGET DIVIDE BY 2
 					std::stringstream ss;
-					ss << 2*std::real(spinInst->coefficient) << " * "
-							<< spinInst->variable;
+					ss << 2*std::real(std::get<0>(spinInst)) << " * "
+							<< std::get<1>(spinInst);
 					auto rz =
 							xacc::quantum::GateInstructionRegistry::instance()->create(
 									"Rz", std::vector<int> { qbitIdx });

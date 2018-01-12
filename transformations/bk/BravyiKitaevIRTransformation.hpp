@@ -63,7 +63,7 @@ public:
 	virtual std::shared_ptr<IR> transform(std::shared_ptr<IR> ir);
 
 	virtual const std::string name() const {
-		return "bravyi-kitaev";
+		return "bk";
 	}
 
 	virtual const std::string description() const {

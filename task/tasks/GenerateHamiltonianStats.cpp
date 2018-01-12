@@ -90,7 +90,7 @@ VQETaskResult GenerateHamiltonianStats::execute(
 			<< ", " << std::to_string(it.second) << ")" << "\n";
 		}
 
-		auto resultsStr = hamiltonianInstruction.toString("");
+		auto resultsStr = hamiltonianInstruction.toString();
 		boost::replace_all(resultsStr, "+", "+\n");
 		s << "\nHamiltonian:\n" << resultsStr << "\n";
 

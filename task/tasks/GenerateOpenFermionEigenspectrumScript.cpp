@@ -42,12 +42,13 @@ VQETaskResult GenerateOpenFermionEigenspectrumScript::execute(
 		s << "from openfermion.utils import eigenspectrum\n";
 		s << "op = \\\n";
 
-		int nInsts = hamiltonianInstruction.nInstructions();
-		for (int i = 0; i < nInsts; i++) {
-			auto t = hamiltonianInstruction.getInstruction(i);
-			auto spin = std::dynamic_pointer_cast<SpinInstruction>(t);
+		auto terms = hamiltonianInstruction.getTerms();
+		int nInsts = terms.size();
+		int i = 0;
+		for (auto& kv : terms) {
+			auto spin = kv.second;
 			std::string termStr = "";
-			for (auto term : spin->getTerms()) {
+			for (auto term : spin.ops()) {
 				if (term.second != "I") {
 					termStr += " " + term.second + std::to_string(term.first) + " ";
 				} else {
@@ -56,10 +57,11 @@ VQETaskResult GenerateOpenFermionEigenspectrumScript::execute(
 			}
 
 			if (i == nInsts-1) {
-				s << "   QubitOperator('" << termStr << "', complex" << spin->coefficient << ")\n";
+				s << "   QubitOperator('" << termStr << "', complex" << spin.coeff() << ")\n";
 			} else {
-				s << "   QubitOperator('" << termStr << "', complex" << spin->coefficient << ") + \\\n";
+				s << "   QubitOperator('" << termStr << "', complex" << spin.coeff() << ") + \\\n";
 			}
+			i++;
 		}
 
 		s << "\n\nes = eigenspectrum(op)\n";

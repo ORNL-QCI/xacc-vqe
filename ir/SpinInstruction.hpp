@@ -85,6 +85,8 @@ public:
 	SpinInstruction() {
 	}
 
+	SpinInstruction(double c) :coefficient(std::complex<double>(c,0)) {}
+	SpinInstruction(std::complex<double> c) : coefficient(c) {}
 	/**
 	 * The copy constructor
 	 * @param i
@@ -371,6 +373,46 @@ public:
 		return !operator==(b);
 	}
 
+	SpinInstruction& operator*=(const SpinInstruction &b) {
+
+		coefficient *= b.coefficient;
+
+		std::stringstream ss;
+		if (!variable.empty()) {
+			if (!b.variable.empty()) {
+				ss << variable << " " << b.variable;
+			} else {
+				ss << variable;
+			}
+		} else {
+			if(!b.variable.empty()) {
+				ss << b.variable;
+			}
+		}
+
+		variable = ss.str();
+
+		CommonPauliProducts products;
+		std::map<int, std::string> newTerms = terms;
+		for (auto& kv : b.terms) {
+			if (newTerms.count(kv.first)) {
+				// This means, we have a Pi in both
+				// so we need to check its product
+				auto gate_coeff = products[newTerms[kv.first]+ kv.second];
+				if (gate_coeff.second != "I") {
+					newTerms[kv.first] = gate_coeff.second;
+				} else {
+					newTerms.erase(kv.first);
+				}
+				coefficient *= gate_coeff.first;
+			} else if (kv.second != "I"){
+				newTerms[kv.first] = kv.second;
+			}
+		}
+
+		return *this;
+	}
+
 	/**
 	 * Multiply this SpinInstruction by the given one, and
 	 * return a new SpinInstruction instance.
@@ -403,7 +445,7 @@ public:
 			if (newTerms.count(kv.first)) {
 				// This means, we have a Pi in both
 				// so we need to check its product
-				auto gate_coeff = products[{newTerms[kv.first], kv.second}];
+				auto gate_coeff = products[newTerms[kv.first] + kv.second];
 				if (gate_coeff.second != "I") {
 					newTerms[kv.first] = gate_coeff.second;
 				} else {

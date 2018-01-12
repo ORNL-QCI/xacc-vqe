@@ -31,11 +31,13 @@
 #ifndef VQE_IR_COMMONPAULIPRODUCTS_HPP_
 #define VQE_IR_COMMONPAULIPRODUCTS_HPP_
 
-
-#include <map>
+#include <unordered_map>
+#include <complex>
 
 namespace xacc {
 namespace vqe {
+
+using c = std::complex<double>;
 
 /**
  * CommonPauliProducts keeps track of a map of
@@ -44,64 +46,35 @@ namespace vqe {
  * pauli matrix.
  *
  */
-class CommonPauliProducts : public std::map<std::pair<std::string, std::string>,
-std::pair<std::complex<double>, std::string>> {
+class CommonPauliProducts: public std::unordered_map<std::string,
+		std::pair<c, std::string>> {
 
 public:
 
 	/**
 	 * The constructor
 	 */
+
 	CommonPauliProducts() {
-		insert(
-				std::make_pair(std::make_pair("I", "I"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "I")));
-		insert(
-				std::make_pair(std::make_pair("I", "X"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "X")));
-		insert(
-				std::make_pair(std::make_pair("X", "I"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "X")));
-		insert(
-				std::make_pair(std::make_pair("I", "Y"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "Y")));
-		insert(
-				std::make_pair(std::make_pair("Y", "I"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "Y")));
-		insert(
-				std::make_pair(std::make_pair("Z", "I"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "Z")));
-		insert(
-				std::make_pair(std::make_pair("I", "Z"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "Z")));
-		insert(
-				std::make_pair(std::make_pair("X", "X"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "I")));
-		insert(
-				std::make_pair(std::make_pair("Y", "Y"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "I")));
-		insert(
-				std::make_pair(std::make_pair("Z", "Z"),
-						std::make_pair(std::complex<double>(1.0, 0.0), "I")));
-		insert(
-				std::make_pair(std::make_pair("X", "Y"),
-						std::make_pair(std::complex<double>(0.0, 1.0), "Z")));
-		insert(
-				std::make_pair(std::make_pair("X", "Z"),
-						std::make_pair(std::complex<double>(0.0, -1.0), "Y")));
-		insert(
-				std::make_pair(std::make_pair("Y", "X"),
-						std::make_pair(std::complex<double>(0.0, -1.0), "Z")));
-		insert(
-				std::make_pair(std::make_pair("Y", "Z"),
-						std::make_pair(std::complex<double>(0.0, 1.0), "X")));
-		insert(
-				std::make_pair(std::make_pair("Z", "X"),
-						std::make_pair(std::complex<double>(0.0, 1.0), "Y")));
-		insert(
-				std::make_pair(std::make_pair("Z", "Y"),
-						std::make_pair(std::complex<double>(0.0, -1.0), "X")));
+		insert( { "II", { c(1.0, 0.0), "I" } });
+		insert( { "IX", { c(1.0, 0.0), "X" } });
+		insert( { "XI", { c(1.0, 0.0), "X" } });
+		insert( { "IY", { c(1.0, 0.0), "Y" } });
+		insert( { "YI", { c(1.0, 0.0), "Y" } });
+		insert( { "ZI", { c(1.0, 0.0), "Z" } });
+		insert( { "IZ", { c(1.0, 0.0), "Z" } });
+		insert( { "XX", { c(1.0, 0.0), "I" } });
+		insert( { "YY", { c(1.0, 0.0), "I" } });
+		insert( { "ZZ", { c(1.0, 0.0), "I" } });
+		insert( { "XY", { c(0.0, 1.0), "Z" } });
+		insert( { "XZ", { c(0.0, -1.0), "Y" } });
+		insert( { "YX", { c(0.0, -1.0), "Z" } });
+		insert( { "YZ", { c(0.0, 1.0), "X" } });
+		insert( { "ZX", { c(0.0, 1.0), "Y" } });
+		insert( { "ZY", { c(0.0, -1.0), "X" } });
+
 	}
+
 };
 
 }

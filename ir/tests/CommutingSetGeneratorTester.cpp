@@ -39,44 +39,34 @@ using namespace xacc::vqe;
 
 BOOST_AUTO_TEST_CASE(checkCommutingSets) {
 
-	auto inst1 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 0, "Y" },
+	PauliOperator inst1(std::map<int, std::string> { { 0, "Y" },
 			{ 1, "Z" }, { 2, "X" } });
-	auto inst2 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 0, "X" },
+	PauliOperator inst2(std::map<int, std::string> { { 0, "X" },
 			 { 1, "Z" }, {2, "Y"} });
-	auto inst3 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 1, "Y" },
+	PauliOperator inst3(std::map<int, std::string> { { 1, "Y" },
 			{ 2, "Z" }, { 3, "X"} });
-	auto inst4 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 1, "X" },
+	PauliOperator inst4(std::map<int, std::string> { { 1, "X" },
 			{ 2, "Z" }, {3, "Y"} });
-	auto inst5 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 0, "Y" },
+	PauliOperator inst5(std::map<int, std::string> { { 0, "Y" },
 			{ 1, "Y" }, {2, "Y"}, {3, "X"} });
-	auto inst6 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 0, "Y" },
+	PauliOperator inst6(std::map<int, std::string> { { 0, "Y" },
 			{ 1, "X" }, {2, "Y"}, {3, "Y"} });
-	auto inst7 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 0, "X" },
+	PauliOperator inst7(std::map<int, std::string> { { 0, "X" },
 			{ 1, "X" }, {2, "Y"}, {3, "X"} });
-	auto inst8 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 0, "X" },
+	PauliOperator inst8(std::map<int, std::string> { { 0, "X" },
 			{ 1, "Y" }, {2, "Y"}, {3, "Y"} });
-	auto inst9 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 0, "Y" },
+	PauliOperator inst9(std::map<int, std::string> { { 0, "Y" },
 			{ 1, "X" }, {2, "X"}, {3, "X"} });
-	auto inst10 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 0, "Y" },
+	PauliOperator inst10(std::map<int, std::string> { { 0, "Y" },
 				{ 1, "Y" }, {2, "X"}, {3, "Y"} });
-	auto inst11 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 0, "X" },
+	PauliOperator inst11(std::map<int, std::string> { { 0, "X" },
 				{ 1, "Y" }, {2, "X"}, {3, "X"} });
-	auto inst12 = std::make_shared<SpinInstruction>(std::map<int, std::string> { { 0, "X" },
+	PauliOperator inst12(std::map<int, std::string> { { 0, "X" },
 				{ 1, "X" }, {2, "X"}, {3, "Y"} });
 
-	CompositeSpinInstruction composite;
-	composite.addInstruction(inst3);
-	composite.addInstruction(inst11);
-	composite.addInstruction(inst9);
-	composite.addInstruction(inst1);
-	composite.addInstruction(inst2);
-	composite.addInstruction(inst5);
-	composite.addInstruction(inst12);
-	composite.addInstruction(inst10);
-	composite.addInstruction(inst6);
-	composite.addInstruction(inst8);
-	composite.addInstruction(inst7);
-	composite.addInstruction(inst4);
+	PauliOperator composite = inst1 + inst2 + inst3 + inst4
+			+ inst5 + inst6 + inst7 + inst8 + inst9 + inst10
+			+ inst11 + inst12;
 
 	auto str = composite.toString();
 	boost::replace_all(str, "+", "+\n");
@@ -84,20 +74,20 @@ BOOST_AUTO_TEST_CASE(checkCommutingSets) {
 	CommutingSetGenerator gen;
 	auto sets = gen.getCommutingSet(composite, 4);
 
-	BOOST_VERIFY(sets.size() == 2);
-	BOOST_VERIFY(sets[0][0] == 0);
-	BOOST_VERIFY(sets[0][1] == 2);
-	BOOST_VERIFY(sets[0][2] == 7);
-	BOOST_VERIFY(sets[0][3] == 9);
-	BOOST_VERIFY(sets[0][4] == 10);
-	BOOST_VERIFY(sets[0][5] == 11);
+	BOOST_VERIFY(sets.first.size() == 2);
+	BOOST_VERIFY(sets.first[0][0] == 0);
+	BOOST_VERIFY(sets.first[0][1] == 2);
+	BOOST_VERIFY(sets.first[0][2] == 7);
+	BOOST_VERIFY(sets.first[0][3] == 9);
+	BOOST_VERIFY(sets.first[0][4] == 10);
+	BOOST_VERIFY(sets.first[0][5] == 11);
 
-	BOOST_VERIFY(sets[1][0] == 1);
-	BOOST_VERIFY(sets[1][1] == 3);
-	BOOST_VERIFY(sets[1][2] == 4);
-	BOOST_VERIFY(sets[1][3] == 5);
-	BOOST_VERIFY(sets[1][4] == 6);
-	BOOST_VERIFY(sets[1][5] == 8);
+	BOOST_VERIFY(sets.first[1][0] == 1);
+	BOOST_VERIFY(sets.first[1][1] == 3);
+	BOOST_VERIFY(sets.first[1][2] == 4);
+	BOOST_VERIFY(sets.first[1][3] == 5);
+	BOOST_VERIFY(sets.first[1][4] == 6);
+	BOOST_VERIFY(sets.first[1][5] == 8);
 
 
 }

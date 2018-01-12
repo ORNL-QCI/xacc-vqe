@@ -1,5 +1,5 @@
 /***********************************************************************************
- * Copyright (c) 2017, UT-Battelle
+ * Copyright (c) 2018, UT-Battelle
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,8 +28,8 @@
  *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
-#ifndef VQE_IR_JORDANWIGNERIRTRANSFORMATION_HPP_
-#define VQE_IR_JORDANWIGNERIRTRANSFORMATION_HPP_
+#ifndef VQE_IR_EFFICIENTJW_HPP_
+#define VQE_IR_EFFICIENTJW_HPP_
 
 #include "FermionToSpinTransformation.hpp"
 #include "FermionKernel.hpp"
@@ -42,15 +42,8 @@ namespace xacc {
 namespace vqe {
 
 /**
- * The JordanWignerIRTransformation is a realization of the XACC
- * IRTransformation interface that provides a transform method
- * that takes as input a FermionIR instance and transforms it to
- * a GateQIR instance.
- *
- * Specifically, this transformation will generate N GateFunctions,
- * one for each term in the generated spin-based hamiltonian.
  */
-class JordanWignerIRTransformation: public FermionToSpinTransformation {
+class EfficientJW: public FermionToSpinTransformation {
 
 public:
 
@@ -63,7 +56,7 @@ public:
 	virtual std::shared_ptr<IR> transform(std::shared_ptr<IR> ir);
 
 	virtual const std::string name() const {
-		return "jw";
+		return "ejw";
 	}
 
 	virtual const std::string description() const {

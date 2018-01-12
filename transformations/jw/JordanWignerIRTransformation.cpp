@@ -5,14 +5,14 @@
 namespace xacc {
 namespace vqe {
 
-struct CompositeSpinInstruction addJWResults(struct CompositeSpinInstruction x,
-		struct CompositeSpinInstruction y) {
-	return x + y;
-}
-
-#pragma omp declare reduction( + : CompositeSpinInstruction : \
-		omp_out = addJWResults(omp_out, omp_in)) \
-		initializer( omp_priv(omp_orig))
+//struct CompositeSpinInstruction addJWResults(struct CompositeSpinInstruction x,
+//		struct CompositeSpinInstruction y) {
+//	return x + y;
+//}
+//
+//#pragma omp declare reduction( + : CompositeSpinInstruction : \
+//		omp_out = addJWResults(omp_out, omp_in)) \
+//		initializer( omp_priv(omp_orig))
 
 std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 		std::shared_ptr<IR> ir) {
@@ -21,19 +21,20 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 
 	auto fermiKernel = ir->getKernels()[0];
 
-	CompositeSpinInstruction total;
+//	PauliOperator total;
 	result.clear();
 
 	int myStart = 0;
 	int myEnd = fermiKernel->nInstructions();
 
-	if (runParallel) {
-		myStart = (world.rank()) * fermiKernel->nInstructions() / world.size();
-		myEnd = (world.rank() + 1) * fermiKernel->nInstructions() / world.size();
-	}
+//	if (runParallel) {
+//		myStart = (world.rank()) * fermiKernel->nInstructions() / world.size();
+//		myEnd = (world.rank() + 1) * fermiKernel->nInstructions() / world.size();
+//	}
+	auto start = std::clock();
 
 	// Loop over all Fermionic terms...
-#pragma omp parallel for shared(fermiKernel) reduction (+:total) if (runParallel)
+//#pragma omp parallel for shared(fermiKernel) reduction (+:total) if (runParallel)
 	for (int z = myStart; z < myEnd; ++z) {
 
 		auto f = fermiKernel->getInstruction(z);
@@ -48,12 +49,7 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 
 		auto fermionVar = fermionInst->variable;
 
-		CompositeSpinInstruction current;
-		auto nullInst = std::make_shared<SpinInstruction>(
-				std::map<int, std::string> { },
-				fermionInst->coefficient, fermionVar);
-		current.addInstruction(nullInst);
-
+		PauliOperator current(fermionInst->coefficient);
 		for (int i = 0; i < termSites.size(); i++) {
 			auto isCreation = boost::get<int>(params[i]);
 
@@ -73,33 +69,32 @@ std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 				zy.insert({j, "Z"});
 			}
 
-			SpinInstruction sx({{index,"X"}}), sy({{index, "Y"}});
+			PauliOperator sx({{index,"X"}}), sy({{index, "Y"}});
 
-			SpinInstruction xcomp(zx, xcoeff), ycomp(zy, ycoeff);
+			PauliOperator xcomp(zx, xcoeff), ycomp(zy, ycoeff);
 			auto sum = xcomp*sx + ycomp*sy;
-			current = current * sum;
-			current.simplify();
-//			current.compress();
+			current *= sum;
 		}
 
-		total = total + current;
-		total.simplify();
-//		total.compress();
+		result += current;
 	}
 
-	total.simplify();
+	std::cout << (std::clock() - start) / (double) (CLOCKS_PER_SEC) << "\n";
 
-	CompositeSpinInstruction i;
-
-	if (world.size() > 1 && runParallel) {
-		i = distributeResults(world, total);
-	} else {
-		i = total;
-	}
-
-	world.barrier();
-
-	result = i;
+//
+//	total.simplify();
+//
+//	CompositeSpinInstruction i;
+//
+//	if (world.size() > 1 && runParallel) {
+//		i = distributeResults(world, total);
+//	} else {
+//		i = total;
+//	}
+//
+//	world.barrier();
+//
+//	result = total;
 
 //	result.compress();
 

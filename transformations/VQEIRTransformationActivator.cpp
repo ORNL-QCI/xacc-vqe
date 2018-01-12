@@ -30,6 +30,7 @@
  **********************************************************************************/
 #include "JordanWignerIRTransformation.hpp"
 #include "BravyiKitaevIRTransformation.hpp"
+#include "EfficientJW.hpp"
 
 #include "cppmicroservices/BundleActivator.h"
 #include "cppmicroservices/BundleContext.h"
@@ -56,9 +57,11 @@ public:
 	void Start(BundleContext context) {
 		auto c = std::make_shared<xacc::vqe::JordanWignerIRTransformation>();
 		auto c3 = std::make_shared<xacc::vqe::BravyiKitaevIRTransformation>();
+		auto c4 = std::make_shared<xacc::vqe::EfficientJW>();
 
 		context.RegisterService<xacc::IRTransformation>(c);
 		context.RegisterService<xacc::IRTransformation>(c3);
+		context.RegisterService<xacc::IRTransformation>(c4);
 
 	}
 

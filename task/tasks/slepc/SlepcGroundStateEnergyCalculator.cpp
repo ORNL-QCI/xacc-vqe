@@ -4,7 +4,6 @@
 #include <petscviewer.h>
 #include <slepceps.h>
 #include <unsupported/Eigen/KroneckerProduct>
-#include "SpinInstruction.hpp"
 
 #include <boost/functional/hash.hpp>
 #include <unordered_map>
@@ -15,7 +14,7 @@ using IndexPair = std::pair<std::uint64_t, std::uint64_t>;
 namespace xacc {
 namespace vqe {
 double SlepcGroundStateEnergyCalculator::computeGroundStateEnergy(
-		CompositeSpinInstruction& inst, const int nQubits) {
+		PauliOperator& inst, const int nQubits) {
 	boost::mpi::communicator world;
 	int rank = world.rank();
 	int nRanks = world.size();
@@ -30,7 +29,7 @@ double SlepcGroundStateEnergyCalculator::computeGroundStateEnergy(
 
 	int argc = argvVec.size();
 	auto argv = cstrs.data();
-	auto nTerms = inst.nInstructions();
+	auto nTerms = inst.nTerms();
 
 	std::size_t dim = 1;
 	std::size_t two = 2;
@@ -62,16 +61,11 @@ double SlepcGroundStateEnergyCalculator::computeGroundStateEnergy(
 			"Building Matrix for SLEPc.");
 
 	for (std::uint64_t myRow = Istart; myRow < Iend; myRow++) {
-
 		auto rowBitStr = getBitStrForIdx(myRow);
-		for (int i = 0; i < nTerms; i++) {
-
-			std::shared_ptr<SpinInstruction> spinInst =
-					std::dynamic_pointer_cast<SpinInstruction>(
-							inst.getInstruction(i));
-			auto newBitStrCoeff = spinInst->computeActionOnBra(rowBitStr);
-			std::uint64_t k = std::stol(newBitStrCoeff.first, nullptr, 2);
-			MatSetValue(A, myRow, k, newBitStrCoeff.second, ADD_VALUES);
+		auto results = inst.computeActionOnBra(rowBitStr);
+		for (auto& result : results) {
+			std::uint64_t k = std::stol(result.first, nullptr, 2);
+			MatSetValue(A, myRow, k, result.second, ADD_VALUES);
 		}
 	}
 

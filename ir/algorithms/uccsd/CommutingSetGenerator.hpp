@@ -8,7 +8,7 @@
 #ifndef VQE_TRANSFORMATION_COMMUTINGSETGENERATOR_HPP_
 #define VQE_TRANSFORMATION_COMMUTINGSETGENERATOR_HPP_
 
-#include "SpinInstruction.hpp"
+#include "PauliOperator.hpp"
 #include <Eigen/Core>
 #include <numeric>
 
@@ -19,11 +19,11 @@ class CommutingSetGenerator {
 
 private:
 
-	std::pair<Eigen::VectorXi, Eigen::VectorXi> bv(SpinInstruction& op, int nQubits) {
+	std::pair<Eigen::VectorXi, Eigen::VectorXi> bv(Term& op, int nQubits) {
 		Eigen::VectorXi vx = Eigen::VectorXi::Zero(nQubits);
 		Eigen::VectorXi vz = Eigen::VectorXi::Zero(nQubits);
 
-		for (auto term : op.getTerms()) {
+		for (auto term : op.ops()) {
 			if (term.second == "X") {
 				vx(term.first) += 1;
 			} else if (term.second == "Z") {
@@ -37,7 +37,7 @@ private:
 		return std::make_pair(vx, vz);
 	};
 
-	int bv_commutator(SpinInstruction& term1, SpinInstruction& term2, int nQubits) {
+	int bv_commutator(Term& term1, Term& term2, int nQubits) {
 			auto pair1 = bv(term1, nQubits);
 			auto pair2 = bv(term2, nQubits);
 			auto scalar = pair1.first.dot(pair2.second) + pair1.second.dot(pair2.first);
@@ -46,14 +46,19 @@ private:
 
 public:
 
-	std::vector<std::vector<int>> getCommutingSet(CompositeSpinInstruction& composite, int n_qubits) {
+	std::pair<std::vector<std::vector<int>>, std::vector<Term>> getCommutingSet(PauliOperator& composite, int n_qubits) {
 
 
 		std::vector<std::vector<int>> commuting_ops;
-		for (int i = 0; i < composite.nInstructions(); i++) {
+		std::vector<Term> allTerms;
+		for (auto& kv : composite.getTerms()) {
+			allTerms.push_back(kv.second);
+		}
 
-			auto t_i = std::dynamic_pointer_cast<SpinInstruction>(
-					composite.getInstruction(i));
+		for (int i = 0; i < allTerms.size(); i++) {
+
+			auto t_i = allTerms[i];
+
 			if (i == 0) {
 				commuting_ops.push_back(std::vector<int> { i });
 			} else {
@@ -62,10 +67,8 @@ public:
 					auto j_op_list = commuting_ops[j];
 					int sum = 0;
 					for (auto j_op : j_op_list) {
-						auto t_jopPtr = std::dynamic_pointer_cast<
-								SpinInstruction>(
-								composite.getInstruction(j_op));
-						sum += bv_commutator(*t_i.get(), *t_jopPtr.get(),
+						auto t_jopPtr = allTerms[j_op];
+						sum += bv_commutator(t_i, t_jopPtr,
 								n_qubits);
 					}
 
@@ -82,14 +85,8 @@ public:
 			}
 		}
 
-//		for (auto s : commuting_ops) {
-//			for (auto x : s) {
-//				std::cout << x << " ";
-//			}
-//			std::cout << "\n";
-//		}
 
-		return commuting_ops;
+		return std::make_pair( commuting_ops, allTerms );
 	}
 
 };
