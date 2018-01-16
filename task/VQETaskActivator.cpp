@@ -36,11 +36,11 @@
 #include <set>
 #include "ComputeEnergyVQETask.hpp"
 #include "ComputeExpectationValues.hpp"
-#include "GenerateHamiltonianStats.hpp"
 #include "Sweep1DParameter.hpp"
 #include "VQEMinimizeTask.hpp"
-#include "BruteForceComputeGroundStateEnergy.hpp"
 #include "GenerateOpenFermionEigenspectrumScript.hpp"
+#include "DiagonalizeTask.hpp"
+#include "ProfileHamiltonianTask.hpp"
 
 using namespace cppmicroservices;
 
@@ -60,11 +60,11 @@ public:
 	void Start(BundleContext context) {
 		auto c = std::make_shared<xacc::vqe::ComputeEnergyVQETask>();
 		auto c2 = std::make_shared<xacc::vqe::VQEMinimizeTask>();
-		auto c3 = std::make_shared<xacc::vqe::GenerateHamiltonianStats>();
+		auto c3 = std::make_shared<xacc::vqe::ProfileHamiltonianTask>();
 		auto c4 = std::make_shared<xacc::vqe::Sweep1DParameter>();
 		auto c5 = std::make_shared<xacc::vqe::ComputeExpectationValues>();
-		auto c6 = std::make_shared<xacc::vqe::BruteForceComputeGroundStateEnergy>();
-		auto c7 = std::make_shared<xacc::vqe::EigenMatrixXcdGroundStateCalculator>();
+		auto c6 = std::make_shared<xacc::vqe::DiagonalizeTask>();
+		auto c7 = std::make_shared<xacc::vqe::EigenDiagonalizeBackend>();
 		auto c8 = std::make_shared<xacc::vqe::VQEDummyAccelerator>();
 		auto c9 = std::make_shared<xacc::vqe::GenerateOpenFermionEigenspectrumScript>();
 
@@ -83,7 +83,7 @@ public:
 		context.RegisterService<xacc::OptionsProvider>(c6);
 		context.RegisterService<xacc::OptionsProvider>(c3);
 
-		context.RegisterService<xacc::vqe::GroundStateEnergyCalculator>(c7);
+		context.RegisterService<xacc::vqe::DiagonalizeBackend>(c7);
 	}
 
 	/**

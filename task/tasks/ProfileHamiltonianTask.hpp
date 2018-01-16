@@ -1,18 +1,18 @@
-#ifndef VQETASKS_GENERATEHAMILTONIANSTATS_HPP_
-#define VQETASKS_GENERATEHAMILTONIANSTATS_HPP_
+#ifndef VQETASKS_PROFILEHAMILTONIANTASK_HPP_
+#define VQETASKS_PROFILEHAMILTONIANTASK_HPP_
 
 #include "VQETask.hpp"
 
 namespace xacc {
 namespace vqe {
 
-class GenerateHamiltonianStats: public VQETask {
+class ProfileHamiltonianTask : public VQETask {
 
 public:
 
-	GenerateHamiltonianStats() {}
+	ProfileHamiltonianTask() {}
 
-	GenerateHamiltonianStats(std::shared_ptr<VQEProgram> prog) :
+	ProfileHamiltonianTask(std::shared_ptr<VQEProgram> prog) :
 			VQETask(prog) {
 	}
 
@@ -41,7 +41,7 @@ public:
 	 */
 	virtual std::shared_ptr<options_description> getOptions() {
 		auto desc = std::make_shared<options_description>(
-				"Generate Hamiltonian Profile");
+				"Profile Hamiltonian");
 		desc->add_options()("vqe-profile-name", value<std::string>(), "The name of the file to save.");
 		return desc;
 	}

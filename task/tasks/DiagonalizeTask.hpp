@@ -1,5 +1,5 @@
-#ifndef VQETASKS_BRUTEFORCECOMPUTEGROUNDSTATEENERGY_HPP_
-#define VQETASKS_BRUTEFORCECOMPUTEGROUNDSTATEENERGY_HPP_
+#ifndef VQETASKS_DIAGONALIZETASK_HPP_
+#define VQETASKS_DIAGONALIZETASK_HPP_
 
 #include "VQETask.hpp"
 #include "PauliOperator.hpp"
@@ -7,13 +7,13 @@
 namespace xacc {
 namespace vqe {
 
-class BruteForceComputeGroundStateEnergy: public VQETask {
+class DiagonalizeTask : public VQETask {
 
 public:
 
-	BruteForceComputeGroundStateEnergy() {}
+	DiagonalizeTask() {}
 
-	BruteForceComputeGroundStateEnergy(std::shared_ptr<VQEProgram> prog) :
+	DiagonalizeTask(std::shared_ptr<VQEProgram> prog) :
 			VQETask(prog) {
 	}
 
@@ -25,7 +25,7 @@ public:
 	 * @return name The string name
 	 */
 	virtual const std::string name() const {
-		return "vqe-bf-gse";
+		return "vqe-diagonalize";
 	}
 
 	/**
@@ -33,7 +33,8 @@ public:
 	 * @return description The description of this object.
 	 */
 	virtual const std::string description() const {
-		return "";
+		return "Diagonalize the Qubit Hamiltonian "
+				"and return the lowest energy eigenvalue.";
 	}
 
 	/**
@@ -42,8 +43,9 @@ public:
 	 */
 	virtual std::shared_ptr<options_description> getOptions() {
 		auto desc = std::make_shared<options_description>(
-				"Compute Ground State Energy Options");
-		desc->add_options()("vqe-ground-state-calculator", value<std::string>(), "");
+				"Diagonalize Options");
+		desc->add_options()("diagonalize-backend", value<std::string>(),
+							"The backend to use to compute the Hamiltonian eigenspectrum");
 		return desc;
 	}
 
@@ -53,23 +55,23 @@ public:
 
 };
 
-class GroundStateEnergyCalculator : public Identifiable {
+class DiagonalizeBackend : public Identifiable {
 
 public:
 
-	virtual double computeGroundStateEnergy(PauliOperator& inst,
+	virtual double diagonalize(PauliOperator& inst,
 			const int nQubits) = 0;
-	virtual ~GroundStateEnergyCalculator() {}
+	virtual ~DiagonalizeBackend() {}
 };
 
-class EigenMatrixXcdGroundStateCalculator: public GroundStateEnergyCalculator {
+class EigenDiagonalizeBackend: public DiagonalizeBackend {
 public:
 
-	virtual double computeGroundStateEnergy(PauliOperator& inst,
+	virtual double diagonalize(PauliOperator& inst,
 			const int nQubits);
 
 	virtual const std::string name() const {
-		return "vqe-eigen-gs-calculator";
+		return "diagonalize-eigen";
 	}
 
 	/**

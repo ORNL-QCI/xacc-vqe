@@ -1,4 +1,3 @@
-#include "SlepcGroundStateEnergyCalculator.hpp"
 #include <petscmat.h>
 #include <petscsys.h>
 #include <petscviewer.h>
@@ -8,12 +7,13 @@
 #include <boost/functional/hash.hpp>
 #include <unordered_map>
 #include <memory>
+#include "SlepcDiagonalizeBackend.hpp"
 
 using IndexPair = std::pair<std::uint64_t, std::uint64_t>;
 
 namespace xacc {
 namespace vqe {
-double SlepcGroundStateEnergyCalculator::computeGroundStateEnergy(
+double SlepcDiagonalizeBackend::diagonalize(
 		PauliOperator& inst, const int nQubits) {
 	boost::mpi::communicator world;
 	int rank = world.rank();
@@ -58,7 +58,7 @@ double SlepcGroundStateEnergyCalculator::computeGroundStateEnergy(
 
 
 	if (rank == 0) XACCInfo(
-			"Building Matrix for SLEPc. " + std::to_string(nTerms));
+			"Building Matrix for SLEPc.");
 
 	for (std::uint64_t myRow = Istart; myRow < Iend; myRow++) {
 		auto rowBitStr = getBitStrForIdx(myRow);

@@ -35,7 +35,7 @@
 #include <memory>
 #include <set>
 
-#include "SlepcGroundStateEnergyCalculator.hpp"
+#include "SlepcDiagonalizeBackend.hpp"
 
 using namespace cppmicroservices;
 
@@ -53,8 +53,8 @@ public:
 	/**
 	 */
 	void Start(BundleContext context) {
-		auto c7 = std::make_shared<xacc::vqe::SlepcGroundStateEnergyCalculator>();
-		context.RegisterService<xacc::vqe::GroundStateEnergyCalculator>(c7);
+		auto c7 = std::make_shared<xacc::vqe::SlepcDiagonalizeBackend>();
+		context.RegisterService<xacc::vqe::DiagonalizeBackend>(c7);
 	}
 
 	/**

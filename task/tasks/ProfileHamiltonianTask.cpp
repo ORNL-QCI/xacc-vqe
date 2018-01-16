@@ -1,15 +1,14 @@
-#include "GenerateHamiltonianStats.hpp"
-
 #include "CountGatesOfTypeVisitor.hpp"
 #include "Measure.hpp"
 #include "VQEProgram.hpp"
 #include "FermionToSpinTransformation.hpp"
+#include "ProfileHamiltonianTask.hpp"
 
 namespace xacc {
 namespace vqe {
 
 
-VQETaskResult GenerateHamiltonianStats::execute(
+VQETaskResult ProfileHamiltonianTask::execute(
 		Eigen::VectorXd parameters) {
 
 	auto kernels = program->getVQEKernels();
@@ -18,7 +17,7 @@ VQETaskResult GenerateHamiltonianStats::execute(
 	auto nParameters = program->getNParameters();
 
 	if (comm.rank() == 0) {
-		std::string defaultFileName = "gen_hamiltonian_stats_out.txt";
+		std::string defaultFileName = "hamiltonianProfile.txt";
 		if (xacc::optionExists("vqe-profile-name")) {
 			defaultFileName = xacc::getOption("vqe-profile-name");
 		}
@@ -31,7 +30,7 @@ VQETaskResult GenerateHamiltonianStats::execute(
 					transformStr);
 		} else {
 			transform = ServiceRegistry::instance()->getService<IRTransformation>(
-					"jordan-wigner");
+					"jw");
 		}
 
 		auto hamiltonianInstruction = std::dynamic_pointer_cast<

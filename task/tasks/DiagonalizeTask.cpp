@@ -1,12 +1,14 @@
-#include "BruteForceComputeGroundStateEnergy.hpp"
 #include "FermionToSpinTransformation.hpp"
 #include <iostream>
 #include <unordered_map>
+
+#include "DiagonalizeTask.hpp"
+
 namespace xacc {
 namespace vqe {
 
 
-VQETaskResult BruteForceComputeGroundStateEnergy::execute(
+VQETaskResult DiagonalizeTask::execute(
 		Eigen::VectorXd parameters) {
 	int nQubits = std::stoi(xacc::getOption("n-qubits"));
 
@@ -24,23 +26,23 @@ VQETaskResult BruteForceComputeGroundStateEnergy::execute(
 
 	auto hamiltonianInstruction = transform->getResult();
 
-	auto calc = ServiceRegistry::instance()->getService<
-			GroundStateEnergyCalculator>("vqe-eigen-gs-calculator");
-
-	if (xacc::optionExists("vqe-ground-state-calculator")) {
-		auto str = xacc::getOption("vqe-ground-state-calculator");
-		calc = ServiceRegistry::instance()->getService<
-				GroundStateEnergyCalculator>(str);
-
+	std::shared_ptr<DiagonalizeBackend> backend;
+	if (xacc::optionExists("diagonalize-backend")) {
+		auto str = xacc::getOption("diagonalize-backend");
+		backend = ServiceRegistry::instance()->getService<
+				DiagonalizeBackend>(str);
+	} else {
+		backend = ServiceRegistry::instance()->getService<
+				DiagonalizeBackend>("diagonalize-eigen");
 	}
 
-	auto energy = calc->computeGroundStateEnergy(hamiltonianInstruction,
+	auto energy = backend->diagonalize(hamiltonianInstruction,
 			nQubits);
 	return std::vector<std::pair<Eigen::VectorXd, double>> { { parameters,
 			energy } };
 }
 
-double EigenMatrixXcdGroundStateCalculator::computeGroundStateEnergy(
+double EigenDiagonalizeBackend::diagonalize(
 		PauliOperator& inst, const int nQubits) {
 	boost::mpi::communicator world;
 //	= inst.toSparseRealMatrix(
@@ -148,6 +150,7 @@ double EigenMatrixXcdGroundStateCalculator::computeGroundStateEnergy(
 //	if (world.rank() == 0)
 //		XACCInfo("HamiltonianEigenvalues:\n" + ss.str());
 //	return std::real(eigenvalues(0));
+	return 0.0;
 }
 
 }
