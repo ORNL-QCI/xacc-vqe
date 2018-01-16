@@ -32,10 +32,6 @@
 #define VQE_IR_EFFICIENTJW_HPP_
 
 #include "FermionToSpinTransformation.hpp"
-#include "FermionKernel.hpp"
-#include "FermionIR.hpp"
-#include "GateQIR.hpp"
-#include "SpinInstruction.hpp"
 
 namespace xacc {
 

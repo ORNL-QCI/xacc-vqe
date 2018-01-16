@@ -32,10 +32,6 @@
 #define VQE_IR_JORDANWIGNERIRTRANSFORMATION_HPP_
 
 #include "FermionToSpinTransformation.hpp"
-#include "FermionKernel.hpp"
-#include "FermionIR.hpp"
-#include "GateQIR.hpp"
-#include "SpinInstruction.hpp"
 
 namespace xacc {
 
@@ -61,6 +57,7 @@ public:
 	 * @return
 	 */
 	virtual std::shared_ptr<IR> transform(std::shared_ptr<IR> ir);
+	virtual PauliOperator transform(FermionKernel& kernel);
 
 	virtual const std::string name() const {
 		return "jw";

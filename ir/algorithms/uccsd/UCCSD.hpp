@@ -34,7 +34,7 @@
 #include "IRGenerator.hpp"
 #include "FermionKernel.hpp"
 #include "FermionIR.hpp"
-#include "SpinInstruction.hpp"
+#include "PauliOperator.hpp"
 
 namespace xacc {
 

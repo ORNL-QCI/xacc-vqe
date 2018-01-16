@@ -38,6 +38,26 @@
 
 using namespace xacc::vqe;
 
+BOOST_AUTO_TEST_CASE(checkEasy) {
+
+//	CURRENT: (0.25,0) X1 Z2 X3 + (0,0.25) X1 Z2 Y3 + (0.25,0) Y1 Z2 Y3 + (0,-0.25) Y1 Z2 X3
+//	SUM: (0,-0.5) Z0 Y1 + (0.5,0) Z0 X1
+
+	PauliOperator op({{1, "X"}, {2, "Z"}, {3,"X"}}, .25);
+	op += PauliOperator({{1,"X"}, {2, "Z"}, {3,"Y"}}, std::complex<double>(0,.25));
+	op += PauliOperator({{1,"Y"}, {2, "Z"}, {3,"Y"}}, .25);
+	op += PauliOperator({{1,"Y"}, {2, "Z"}, {3,"X"}}, std::complex<double>(0,-.25));
+
+	PauliOperator sum({{0,"Z"}, {1, "Y"}}, std::complex<double>(0,-.5));
+	sum += PauliOperator({{0, "Z"}, {1,"X"}}, .5);
+
+	std::cout << "PRINT: " << op.toString() << "\n";
+	std::cout << "SUM: " << sum.toString() << "\n";
+
+	op *= sum;
+
+	std::cout << "CURRENTMULT: " << op.toString() << "\n";
+}
 BOOST_AUTO_TEST_CASE(checkConstruction) {
 
 	PauliOperator inst({ { 4, "X" },
@@ -50,7 +70,8 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 	auto sumInst = inst + i2;
 	std::cout << "PRINT: " << sumInst.toString() << "\n";
 
-	PauliOperator expected({ {{3,"Z"}, {4,"X"}}, {{1,"Z"}, {3,"Z"}, {4,"X"}, {9,"Y"}} });
+	PauliOperator expected({{3,"Z"}, {4,"X"}});
+	expected += PauliOperator({{1,"Z"}, {3,"Z"},{4,"X"}, {9,"Y"}});
 	std::cout << "EXPECTED: " << expected.toString() << "\n";
 	BOOST_VERIFY(expected == sumInst);
 	BOOST_VERIFY(sumInst == sumInst);
@@ -245,7 +266,7 @@ BOOST_AUTO_TEST_CASE(checkIdentity) {
 	compInst = compInst + i2;
 
 	std::cout << "HI: " << compInst.toString() << "\n";
-	BOOST_VERIFY("(8.6,0) I" == compInst.toString());
+	BOOST_VERIFY("(8.6,0)" == compInst.toString());
 	BOOST_VERIFY(PauliOperator(std::complex<double>(8.6,0)) == compInst);
 }
 

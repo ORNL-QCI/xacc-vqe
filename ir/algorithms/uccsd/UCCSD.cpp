@@ -1,10 +1,9 @@
+#include "UCCSD.hpp"
 #include "GateFunction.hpp"
-#include "RuntimeOptions.hpp"
 #include "FermionToSpinTransformation.hpp"
 #include "ServiceRegistry.hpp"
 #include "CommutingSetGenerator.hpp"
 #include <boost/math/constants/constants.hpp>
-#include "UCCSD.hpp"
 
 using namespace xacc::quantum;
 
@@ -72,8 +71,12 @@ std::shared_ptr<Function> UCCSD::generate(
 						{ 2 * (i + _nOccupied) + l, 0 } };
 				auto fermiInstruction2 = std::make_shared<FermionInstruction>(
 						operators2, params[singletIndex(i, j)]);
-				fermiInstruction2->coefficient = -1.0
-						* fermiInstruction2->coefficient;
+
+
+				auto nP = fermiInstruction2->nParameters();
+				InstructionParameter p(-1.0*std::complex<double>(1,0));
+				fermiInstruction2->setParameter(nP-2,p);
+
 				kernel->addInstruction(fermiInstruction2);
 
 			}
@@ -111,8 +114,9 @@ std::shared_ptr<Function> UCCSD::generate(
 									FermionInstruction>(operators2,
 									params[doubletIdx2]);
 
-							fermiInstruction2->coefficient = -1.0
-									* fermiInstruction2->coefficient;
+							auto nP = fermiInstruction2->nParameters();
+							InstructionParameter p(-1.0*std::complex<double>(1,0));
+							fermiInstruction2->setParameter(nP-2,p);
 							kernel->addInstruction(fermiInstruction2);
 
 						}
@@ -122,7 +126,7 @@ std::shared_ptr<Function> UCCSD::generate(
 		}
 	}
 
-	//std::cout << "KERNEL: \n" << kernel->toString("") << "\n";
+//	std::cout << "KERNEL: \n" << kernel->toString("") << "\n";
 	// Create the FermionIR to pass to our transformation.
 	auto fermionir = std::make_shared<FermionIR>();
 	fermionir->addKernel(kernel);
@@ -130,32 +134,25 @@ std::shared_ptr<Function> UCCSD::generate(
 	XACCInfo("Done constructing UCCSD Fermion Operator.");
 	XACCInfo("Mapping UCCSD Fermion Operator to Spin. ");
 
-	std::shared_ptr<IRTransformation> transform;
-	if (runtimeOptions->exists("fermion-transformation")) {
-		auto transformStr = (*runtimeOptions)["fermion-transformation"];
-		transform = ServiceRegistry::instance()->getService<IRTransformation>(
+	std::shared_ptr<FermionToSpinTransformation> transform;
+	if (xacc::optionExists("fermion-transformation")) {
+		auto transformStr = xacc::getOption("fermion-transformation");
+		transform = ServiceRegistry::instance()->getService<FermionToSpinTransformation>(
 				transformStr);
 	} else {
-		transform = ServiceRegistry::instance()->getService<IRTransformation>(
-				"jordan-wigner");
+		transform = ServiceRegistry::instance()->getService<FermionToSpinTransformation>(
+				"jw");
 	}
 
-	XACCInfo("Done mapping UCCSD Fermion Operator to Spin. ");
-
-	std::dynamic_pointer_cast<FermionToSpinTransformation>(transform)->runParallel = false;
+	auto compositeResult = transform->transform(*kernel.get());
+//	auto resultsStr = compositeResult.toString();
+//	boost::replace_all(resultsStr, "+", "+\n");
 
 	// Create the Spin Hamiltonian
-	auto transformedIR = transform->transform(fermionir);
-
-	auto compositeResult =
-			std::dynamic_pointer_cast<FermionToSpinTransformation>(transform)->getResult();
+	auto transformedIR = compositeResult.toXACCIR();
+	XACCInfo("Done mapping UCCSD Fermion Operator to Spin.");
 
 	std::unordered_map<std::string, Term> terms = compositeResult.getTerms();
-	// Convert imaginary part to real part
-	for (auto& term : terms) {
-		std::complex<double> tmp = std::get<0>(term.second);
-		term.second.coeff() = std::complex<double>(std::imag(tmp), 0);
-	}
 
 	CommutingSetGenerator gen;
 	auto commutingSets = gen.getCommutingSet(compositeResult, nQubits);
@@ -164,16 +161,19 @@ std::shared_ptr<Function> UCCSD::generate(
 			variables);
 
 	// Perform Trotterization...
-	for (auto s : commutingSets.first) {
+	for (auto s : commutingSets) {
 
-		for (auto instIdx : s) {
-			Term spinInst = commutingSets.second[instIdx]; //std::dynamic_pointer_cast<SpinInstruction>(temp);
+		for (auto inst : s) {
+			Term spinInst = inst;
+
 			// Get the individual pauli terms
 			auto termsMap = std::get<2>(spinInst);
 
 			std::vector<std::pair<int,std::string>> terms;
 			for (auto& kv : termsMap) {
-				terms.push_back({kv.first, kv.second});
+				if (kv.second != "I" && !kv.second.empty()) {
+					terms.push_back({kv.first, kv.second});
+				}
 			}
 			// The largest qubit index is on the last term
 			int largestQbitIdx = terms[terms.size() - 1].first;
@@ -212,7 +212,7 @@ std::shared_ptr<Function> UCCSD::generate(
 				if (i == terms.size() - 1) {
 					// FIXME DONT FORGET DIVIDE BY 2
 					std::stringstream ss;
-					ss << 2*std::real(std::get<0>(spinInst)) << " * "
+					ss << 2*std::imag(std::get<0>(spinInst)) << " * "
 							<< std::get<1>(spinInst);
 					auto rz =
 							xacc::quantum::GateInstructionRegistry::instance()->create(

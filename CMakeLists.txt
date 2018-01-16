@@ -13,6 +13,7 @@ set(CppMicroServicesConfig_DIR "${XACC_ROOT}/share/cppmicroservices3/cmake")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${XACC_ROOT}/share/xacc")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CppMicroServicesConfig_DIR}")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/tpls/backward-cpp")
 
 include(tests)
 include(CppMicroServicesConfig)
@@ -36,6 +37,8 @@ include_directories(${XACC_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/tpls/cppnumericalsolvers/cppoptlib)
 include_directories(${CMAKE_SOURCE_DIR}/tpls/exprtk)
 
+include_directories(${CMAKE_SOURCE_DIR}/tpls/backward-cpp)
+
 link_directories(${XACC_LIBRARY_DIR})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ir)
@@ -51,5 +54,6 @@ add_subdirectory(compiler)
 add_subdirectory(task)
 add_subdirectory(python)
 
-add_executable(xacc-vqe xacc-vqe.cpp)
+add_executable(xacc-vqe xacc-vqe.cpp tpls/backward-cpp/backward.cpp)
 target_link_libraries(xacc-vqe ${Boost_LIBRARIES} xacc-vqe-ir xacc-vqe-tasks ${XACC_LIBRARIES} pthread dl ${MPI_CXX_LIBRARIES}) # petsc)
+

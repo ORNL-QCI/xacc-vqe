@@ -45,10 +45,10 @@ public:
 	std::vector<InstructionParameter> parameters;
 
 public:
-
-	std::complex<double> coefficient;
-
-	std::string variable = "";
+//
+//	std::complex<double> coefficient;
+//
+//	std::string variable = "";
 
 	/**
 	 * The constructor, takes the (site, creation/annihilation) pairs
@@ -57,12 +57,14 @@ public:
 	 * @param operators Pairs describing site and if creation or annihilation
 	 */
 	FermionInstruction(std::vector<std::pair<int, int>> operators) :
-			terms(operators), coefficient(std::complex<double>(1.0)) {
+			terms(operators) {//, coefficient(std::complex<double>(1.0)) {
 		for (auto p : operators) {
 			sites.push_back(p.first);
 			parameters.push_back(InstructionParameter(p.second));
 		}
-		parameters.push_back(InstructionParameter(std::complex<double>(1.0)));
+		parameters.push_back(InstructionParameter(std::complex<double>(1,0)));
+		parameters.push_back(InstructionParameter(std::string("")));
+
 	}
 
 	/**
@@ -74,23 +76,24 @@ public:
 	 */
 	FermionInstruction(std::vector<std::pair<int, int>> operators,
 			std::complex<double> coeff) :
-			coefficient(coeff), terms(operators) {
+			 terms(operators) {
 		for (auto p : operators) {
 			sites.push_back(p.first);
 			parameters.push_back(InstructionParameter(p.second));
 		}
 		parameters.push_back(InstructionParameter(coeff));
+		parameters.push_back(InstructionParameter(std::string("")));
 	}
 
 	FermionInstruction(std::vector<std::pair<int, int>> operators,
 			std::string var) :
-			terms(operators), coefficient(std::complex<double>(1.0)), variable(
-					var) {
+			terms(operators) {
 		for (auto p : operators) {
 			sites.push_back(p.first);
 			parameters.push_back(InstructionParameter(p.second));
 		}
-		parameters.push_back(InstructionParameter(coefficient));
+		parameters.push_back(InstructionParameter(std::complex<double>(1,0)));
+		parameters.push_back(InstructionParameter(var));
 	}
 
 	/**
@@ -111,7 +114,8 @@ public:
 	 */
 	virtual const std::string toString(const std::string& bufferVarName) {
 		std::stringstream ss;
-		ss << coefficient << " * ";
+		ss << getParameter(nParameters()-2) << " * ";
+		auto variable = getParameter(nParameters()-1);
 		if (!variable.empty()) {
 			ss << variable << " * ";
 		}

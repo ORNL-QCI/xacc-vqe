@@ -46,10 +46,10 @@ private:
 
 public:
 
-	std::pair<std::vector<std::vector<int>>, std::vector<Term>> getCommutingSet(PauliOperator& composite, int n_qubits) {
+	std::vector<std::vector<Term>> getCommutingSet(
+			PauliOperator& composite, int n_qubits) {
 
-
-		std::vector<std::vector<int>> commuting_ops;
+		std::vector<std::vector<Term>> commuting_ops;
 		std::vector<Term> allTerms;
 		for (auto& kv : composite.getTerms()) {
 			allTerms.push_back(kv.second);
@@ -60,33 +60,34 @@ public:
 			auto t_i = allTerms[i];
 
 			if (i == 0) {
-				commuting_ops.push_back(std::vector<int> { i });
+				commuting_ops.push_back({t_i});
 			} else {
 				auto comm_ticker = 0;
 				for (int j = 0; j < commuting_ops.size(); j++) {
 					auto j_op_list = commuting_ops[j];
 					int sum = 0;
+					int innerCounter = 0;
 					for (auto j_op : j_op_list) {
-						auto t_jopPtr = allTerms[j_op];
+						auto t_jopPtr = allTerms[innerCounter];
 						sum += bv_commutator(t_i, t_jopPtr,
 								n_qubits);
+						innerCounter++;
 					}
 
 					if (sum == 0) {
-						commuting_ops[j].push_back(i);
+						commuting_ops[j].push_back(t_i);
 						comm_ticker += 1;
 						break;
 					}
 				}
 
 				if (comm_ticker == 0) {
-					commuting_ops.push_back(std::vector<int> { i });
+					commuting_ops.push_back({t_i});
 				}
 			}
 		}
 
-
-		return std::make_pair( commuting_ops, allTerms );
+		return commuting_ops;
 	}
 
 };

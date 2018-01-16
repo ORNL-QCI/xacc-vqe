@@ -47,28 +47,28 @@ BOOST_AUTO_TEST_CASE(checkSimple) {
    -1.252477303982147 0 1 0 0
    0.337246551663004 0 1 1 1 1 0 0 0
    0.0906437679061661 0 1 1 1 3 0 2 0
-   0.3317360224302783 0 1 2 1 0 0 2 0
-   0.0906437679061661 0 1 2 1 2 0 0 0
-   0.3317360224302783 0 1 3 1 1 0 2 0
-   0.0906437679061661 0 1 3 1 3 0 0 0
+   0.0906437679061661 0 1 2 1 0 0 2 0
+   0.3317360224302783 0 1 2 1 2 0 0 0
+   0.0906437679061661 0 1 3 1 1 0 2 0
+   0.3317360224302783 0 1 3 1 3 0 0 0
    0.337246551663004 1 1 0 1 0 0 1 0
    0.0906437679061661 1 1 0 1 2 0 3 0
    -1.252477303982147 1 1 1 0
-   0.3317360224302783 1 1 2 1 0 0 3 0
-   0.0906437679061661 1 1 2 1 2 0 1 0
-   0.3317360224302783 1 1 3 1 1 0 3 0
-   0.0906437679061661 1 1 3 1 3 0 1 0
-   0.0906437679061661 2 1 0 1 0 0 2 0
-   0.3317360224302783 2 1 0 1 2 0 0 0
-   0.0906437679061661 2 1 1 1 1 0 2 0
-   0.3317360224302783 2 1 1 1 3 0 0 0
+   0.0906437679061661 1 1 2 1 0 0 3 0
+   0.3317360224302783 1 1 2 1 2 0 1 0
+   0.0906437679061661 1 1 3 1 1 0 3 0
+   0.3317360224302783 1 1 3 1 3 0 1 0
+   0.3317360224302783 2 1 0 1 0 0 2 0
+   0.0906437679061661 2 1 0 1 2 0 0 0
+   0.3317360224302783 2 1 1 1 1 0 2 0
+   0.0906437679061661 2 1 1 1 3 0 0 0
    -0.4759344611440753 2 1 2 0
    0.0906437679061661 2 1 3 1 1 0 0 0
    0.3486989747346679 2 1 3 1 3 0 2 0
-   0.0906437679061661 3 1 0 1 0 0 3 0
-   0.3317360224302783 3 1 0 1 2 0 1 0
-   0.0906437679061661 3 1 1 1 1 0 3 0
-   0.3317360224302783 3 1 1 1 3 0 1 0
+   0.3317360224302783 3 1 0 1 0 0 3 0
+   0.0906437679061661 3 1 0 1 2 0 1 0
+   0.3317360224302783 3 1 1 1 1 0 3 0
+   0.0906437679061661 3 1 1 1 3 0 1 0
    0.0906437679061661 3 1 2 1 0 0 1 0
    0.3486989747346679 3 1 2 1 2 0 3 0
    -0.4759344611440753 3 1 3 0
@@ -80,27 +80,28 @@ BOOST_AUTO_TEST_CASE(checkSimple) {
 
 	xacc::setOption("n-qubits", "4");
 	xacc::setOption("n-electrons", "2");
-
+	xacc::setOption("vqe-task", "compute-energy");
 	// FIXME ADD xacc::hasAccelerator()...
 
-	// Get the user-specified Accelerator,
-	// or TNQVM if none specified
-	auto accelerator = xacc::getAccelerator("tnqvm");
+	if (xacc::hasAccelerator("tnqvm")) {
+		// Get the user-specified Accelerator,
+		// or TNQVM if none specified
+		auto accelerator = xacc::getAccelerator("tnqvm");
 
-	ComputeEnergyVQETask task;
+		ComputeEnergyVQETask task;
 
-	auto program = std::make_shared<VQEProgram>(accelerator, src, world);
+		auto program = std::make_shared<VQEProgram>(accelerator, src, world);
 
-	program->build();
+		program->build();
 
-	Eigen::VectorXd parameters(2);
-	parameters << -1.571568483, -0.8419248896;
+		Eigen::VectorXd parameters(2);
+		parameters << 0.000641023496104, 4.76879126994;
+		task.setVQEProgram(program);
 
-	task.setVQEProgram(program);
+		VQETaskResult result = task.execute(parameters);
 
-	VQETaskResult result = task.execute(parameters);
-
-	BOOST_VERIFY(std::fabs(result[0].second + 1.13726996182) < 1e-8);
+		BOOST_VERIFY(std::fabs(result[0].second + 1.13727042207) < 1e-4);
+	}
 
 	xacc::Finalize();
 }

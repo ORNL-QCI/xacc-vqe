@@ -43,11 +43,10 @@ namespace vqe {
 
 // A Term can be a coefficient, a variable coefficient, and the terms themselves
 using TermTuple = std::tuple<std::complex<double>, std::string, std::map<int, std::string>>;
-using PauliProductsType = std::unordered_map<std::string, std::pair<std::complex<double>, std::string>>;
-using c = std::complex<double>;
 
 class Term: public TermTuple,
-		public tao::operators::commutative_multipliable<Term> {
+		public tao::operators::commutative_multipliable<Term>,
+		public tao::operators::equality_comparable<Term> {
 
 protected:
 
@@ -61,22 +60,34 @@ public:
 		std::get<2>(*this) = { };
 	}
 
+	Term(const Term& t) {
+		std::get<0>(*this) = std::get<0>(t);
+		std::get<1>(*this) = std::get<1>(t);
+		std::get<2>(*this) = std::get<2>(t);
+	}
+
 	Term(std::complex<double> c) {
 		std::get<0>(*this) = c;
 		std::get<1>(*this) = "";
-		std::get<2>(*this) = { {0,"I"}};
+		std::get<2>(*this) = { };
 	}
 
 	Term(double c) {
 		std::get<0>(*this) = std::complex<double>(c, 0);
 		std::get<1>(*this) = "";
-		std::get<2>(*this) = { {0,"I"}};
+		std::get<2>(*this) = { };
 	}
 
 	Term(std::complex<double> c, std::map<int, std::string> ops) {
 		std::get<0>(*this) = c;
 		std::get<1>(*this) = "";
 		std::get<2>(*this) = ops;
+	}
+
+	Term(std::complex<double> c, std::string var) {
+		std::get<0>(*this) = c;
+		std::get<1>(*this) = var;
+		std::get<2>(*this) = { };
 	}
 
 	Term(std::string var, std::map<int, std::string> ops) {
@@ -95,6 +106,22 @@ public:
 		std::get<0>(*this) = std::complex<double>(1,0);
 		std::get<1>(*this) = "";
 		std::get<2>(*this) = ops;
+	}
+
+	static const std::string id(const std::map<int, std::string>& ops, const std::string& var = "") {
+		std::stringstream s;
+		s << var;
+		for (auto& t : ops) {
+			if (t.second != "I") {
+				s << t.second << t.first;
+			}
+		}
+
+		if (s.str().empty()) {
+			return "I";
+		}
+
+		return s.str();
 	}
 
 	const std::string id() const {
@@ -118,7 +145,7 @@ public:
 	}
 
 	bool isIdentity() {
-		if (ops().size() == 1 && ops()[0] == "I") {
+		if (ops().empty()) {
 			return true;
 		} else {
 			return false;
@@ -129,8 +156,15 @@ public:
 		return std::get<0>(*this);
 	}
 
+	const std::string var() {
+		return std::get<1>(*this);
+	}
+
 	Term& operator*=( const Term& v ) noexcept;
 
+	bool operator==( const Term& v ) noexcept {
+		return std::get<1>(*this) == std::get<1>(v) && ops() == std::get<2>(v);
+	}
 };
 
 class PauliOperator: public tao::operators::commutative_ring<PauliOperator>,
@@ -147,6 +181,7 @@ public:
 	PauliOperator();
 	PauliOperator(std::complex<double> c);
 	PauliOperator(double c);
+	PauliOperator(std::complex<double> c, std::string var);
 	PauliOperator(const PauliOperator& i);
 	PauliOperator(std::map<int, std::string> operators);
 	PauliOperator(std::map<int, std::string> operators, std::string var);
@@ -156,7 +191,6 @@ public:
 			double coeff);
 	PauliOperator(std::map<int, std::string> operators,
 			std::complex<double> coeff, std::string var);
-	PauliOperator(std::vector<std::map<int, std::string>> operators);
 
 	const std::vector<std::pair<std::string, std::complex<double>>> computeActionOnKet(
 			const std::string& bitString);
@@ -172,6 +206,8 @@ public:
 	std::unordered_map<std::string, Term> getTerms() const {
 		return terms;
 	}
+
+	std::shared_ptr<IR> toXACCIR();
 
 	PauliOperator& operator+=( const PauliOperator& v ) noexcept;
 	PauliOperator& operator-=( const PauliOperator& v ) noexcept;

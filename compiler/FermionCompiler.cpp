@@ -112,7 +112,7 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 				transformStr);
 	} else {
 		transform = ServiceRegistry::instance()->getService<IRTransformation>(
-				"jordan-wigner");
+				"jw");
 	}
 
 	// Create the Spin Hamiltonian

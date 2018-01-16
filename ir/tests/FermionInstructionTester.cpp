@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 			{ 3, 1 }, { 9, 0 }, { 1, 0 } });
 
 	BOOST_VERIFY(inst.bits().size() == 4);
-	BOOST_VERIFY(inst.getParameters().size() == 5);
+	BOOST_VERIFY(inst.getParameters().size() == 6);
 
 	BOOST_VERIFY((inst.bits() == std::vector<int> {4, 3, 9, 1}));
 	BOOST_VERIFY((
@@ -52,7 +52,8 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 				xacc::InstructionParameter(1), xacc::InstructionParameter(1),
 						xacc::InstructionParameter(0),
 						xacc::InstructionParameter(0),
-						xacc::InstructionParameter(std::complex<double>(1.0))}));
+						xacc::InstructionParameter(std::complex<double>(1.0)),
+						xacc::InstructionParameter(std::string(""))}));
 
 	std::cout << "HEY:\n" << inst.toString("") << "\n";
 }

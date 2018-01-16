@@ -89,7 +89,7 @@ std::shared_ptr<FermionKernel> compileKernel(const std::string src) {
 	return fermionKernel;
 }
 
-/*BOOST_AUTO_TEST_CASE(checkBKTransform) {
+BOOST_AUTO_TEST_CASE(checkBKTransform) {
 
 	xacc::setOption("n-qubits", "3");
 	auto Instruction = std::make_shared<FermionInstruction>(
@@ -101,25 +101,18 @@ std::shared_ptr<FermionKernel> compileKernel(const std::string src) {
 	kernel->addInstruction(Instruction);
 	kernel->addInstruction(Instruction2);
 
-	auto ir = std::make_shared<FermionIR>();
-	ir->addKernel(kernel);
-
 	BravyiKitaevIRTransformation bkTransform;
 
-	auto newIr = bkTransform.transform(ir);
+	auto result = bkTransform.transform(*kernel);
 
-	auto result = bkTransform.getResult();
-	std::cout << "HI: " << bkTransform.getResult().toString("") << "\n";
-	BOOST_VERIFY(
-			"(-1.585,0) * Y0 * Y1 + (-1.585,0) * X0 * X1 * Z2"
-					== bkTransform.getResult().toString(""));
+	std::cout << "HI: " << result.toString() << "\n";
 
-	for (auto k : newIr->getKernels()) {
-		for (auto i : k->getInstructions()) {
-			std::cout << "InstTest: " << i->getName() << "\n";
-		}
-	}
-}*/
+	PauliOperator expected({{0,"Y"}, {1,"Y"}}, -1.585);
+	expected += PauliOperator({{0,"X"}, {1,"X"}, {2,"Z"}}, -1.585);
+
+	BOOST_VERIFY(expected == result);
+
+}
 
 BOOST_AUTO_TEST_CASE(checkH2Transform) {
 
@@ -128,76 +121,64 @@ BOOST_AUTO_TEST_CASE(checkH2Transform) {
 	mpi::environment env(argc, argv);
 	mpi::communicator world;
 
-	const std::string code = R"code(__qpu__ H2_sto-3g_singlet_H2_Molecule() {
-        0.276761058984 1 1 0 1 0 0 1 0
-        0.280200438869 2 1 0 1 0 0 2 0
-        -0.910498000093 1 1 1 0
-        0.280200438869 3 1 1 1 1 0 3 0
-        0.292131000327 3 1 2 1 2 0 3 0
-        0.280200438869 1 1 2 1 2 0 1 0
-        -0.664937888133 2 1 2 0
-        0.114538342894 2 1 1 1 3 0 0 0
-        0.280200438869 1 1 3 1 3 0 1 0
-        0.276761058984 0 1 1 1 1 0 0 0
-        0.114538342894 3 1 2 1 0 0 1 0
-        0.292131000327 2 1 3 1 3 0 2 0
-        0.114538342894 2 1 0 1 2 0 0 0
-        0.114538342894 3 1 0 1 2 0 1 0
-        -0.910498000093 0 1 0 0
-        0.114538342894 0 1 2 1 0 0 2 0
-        0.114538342894 3 1 1 1 3 0 1 0
-        -0.664937888133 3 1 3 0
-        0.280200438869 3 1 0 1 0 0 3 0
-        0.280200438869 0 1 2 1 2 0 0 0
-        0.114538342894 0 1 3 1 1 0 2 0
-        0.114538342894 1 1 2 1 0 0 3 0
-        0.280200438869 2 1 1 1 1 0 2 0
-        0.114538342894 0 1 1 1 3 0 2 0
-        0.114538342894 1 1 3 1 1 0 3 0
-        0.354466478596
-        0.114538342894 2 1 3 1 1 0 0 0
-        0.114538342894 1 1 0 1 2 0 3 0
-        0.280200438869 0 1 3 1 3 0 0 0
+	const std::string code =
+			R"code(__qpu__ kernel() {
+   0.7137758743754461
+   -1.252477303982147 0 1 0 0
+   0.337246551663004 0 1 1 1 1 0 0 0
+   0.0906437679061661 0 1 1 1 3 0 2 0
+   0.0906437679061661 0 1 2 1 0 0 2 0
+   0.3317360224302783 0 1 2 1 2 0 0 0
+   0.0906437679061661 0 1 3 1 1 0 2 0
+   0.3317360224302783 0 1 3 1 3 0 0 0
+   0.337246551663004 1 1 0 1 0 0 1 0
+   0.0906437679061661 1 1 0 1 2 0 3 0
+   -1.252477303982147 1 1 1 0
+   0.0906437679061661 1 1 2 1 0 0 3 0
+   0.3317360224302783 1 1 2 1 2 0 1 0
+   0.0906437679061661 1 1 3 1 1 0 3 0
+   0.3317360224302783 1 1 3 1 3 0 1 0
+   0.3317360224302783 2 1 0 1 0 0 2 0
+   0.0906437679061661 2 1 0 1 2 0 0 0
+   0.3317360224302783 2 1 1 1 1 0 2 0
+   0.0906437679061661 2 1 1 1 3 0 0 0
+   -0.4759344611440753 2 1 2 0
+   0.0906437679061661 2 1 3 1 1 0 0 0
+   0.3486989747346679 2 1 3 1 3 0 2 0
+   0.3317360224302783 3 1 0 1 0 0 3 0
+   0.0906437679061661 3 1 0 1 2 0 1 0
+   0.3317360224302783 3 1 1 1 1 0 3 0
+   0.0906437679061661 3 1 1 1 3 0 1 0
+   0.0906437679061661 3 1 2 1 0 0 1 0
+   0.3486989747346679 3 1 2 1 2 0 3 0
+   -0.4759344611440753 3 1 3 0
 })code";
 
 	auto fermionKernel = compileKernel(code);
 
-	// Create the FermionIR to pass to our transformation.
-	auto fermionir = std::make_shared<FermionIR>();
-	fermionir->addKernel(fermionKernel);
-
 	xacc::setOption("n-qubits", "4");
 
 	BravyiKitaevIRTransformation t;
-	auto ir = t.transform(fermionir);
+	auto result = t.transform(*fermionKernel);
 
-	auto result = t.getResult();
+	PauliOperator expected({{0,"Z"}, {1,"Z"}, {2,"Z"}}, .165868);
+	expected += PauliOperator({{1,"Z"}, {3,"Z"}}, .174349);
+	expected += PauliOperator({{1,"Z"}, {2,"Z"}, {3,"Z"}}, -.222796);
+	expected += PauliOperator({{0,"Z"}, {1,"Z"}, {2,"Z"}, {3,"Z"}}, .165868);
+	expected += PauliOperator({{0,"Z"}, {2,"Z"}}, .120546);
+	expected += PauliOperator({{1,"Z"}}, 0.168623);
+	expected += PauliOperator({{0,"Z"}, {1,"Z"}}, .171201);
+	expected += PauliOperator({{2,"Z"}}, -.222796);
+	expected += PauliOperator({{0,"Z"}}, .171201);
+	expected += PauliOperator({{0,"Z"}, {2,"Z"}, {3,"Z"}}, 0.120546);
 
-	BOOST_VERIFY(result.nTerms() == 15);
+	expected += PauliOperator({}, -.0988349);
+	expected += PauliOperator({{0,"X"}, {1,"Z"}, {2,"X"}, {3,"Z"}}, 0.0453219);
+	expected += PauliOperator({{0,"X"}, {1,"Z"}, {2,"X"}}, 0.0453219);
+	expected += PauliOperator({{0,"Y"}, {1,"Z"}, {2,"Y"}}, 0.0453219);
+	expected += PauliOperator({{0,"Y"}, {1,"Z"}, {2,"Y"}, {3,"Z"}}, 0.0453219);
 
-	std::vector<std::vector<std::pair<int, std::string>>> expectedTerms {
-		{{0,"Z"}},
-		{{1,"Z"}},
-		{{2,"Z"}},
-		{{0,"Z"},{1,"Z"}},
-		{{0,"Z"},{2,"Z"}},
-		{{1,"Z"},{3,"Z"}},
-		{{0,"X"},{1,"Z"},{2,"X"}},
-		{{0,"Y"},{1,"Z"},{2,"Y"}},
-		{{0,"Z"},{1,"Z"},{2,"Z"}},
-		{{0,"Z"},{2,"Z"},{3,"Z"}},
-		{{1,"Z"},{2,"Z"},{3,"Z"}},
-		{{0,"X"},{1,"Z"},{2,"X"},{3,"Z"}},
-		{{0,"Y"},{1,"Z"},{2,"Y"},{3,"Z"}},
-		{{0,"Z"},{1,"Z"},{2,"Z"},{3,"Z"}},
-		{{0,"I"}}
-	};
-
-//	for (auto inst : result.()) {
-//		auto cast = std::dynamic_pointer_cast<SpinInstruction>(inst);
-//		auto terms = cast->getTerms();
-//		BOOST_VERIFY(std::find(expectedTerms.begin(), expectedTerms.end(), terms) != expectedTerms.end());
-//	}
+	BOOST_VERIFY(expected == result);
 
 
 }

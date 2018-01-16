@@ -60,7 +60,9 @@ public:
 		auto c4 = std::make_shared<xacc::vqe::EfficientJW>();
 
 		context.RegisterService<xacc::IRTransformation>(c);
+		context.RegisterService<xacc::vqe::FermionToSpinTransformation>(c);
 		context.RegisterService<xacc::IRTransformation>(c3);
+		context.RegisterService<xacc::vqe::FermionToSpinTransformation>(c3);
 		context.RegisterService<xacc::IRTransformation>(c4);
 
 	}

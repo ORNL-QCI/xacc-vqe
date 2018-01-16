@@ -9,7 +9,7 @@ std::shared_ptr<IR> EfficientJW::transform(
 		std::shared_ptr<IR> ir) {
 
 	boost::mpi::communicator world;
-
+	std::complex<double> imag(0,1);
 	auto fermiKernel = ir->getKernels()[0];
 
 	result.clear();
@@ -27,7 +27,9 @@ std::shared_ptr<IR> EfficientJW::transform(
 		auto f = instVec[z];
 
 		auto coeff = boost::get<std::complex<double>>(
-				f->getParameter(f->nParameters() - 1));
+				f->getParameter(f->nParameters() - 2));
+
+		auto fermionVar = boost::get<std::string>(f->getParameter(f->nParameters() - 1));
 
 		// Get the creation or annihilation sites
 		auto termSites = f->bits();
@@ -40,21 +42,20 @@ std::shared_ptr<IR> EfficientJW::transform(
 			int pmin = std::min(i,j);
 			int pmax = std::max(i,j);
 
-			PauliOperator xi({{i,"X"}}, std::complex<double>(0.5, 0)),
-					yi({{i,"Y"}}, std::complex<double>(0,.5));
-			PauliOperator xj({{j,"X"}}, std::complex<double>(0.5, 0)),
-					yj({{j,"Y"}}, std::complex<double>(0,-.5));
+			PauliOperator Sxi({{i,"X"}}, 0.5), Syi({{i,"Y"}}, 0.5);
+			PauliOperator Sxj({{j,"X"}}, 0.5), Syj({{j,"Y"}}, 0.5);
 
-			// Construct 1/2 ( xi + iyi) = s_i^+
-			xi += yi;
-
-			// Construct 1/2 ( xj - iyj) = s_j^-
-			xj += yj;
+			PauliOperator sPlusI = Sxi - imag * Syi;
+			PauliOperator sMinusJ = Sxj + imag * Syj;
 
 			std::map<int, std::string> zpm;
-			for (int p = pmin; p < pmax; ++p) zpm[p] = "Z";
+			int parity = 1;
+			for (int p = pmin; p < pmax-1; ++p) {
+				zpm[p] = "Z";
+				parity *= -1;
+			}
 
-			result += coeff * xi * PauliOperator(zpm) * xj;
+			result += coeff * sPlusI * PauliOperator(zpm, parity) * sMinusJ;
 
 		} else if (termSites.size() == 4) {
 			int i = termSites[0];
@@ -65,37 +66,24 @@ std::shared_ptr<IR> EfficientJW::transform(
 			int pmin = std::min(j, k);
 			int pmax = std::max(j, k);
 
-			PauliOperator xi( { { i, "X" } }, std::complex<double>(0.5, 0)),
-					yi( { { i, "Y" } }, std::complex<double>(0, .5));
-			PauliOperator xj( { { j, "X" } }, std::complex<double>(0.5, 0)),
-					yj( { { j, "Y" } }, std::complex<double>(0, .5));
-			PauliOperator xk( { { k, "X" } }, std::complex<double>(0.5, 0)),
-					yk( { { k, "Y" } }, std::complex<double>(0, -.5));
-			PauliOperator xl( { { l, "X" } }, std::complex<double>(0.5, 0)),
-					yl( { { l, "Y" } }, std::complex<double>(0, -.5));
+			PauliOperator Sxi({{i,"X"}}, 0.5), Syi({{i,"Y"}}, 0.5);
+			PauliOperator Sxj({{j,"X"}}, 0.5), Syj({{j,"Y"}}, 0.5);
+			PauliOperator Sxk({{k,"X"}}, 0.5), Syk({{k,"Y"}}, 0.5);
+			PauliOperator Sxl({{l,"X"}}, 0.5), Syl({{l,"Y"}}, 0.5);
 
-			// Construct 1/2 ( xi + iyi) = s_i^+
-			xi += yi;
-
-			// Construct 1/2 ( xj + iyj) = s_j^+
-			xj += yj;
-
-			// Construct 1/2 ( xk - iyk) = s_k^+
-			xk += yk;
-
-			// Construct 1/2 ( xl - iyl) = s_l^+
-			xl += yl;
-
-			// Construct s_k^- * s_l^-
-			xk *= xl;
-
-			// Construct s_i^+ * s_j^+
-			xi *= xj;
+			PauliOperator sPlusI = Sxi - imag * Syi;
+			PauliOperator sPlusJ = Sxj - imag * Syj;
+			PauliOperator sMinusK = Sxk + imag * Syk;
+			PauliOperator sMinusL = Sxl + imag * Syl;
 
 			std::map<int, std::string> zpm;
-			for (int p = pmin; p < pmax; ++p) zpm[p] = "Z";
+			int parity = 1;
+			for (int p = pmin; p < pmax-1; ++p) {
+				zpm[p] = "Z";
+				parity *= -1;
+			}
 
-			result += coeff * xi * PauliOperator(zpm) * xk;
+			result += coeff * sPlusI * sPlusJ * PauliOperator(zpm, parity) * sMinusK * sMinusL;
 		} else if (termSites.size() == 0) {
 			result += PauliOperator(coeff);
 		}

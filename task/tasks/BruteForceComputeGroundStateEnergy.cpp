@@ -12,18 +12,17 @@ VQETaskResult BruteForceComputeGroundStateEnergy::execute(
 
 	boost::mpi::communicator world;
 
-	std::shared_ptr<IRTransformation> transform;
+	std::shared_ptr<FermionToSpinTransformation> transform;
 	if (xacc::optionExists("fermion-transformation")) {
 		auto transformStr = xacc::getOption("fermion-transformation");
-		transform = ServiceRegistry::instance()->getService<IRTransformation>(
+		transform = ServiceRegistry::instance()->getService<FermionToSpinTransformation>(
 				transformStr);
 	} else {
-		transform = ServiceRegistry::instance()->getService<IRTransformation>(
-				"jordan-wigner");
+		transform = ServiceRegistry::instance()->getService<FermionToSpinTransformation>(
+				"jw");
 	}
 
-	auto hamiltonianInstruction = std::dynamic_pointer_cast<
-			FermionToSpinTransformation>(transform)->getResult();
+	auto hamiltonianInstruction = transform->getResult();
 
 	auto calc = ServiceRegistry::instance()->getService<
 			GroundStateEnergyCalculator>("vqe-eigen-gs-calculator");

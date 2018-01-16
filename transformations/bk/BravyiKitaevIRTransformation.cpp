@@ -5,23 +5,19 @@
 namespace xacc {
 namespace vqe {
 
-std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
-		std::shared_ptr<IR> ir) {
-
-	boost::mpi::communicator world;
-
-	auto fermiKernel = ir->getKernels()[0];
-
+PauliOperator BravyiKitaevIRTransformation::transform(FermionKernel& kernel) {
 	result.clear();
+
+	PauliOperator local;
 
 	int nQubits = std::stoi(xacc::getOption("n-qubits"));
 
 	FenwickTree tree(nQubits);
 
 	int myStart = 0;
-	int myEnd = fermiKernel->nInstructions();
+	int myEnd = kernel.nInstructions();
 
-	auto instructions = fermiKernel->getInstructions();
+	auto instructions = kernel.getInstructions();
 	auto instVec = std::vector<InstPtr>(instructions.begin(), instructions.end());
 	auto start = std::clock();
 
@@ -36,11 +32,10 @@ std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
 		// Get the params indicating if termSite is creation or annihilation
 		auto params = f->getParameters();
 
-		auto coeff = boost::get<std::complex<double>>(params[f->nParameters() - 1]);
+		auto coeff = boost::get<std::complex<double>>(params[f->nParameters() - 2]);
+		auto fermionVar = boost::get<std::string>(params[f->nParameters() - 1]);
 
-		auto fermionVar = "";//fermionInst->variable;
-
-		PauliOperator ladderProduct(coeff);
+		PauliOperator ladderProduct(coeff, fermionVar);
 
 		for (int i = 0; i < termSites.size(); i++) {
 
@@ -76,11 +71,19 @@ std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
 			ladderProduct *= (c+d);
 		}
 
-		result += ladderProduct;
+		local += ladderProduct;
 	}
 	std::cout << (std::clock() - start) / (double) (CLOCKS_PER_SEC) << "\n";
 
-	return generateIR();
+	result = local;
+
+	return local;
+}
+
+std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(
+		std::shared_ptr<IR> ir) {
+	auto fermiKernel = ir->getKernels()[0];
+	return transform(*std::dynamic_pointer_cast<FermionKernel>(fermiKernel)).toXACCIR();
 }
 
 }

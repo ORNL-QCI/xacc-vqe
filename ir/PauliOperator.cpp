@@ -1,4 +1,7 @@
 #include "PauliOperator.hpp"
+#include "GateQIR.hpp"
+#include <boost/mpi.hpp>
+#include <boost/math/constants/constants.hpp>
 
 namespace xacc {
 namespace vqe {
@@ -7,17 +10,19 @@ PauliOperator::PauliOperator() {
 }
 
 PauliOperator::PauliOperator(std::complex<double> c) {
-	terms["I"] = Term(c);
-
+	terms.emplace(std::make_pair("I",c));
 }
+
 PauliOperator::PauliOperator(double c) {
-	terms["I"] = Term(c);
+	terms.emplace(std::make_pair("I",c));
 }
 
-/**
- * The copy constructor
- * @param i
- */
+PauliOperator::PauliOperator(std::complex<double> c, std::string var) {
+	terms.emplace(std::piecewise_construct,
+            std::forward_as_tuple("I"),
+            std::forward_as_tuple(c, var));
+}
+
 PauliOperator::PauliOperator(const PauliOperator& i) : terms(i.terms) {
 }
 
@@ -28,13 +33,13 @@ PauliOperator::PauliOperator(const PauliOperator& i) : terms(i.terms) {
  * @param operators The pauli operators making up this SpinInstruction
  */
 PauliOperator::PauliOperator(std::map<int, std::string> operators) {
-	Term t(operators);
-	terms[t.id()] = t;
+	terms.emplace(std::make_pair(Term::id(operators), operators));
 }
 
 PauliOperator::PauliOperator(std::map<int, std::string> operators, std::string var) {
-	Term t(var, operators);
-	terms[t.id()] = t;
+	terms.emplace(std::piecewise_construct,
+            std::forward_as_tuple(Term::id(operators, var)),
+            std::forward_as_tuple(var, operators));
 }
 
 /**
@@ -46,8 +51,10 @@ PauliOperator::PauliOperator(std::map<int, std::string> operators, std::string v
  */
 PauliOperator::PauliOperator(std::map<int, std::string> operators,
 		std::complex<double> coeff) {
-	Term t(coeff, operators);
-	terms[t.id()] = t;
+	terms.emplace(std::piecewise_construct,
+            std::forward_as_tuple(Term::id(operators)),
+            std::forward_as_tuple(coeff, operators));
+
 }
 
 PauliOperator::PauliOperator(std::map<int, std::string> operators,
@@ -56,22 +63,10 @@ PauliOperator::PauliOperator(std::map<int, std::string> operators,
 
 PauliOperator::PauliOperator(std::map<int, std::string> operators,
 		std::complex<double> coeff, std::string var) {
-	Term t(coeff, var, operators);
-	terms[t.id()] = t;
-}
+	terms.emplace(std::piecewise_construct,
+            std::forward_as_tuple(Term::id(operators, var)),
+            std::forward_as_tuple(coeff, var, operators));
 
-PauliOperator::PauliOperator(std::vector<std::map<int, std::string>> operators) {
-
-	for (auto& element : operators) {
-		Term t(element);
-		auto id = t.id();
-
-		if (terms.count(id)) {
-			std::get<0>(terms[id]) += std::complex<double>(1,0);
-		} else {
-			terms[id] = t;
-		}
-	}
 }
 
 const std::vector<std::pair<std::string, std::complex<double>>> PauliOperator::computeActionOnKet(
@@ -176,14 +171,17 @@ void PauliOperator::clear() {
 PauliOperator& PauliOperator::operator+=( const PauliOperator& v ) noexcept {
 	for (auto& kv : v.terms) {
 
-		if (terms.count(kv.first)) {
-			std::get<0>(terms[kv.first]) += std::get<0>(kv.second);
+		auto termId = kv.first;
+		auto otherTerm = kv.second;
+
+		if (terms.count(termId)) {
+			terms.at(termId).coeff() += otherTerm.coeff();
 		} else {
-			terms[kv.first] = kv.second;
+			terms.insert({termId, otherTerm});
 		}
 
-		if (std::abs(terms[kv.first].coeff()) < 1e-12) {
-			terms.erase(kv.first);
+		if (std::abs(terms[termId].coeff()) < 1e-12) {
+			terms.erase(termId);
 		}
 	}
 
@@ -201,13 +199,12 @@ PauliOperator& PauliOperator::operator*=( const PauliOperator& v ) noexcept {
 		for (auto& vkv : v.terms) {
 			auto multTerm = kv.second * vkv.second;
 			auto id = multTerm.id();
-			if (newTerms.count(id)) {
-				newTerms[id].coeff() += multTerm.coeff();
-			} else {
-				newTerms[id] = multTerm;
+
+			if (!newTerms.insert({id, multTerm}).second) {
+				newTerms.at(id).coeff() += multTerm.coeff();
 			}
 
-			if (std::abs(newTerms[id].coeff()) < 1e-12) {
+			if (std::abs(newTerms.at(id).coeff()) < 1e-12) {
 				newTerms.erase(id);
 			}
 		}
@@ -220,10 +217,23 @@ bool PauliOperator::operator==( const PauliOperator& v ) noexcept {
 	if (terms.size() != v.terms.size()) {
 		return false;
 	}
-	std::vector<std::string> k1, k2;
-	for (auto& kv : terms) k1.push_back(kv.first);
-	for (auto& kv : v.terms) k2.push_back(kv.first);
-	return std::is_permutation(k1.begin(), k1.end(), k2.begin());
+
+	for (auto& kv : terms) {
+		bool found = false;
+		for (auto& vkv : v.terms) {
+
+			if (kv.second.operator==(vkv.second)) {
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
 PauliOperator& PauliOperator::operator*=( const double v ) noexcept {
@@ -256,32 +266,100 @@ Term& Term::operator*=( const Term& v ) noexcept {
 
 	std::get<1>(*this) = ss.str();
 
-	std::map<int, std::string> newTerms = std::get<2>(*this);
 	for (auto& kv : std::get<2>(v)) {
 		auto qubit = kv.first;
 		auto gate = kv.second;
-		if (newTerms.count(qubit)) {
+		if (ops().count(qubit)) {
 			// This means, we have a op on same qubit in both
 			// so we need to check its product
-			auto myGate = newTerms[qubit];
+			auto myGate = ops().at(qubit);
 			auto gate_coeff = pauliProducts.at(myGate + gate);
 			if (gate_coeff.second != "I") {
-				newTerms[kv.first] = gate_coeff.second;
+				ops().at(kv.first) = gate_coeff.second;
 			} else {
-				newTerms.erase(kv.first);
-				if (newTerms.empty()) {
-					newTerms[0] = "I";
-				}
+				ops().erase(kv.first);
 			}
 			coeff() *= gate_coeff.first;
 		} else if (gate != "I") {
-			newTerms[kv.first] = kv.second;
+			ops().emplace(std::make_pair(qubit, gate));
 		}
 	}
 
-	std::get<2>(*this) = newTerms;
-
 	return *this;
+}
+
+std::shared_ptr<IR> PauliOperator::toXACCIR() {
+// Create a new GateQIR to hold the spin based terms
+	auto newIr = std::make_shared<xacc::quantum::GateQIR>();
+	int counter = 0;
+	auto resultsStr = toString();
+	boost::replace_all(resultsStr, "+", "+\n");
+	mpi::communicator world;
+	if (world.rank() == 0)
+		std::cout << "[PauliOperator] ransformed Fermion to Spin:\nBEGIN\n" << resultsStr
+				<< "\nEND\n\n";
+	auto pi = boost::math::constants::pi<double>();
+
+	// Populate GateQIR now...
+	for (auto& inst : terms) {
+
+		Term spinInst = inst.second;
+
+		// Create a GateFunction and specify that it has
+		// a parameter that is the Spin Instruction coefficient
+		// that will help us get it to the user for their purposes.
+		auto gateFunction = std::make_shared<xacc::quantum::GateFunction>(
+				"term" + std::to_string(counter),
+				std::vector<InstructionParameter> { InstructionParameter(
+						spinInst.coeff()), InstructionParameter(
+						spinInst.isIdentity() ? 1 : 0) });
+
+		// Loop over all terms in the Spin Instruction
+		// and create instructions to run on the Gate QPU.
+		std::vector<std::shared_ptr<xacc::quantum::GateInstruction>> measurements;
+		auto termsMap = spinInst.ops();
+
+		std::vector<std::pair<int, std::string>> terms;
+		for (auto& kv : termsMap) {
+			if (kv.second != "I" && !kv.second.empty()) {
+				terms.push_back( { kv.first, kv.second });
+			}
+		}
+
+		for (int i = terms.size() - 1; i >= 0; i--) {
+			auto qbit = terms[i].first;
+			auto gateName = terms[i].second;
+			auto gateRegistry =
+					xacc::quantum::GateInstructionRegistry::instance();
+			auto meas = gateRegistry->create("Measure",
+					std::vector<int> { qbit });
+			xacc::InstructionParameter classicalIdx(qbit);
+			meas->setParameter(0, classicalIdx);
+			measurements.push_back(meas);
+
+			if (gateName == "X") {
+				auto hadamard = gateRegistry->create("H", std::vector<int> {
+						qbit });
+				gateFunction->addInstruction(hadamard);
+			} else if (gateName == "Y") {
+				auto rx = gateRegistry->create("Rx", std::vector<int> { qbit });
+				InstructionParameter p(pi / 2.0);
+				rx->setParameter(0, p);
+				gateFunction->addInstruction(rx);
+			}
+
+		}
+
+		if (!spinInst.isIdentity()) {
+			for (auto m : measurements) {
+				gateFunction->addInstruction(m);
+			}
+		}
+
+		newIr->addKernel(gateFunction);
+		counter++;
+	}
+	return newIr;
 }
 }
 }
@@ -291,12 +369,20 @@ bool operator==(const xacc::vqe::PauliOperator& lhs,
 	if (lhs.getTerms().size() != rhs.getTerms().size()) {
 		return false;
 	}
+	for (auto& kv : lhs.getTerms()) {
+		bool found = false;
+		for (auto& vkv : rhs.getTerms()) {
 
-	std::vector<std::string> k1, k2;
-	for (auto& kv : lhs.getTerms())
-		k1.push_back(kv.first);
-	for (auto& kv : rhs.getTerms())
-		k2.push_back(kv.first);
+			if (kv.second.operator==(vkv.second)) {
+				found = true;
+				break;
+			}
+		}
 
-	return std::is_permutation(k1.begin(), k1.end(), k2.begin());
+		if (!found) {
+			return false;
+		}
+	}
+
+	return true;
 }

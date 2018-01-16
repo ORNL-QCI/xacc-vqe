@@ -58,7 +58,7 @@ double SlepcGroundStateEnergyCalculator::computeGroundStateEnergy(
 
 
 	if (rank == 0) XACCInfo(
-			"Building Matrix for SLEPc.");
+			"Building Matrix for SLEPc. " + std::to_string(nTerms));
 
 	for (std::uint64_t myRow = Istart; myRow < Iend; myRow++) {
 		auto rowBitStr = getBitStrForIdx(myRow);
