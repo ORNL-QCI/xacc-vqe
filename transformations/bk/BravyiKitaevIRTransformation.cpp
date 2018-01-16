@@ -8,8 +8,6 @@ namespace vqe {
 PauliOperator BravyiKitaevIRTransformation::transform(FermionKernel& kernel) {
 	result.clear();
 
-	PauliOperator local;
-
 	int nQubits = std::stoi(xacc::getOption("n-qubits"));
 
 	FenwickTree tree(nQubits);
@@ -71,13 +69,11 @@ PauliOperator BravyiKitaevIRTransformation::transform(FermionKernel& kernel) {
 			ladderProduct *= (c+d);
 		}
 
-		local += ladderProduct;
+		result += ladderProduct;
 	}
 	std::cout << (std::clock() - start) / (double) (CLOCKS_PER_SEC) << "\n";
 
-	result = local;
-
-	return local;
+	return result;
 }
 
 std::shared_ptr<IR> BravyiKitaevIRTransformation::transform(

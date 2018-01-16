@@ -5,7 +5,6 @@ namespace xacc {
 namespace vqe {
 
 PauliOperator JordanWignerIRTransformation::transform(FermionKernel& kernel) {
-	PauliOperator localResult;
 	int myStart = 0;
 	int myEnd = kernel.nInstructions();
 
@@ -32,35 +31,29 @@ PauliOperator JordanWignerIRTransformation::transform(FermionKernel& kernel) {
 
 		PauliOperator current(coeff, fermionVar);
 		for (int i = 0; i < termSites.size(); i++) {
+			std::map<int, std::string> zs;
 			auto isCreation = boost::get<int>(params[i]);
 
 			int index = termSites[i];
 
-			std::complex<double> ycoeff, xcoeff(.5,0);
-			if (isCreation) {
-				ycoeff = std::complex<double>(0,-.5);
-			} else {
-				ycoeff = std::complex<double>(0,.5);
-			}
+			std::complex<double> ycoeff =
+					isCreation ?
+							std::complex<double>(0, -.5) :
+							std::complex<double>(0, .5), xcoeff(.5, 0);
 
-			PauliOperator zs(1.0);
-			for (int j = 0; j < index; j++) {
-				zs *= PauliOperator({{j, "Z"}});
-			}
+			for (int j = 0; j < index; j++) zs.emplace(std::make_pair(j,"Z"));
 
-			current *= zs
+			current *= PauliOperator(zs)
 					* (PauliOperator( { { index, "X" } }, xcoeff)
 							+ PauliOperator( { { index, "Y" } }, ycoeff));
 		}
 
-		localResult += current;
+		result += current;
 	}
 
 	std::cout << (std::clock() - start) / (double) (CLOCKS_PER_SEC) << "\n";
 
-	result = localResult;
-
-	return localResult;
+	return result;
 }
 
 std::shared_ptr<IR> JordanWignerIRTransformation::transform(

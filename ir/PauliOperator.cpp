@@ -5,6 +5,7 @@
 
 namespace xacc {
 namespace vqe {
+const std::map<std::string, std::pair<c, std::string>> Term:: pauliProducts =  Term::create_map();
 
 PauliOperator::PauliOperator() {
 }
@@ -251,22 +252,25 @@ Term& Term::operator*=( const Term& v ) noexcept {
 
 	coeff() *= std::get<0>(v);
 
-	std::stringstream ss;
-	if (!std::get<1>(*this).empty()) {
-		if (!std::get<1>(v).empty()) {
-			ss << std::get<1>(*this) << " " << std::get<1>(v);
+	std::string ss;
+	std::string myVar = std::get<1>(*this);
+	std::string otherVar = std::get<1>(v);
+	if (!myVar.empty()) {
+		if (!otherVar.empty()) {
+			ss = myVar + " " + otherVar;
 		} else {
-			ss << std::get<1>(*this);
+			ss = myVar;
 		}
 	} else {
-		if(!std::get<1>(v).empty()) {
-			ss << std::get<1>(v);
+		if(!otherVar.empty()) {
+			ss = otherVar;
 		}
 	}
 
-	std::get<1>(*this) = ss.str();
+	std::get<1>(*this) = ss;
 
-	for (auto& kv : std::get<2>(v)) {
+	auto otherOps = std::get<2>(v);
+	for (auto& kv : otherOps) {
 		auto qubit = kv.first;
 		auto gate = kv.second;
 		if (ops().count(qubit)) {

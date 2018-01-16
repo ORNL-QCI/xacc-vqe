@@ -31,7 +31,8 @@
 #ifndef VQE_IR_SPININSTRUCTION_HPP_
 #define VQE_IR_SPININSTRUCTION_HPP_
 
-#include "CommonPauliProducts.hpp"
+#include <stdio.h>
+#include <stdlib.h>
 #include <map>
 #include <unsupported/Eigen/KroneckerProduct>
 #include "XACC.hpp"
@@ -43,6 +44,7 @@ namespace vqe {
 
 // A Term can be a coefficient, a variable coefficient, and the terms themselves
 using TermTuple = std::tuple<std::complex<double>, std::string, std::map<int, std::string>>;
+using c = std::complex<double>;
 
 class Term: public TermTuple,
 		public tao::operators::commutative_multipliable<Term>,
@@ -50,7 +52,28 @@ class Term: public TermTuple,
 
 protected:
 
-	CommonPauliProducts pauliProducts;
+	static std::map<std::string, std::pair<c, std::string>> create_map() {
+		std::map<std::string, std::pair<c, std::string>> m;
+		m.insert( { "II", { c(1.0, 0.0), "I" } });
+		m.insert( { "IX", { c(1.0, 0.0), "X" } });
+		m.insert( { "XI", { c(1.0, 0.0), "X" } });
+		m.insert( { "IY", { c(1.0, 0.0), "Y" } });
+		m.insert( { "YI", { c(1.0, 0.0), "Y" } });
+		m.insert( { "ZI", { c(1.0, 0.0), "Z" } });
+		m.insert( { "IZ", { c(1.0, 0.0), "Z" } });
+		m.insert( { "XX", { c(1.0, 0.0), "I" } });
+		m.insert( { "YY", { c(1.0, 0.0), "I" } });
+		m.insert( { "ZZ", { c(1.0, 0.0), "I" } });
+		m.insert( { "XY", { c(0.0, 1.0), "Z" } });
+		m.insert( { "XZ", { c(0.0, -1.0), "Y" } });
+		m.insert( { "YX", { c(0.0, -1.0), "Z" } });
+		m.insert( { "YZ", { c(0.0, 1.0), "X" } });
+		m.insert( { "ZX", { c(0.0, 1.0), "Y" } });
+		m.insert( { "ZY", { c(0.0, -1.0), "X" } });
+		return m;
+	}
+
+	static const std::map<std::string, std::pair<c, std::string>> pauliProducts;
 
 public:
 
@@ -109,35 +132,35 @@ public:
 	}
 
 	static const std::string id(const std::map<int, std::string>& ops, const std::string& var = "") {
-		std::stringstream s;
-		s << var;
+		std::string s;
+		s = var;
 		for (auto& t : ops) {
 			if (t.second != "I") {
-				s << t.second << t.first;
+				s += t.second + std::to_string(t.first);
 			}
 		}
 
-		if (s.str().empty()) {
+		if (s.empty()) {
 			return "I";
 		}
 
-		return s.str();
+		return s;
 	}
 
 	const std::string id() const {
-		std::stringstream s;
-		s << std::get<1>(*this);
+		std::string s;
+		s = std::get<1>(*this);
 		for (auto& t : std::get<2>(*this)) {
 			if (t.second != "I") {
-				s << t.second << t.first;
+				s += t.second + std::to_string(t.first);
 			}
 		}
 
-		if (s.str().empty()) {
+		if (s.empty()) {
 			return "I";
 		}
 
-		return s.str();
+		return s;
 	}
 
 	std::map<int, std::string>& ops() {
