@@ -95,7 +95,7 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 	}
 
 	_nQubits++;
-	runtimeOptions->insert(std::make_pair("n-qubits", std::to_string(_nQubits)));
+	xacc::setOption("n-qubits", std::to_string(_nQubits));
 
 	// Create the FermionIR to pass to our transformation.
 	auto fermionir = std::make_shared<FermionIR>();
@@ -105,13 +105,14 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 	// about the fermion representation of the Hamiltonian
 	// we are compiling. We need to transform it to a spin
 	// hamiltonian.
+	auto serviceRegistry = ServiceRegistry::instance();
 	std::shared_ptr<IRTransformation> transform;
-	if (runtimeOptions->exists("fermion-transformation")) {
-		auto transformStr = (*runtimeOptions)["fermion-transformation"];
-		transform = ServiceRegistry::instance()->getService<IRTransformation>(
+	if (xacc::optionExists("fermion-transformation")) {
+		auto transformStr = xacc::getOption("fermion-transformation");
+		transform = serviceRegistry->getService<IRTransformation>(
 				transformStr);
 	} else {
-		transform = ServiceRegistry::instance()->getService<IRTransformation>(
+		transform = serviceRegistry->getService<IRTransformation>(
 				"jw");
 	}
 
@@ -121,9 +122,9 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 	if (world.rank() == 0) XACCInfo("Done mapping Fermion to Spin.");
 
 	// Prepend State Preparation if requested.
-	if (runtimeOptions->exists("state-preparation")) {
-		auto statePrepIRTransformStr = (*runtimeOptions)["state-preparation"];
-		auto statePrepIRTransform = ServiceRegistry::instance()->getService<
+	if (xacc::optionExists("state-preparation")) {
+		auto statePrepIRTransformStr = xacc::getOption("state-preparation");
+		auto statePrepIRTransform = serviceRegistry->getService<
 				IRTransformation>(statePrepIRTransformStr);
 		if (world.rank() == 0) XACCInfo("Generating State Preparation Circuit with " + statePrepIRTransform->name());
 		auto ir = statePrepIRTransform->transform(transformedIR);

@@ -83,7 +83,7 @@ public:
 	virtual std::shared_ptr<options_description> getOptions() {
 		auto desc = std::make_shared<options_description>(
 				"XACC Fermion Compiler Options");
-		desc->add_options()("fermion-transformation", value<std::string>(),
+		desc->add_options()("fermion-transformation,T", value<std::string>(),
 				"Provide the name of Creation/Annihilation to Spin Transformation. Default is Jordan-Wigner.")(
 				"fermion-list-transformations",
 				"List all available fermion-to-spin transformations.");

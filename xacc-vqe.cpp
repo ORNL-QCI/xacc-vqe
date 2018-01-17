@@ -23,22 +23,24 @@ int main(int argc, char** argv) {
 	}
 
 	// Add some command line options for this XACC app
-	xacc::addCommandLineOptions("XACC VQE", std::map<std::string, std::string>{
-		{"vqe-kernel-file", "(required) The file containing XACC Kernels describing "
-			"a Hamiltonian."},
-		{"vqe-kernels-compiler", ""},
-		{"vqe-task", "(required)"},
-		{"vqe-list-tasks", "(optional) List all available VQE Tasks."},
-		{"vqe-state-prep-kernel", "(optional) Provide the file name of the state "
-				"preparation circuit."},
-		{"vqe-state-prep-kernel-compiler", "(optional) If not scaffold, provide the "
-				"compiler to use in compiling the state prep circuit."},
-		{"n-qubits", "The number of qubits used in this calculation."},
-		{"n-electrons", "The number of electrons used in this calculation."},
-		{"vqe-parameters", "(optional)"},
-		{"vqe-energy-delta", "Specify the change in the energy condition for "
-						"convergence of Nelder-Mead minimization."}
-	});
+
+	auto vqeOptions = std::make_shared<options_description>("XACC-VQE Options");
+	vqeOptions->add_options()
+				("vqe-kernel-file,f",value<std::string>(), "(required) The file containing "
+							"XACC Kernels describing a Hamiltonian.")
+				("vqe-kernels-compiler,c", value<std::string>(), "")
+				("vqe-task,t", value<std::string>(), "(required)")
+				("vqe-list-tasks,l","List available VQE Tasks.")
+				("vqe-state-prep-kernel,p", value<std::string>(),"(optional) Provide the file name of the state "
+				"preparation circuit.")
+				("vqe-state-prep-kernel-compiler,s",  value<std::string>(),"(optional) If not scaffold, provide the "
+				"compiler to use in compiling the state prep circuit")
+				("n-qubits,n",  value<std::string>(),"The number of qubits in the calculation")
+				("n-electrons,e",  value<std::string>(),"The number of electrons in the calculation")
+				("vqe-parameters",  value<std::string>(),"")
+				("vqe-energy-delta", value<std::string>(), "");
+
+	 xacc::addCommandLineOptions(vqeOptions);
 
 	// Initialize the framework
 	xacc::Initialize(argc, argv);
@@ -70,7 +72,7 @@ int main(int argc, char** argv) {
 	// Get the task to run
 	auto task = xacc::getOption("vqe-task");
 
-	// Read in the Hamiltonian kernel vile
+	// Read in the Hamiltonian kernel file
 	std::ifstream moleculeKernelHpp(xacc::getOption("vqe-kernel-file"));
 	std::string src((std::istreambuf_iterator<char>(moleculeKernelHpp)),
 			std::istreambuf_iterator<char>());
