@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(checkSimple) {
 
 		VQETaskResult result = task.execute(parameters);
 
-		BOOST_VERIFY(std::fabs(result[0].second + 1.13727042207) < 1e-4);
+		BOOST_VERIFY(std::fabs(result.results[0].second + 1.13727042207) < 1e-4);
 	}
 
 	xacc::Finalize();

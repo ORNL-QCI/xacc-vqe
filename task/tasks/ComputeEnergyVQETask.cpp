@@ -26,6 +26,8 @@ VQETaskResult ComputeEnergyVQETask::execute(
 
 	auto kernels = program->getVQEKernels();
 
+	VQETaskResult taskResult;
+
 	if (xacc::optionExists("vqe-compute-energies-multi-exec")
 			|| qpu->name() == "ibm") {
 		multiExec = true;
@@ -59,6 +61,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 
 		int counter = 0;
 		for (auto b : tmpBuffers) {
+			taskResult.buffers.push_back(b);
 			localExpectationValue = b->getExpectationValueZ();
 			sum += coeffs[counter] * localExpectationValue;
 			counter++;
@@ -132,6 +135,8 @@ VQETaskResult ComputeEnergyVQETask::execute(
 				kernel(buff);
 				nlocalqpucalls++;
 
+				taskResult.buffers.push_back(buff);
+
 				lexpval = buff->getExpectationValueZ();
 
 				// The next iteration will have a different
@@ -162,8 +167,10 @@ VQETaskResult ComputeEnergyVQETask::execute(
 	}
 
 	vqeIteration++;
-	return std::vector<std::pair<Eigen::VectorXd, double>> { { parameters,
-			currentEnergy } };
+
+	taskResult.results.push_back({parameters, currentEnergy});
+
+	return taskResult;
 }
 
 

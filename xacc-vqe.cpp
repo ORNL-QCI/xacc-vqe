@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
 	VQETaskResult result = vqeTask->execute(parameters);
 
 	std::string msg = (task == "compute-expectation-values" ? "Expectation Value = " : "Energy = ");
-	for (auto r : result) {
+	for (auto r : result.results) {
 		std::stringstream ss;
 		ss << std::setprecision(12) << r.second << " at (" << r.first.transpose() << ")";
 		if (world.rank() == 0) XACCInfo(msg + ss.str());

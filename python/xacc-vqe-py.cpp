@@ -120,137 +120,14 @@ VQETaskResult execute(PauliOperator& op, py::kwargs kwargs) {
 	return vqeTask->execute(parameters);
 }
 
-std::pair<Eigen::VectorXd, double> execute_vqe(
-		const std::string& hamiltonianSrc,
-		const int nQbits, const std::string& accelerator = "tnqvm") {
-
-	xacc::setOption("n-qubits", std::to_string(nQbits));
-	auto qpu = xacc::getAccelerator(accelerator);
-
-	boost::mpi::communicator comm;
-	auto program = std::make_shared<VQEProgram>(qpu, hamiltonianSrc, comm);
-	program->build();
-
-	auto task = ServiceRegistry::instance()->getService<VQETask>("vqe");
-	task->setVQEProgram(program);
-
-	auto parameters = VQEParameterGenerator::generateParameters(program->getNParameters(), comm);
-	auto result = task->execute(parameters);
-	return result[0];
-}
-
-std::pair<Eigen::VectorXd, double> execute_vqe(
-		const std::string& hamiltonianSrc, const std::string& statePrepSrc,
-		const int nQbits, const std::string& accelerator = "tnqvm") {
-
-	xacc::setOption("n-qubits", std::to_string(nQbits));
-	auto qpu = xacc::getAccelerator(accelerator);
-
-	boost::mpi::communicator comm;
-	auto program = std::make_shared<VQEProgram>(qpu, hamiltonianSrc, statePrepSrc, comm);
-	program->build();
-
-	auto task = ServiceRegistry::instance()->getService<VQETask>("vqe");
-	task->setVQEProgram(program);
-
-	auto parameters = VQEParameterGenerator::generateParameters(program->getNParameters(), comm);
-	auto result = task->execute(parameters);
-	return result[0];
-}
-
-std::pair<Eigen::VectorXd, double> execute_vqe(
-		const std::string& hamiltonianSrc, const std::string& statePrepSrc,
-		const int nQbits, Eigen::VectorXd& params,
-		const std::string& accelerator = "tnqvm") {
-	xacc::setOption("n-qubits", std::to_string(nQbits));
-	auto qpu = xacc::getAccelerator(accelerator);
-
-	boost::mpi::communicator comm;
-	auto program = std::make_shared<VQEProgram>(qpu, hamiltonianSrc, statePrepSrc, comm);
-	program->build();
-
-	auto task = ServiceRegistry::instance()->getService<VQETask>("vqe");
-	task->setVQEProgram(program);
-
-	auto result = task->execute(params);
-	return result[0];
-}
-
-std::vector<double> sweepParameter1D(const std::string& hamiltonianSrc,
-		const std::string& statePrepSrc, const int nQbits,
-		const Eigen::VectorXd& range,
-		const std::string& accelerator = "tnqvm") {
-
-	xacc::setOption("n-qubits", std::to_string(nQbits));
-	auto qpu = xacc::getAccelerator(accelerator);
-
-	boost::mpi::communicator comm;
-	auto program = std::make_shared<VQEProgram>(qpu, hamiltonianSrc, statePrepSrc, comm);
-	program->build();
-
-	auto task = ServiceRegistry::instance()->getService<VQETask>("sweep-1d");
-	task->setVQEProgram(program);
-
-	auto result = task->execute(range);
-
-	std::vector<double> energies;
-	for (auto r : result) {
-		energies.push_back(r.second);
-	}
-
-    return energies;
-}
-
-double computeEnergyAtParameters(
-		const std::string& hamiltonianSrc, const std::string& statePrepSrc,
-		const int nQbits, Eigen::VectorXd& params,
-		const std::string& accelerator = "tnqvm") {
-
-	xacc::setOption("n-qubits", std::to_string(nQbits));
-	auto qpu = xacc::getAccelerator(accelerator);
-
-	boost::mpi::communicator comm;
-	auto program = std::make_shared<VQEProgram>(qpu, hamiltonianSrc,
-			statePrepSrc, comm);
-	program->build();
-
-	auto task = ServiceRegistry::instance()->getService<VQETask>(
-			"compute-energy");
-	task->setVQEProgram(program);
-
-	auto result = task->execute(params);
-	return result[0].second;
-}
-
-std::vector<double> computeKernelExpectationValues(const std::string& hamiltonianSrc, const std::string& statePrepSrc,
-		const int nQbits, Eigen::VectorXd& params,
-		const std::string& accelerator = "tnqvm") {
-
-	xacc::setOption("n-qubits", std::to_string(nQbits));
-	auto qpu = xacc::getAccelerator(accelerator);
-
-	boost::mpi::communicator comm;
-	auto program = std::make_shared<VQEProgram>(qpu, hamiltonianSrc,
-			statePrepSrc, comm);
-	program->build();
-
-	auto task = ServiceRegistry::instance()->getService<VQETask>(
-			"compute-expectation-values");
-	task->setVQEProgram(program);
-
-	auto result = task->execute(params);
-	std::vector<double> vals;
-	for (auto r : result) {
-		vals.push_back(r.second);
-	}
-	return vals;
-}
-
-
 PYBIND11_MODULE(pyxaccvqe, m) {
 	m.doc() = "Python bindings for XACC VQE.";
 
 	py::add_ostream_redirect(m, "ostream_redirect");
+
+	py::class_<VQETaskResult>(m, "VQETaskResult")
+	    .def_readonly("buffers", &VQETaskResult::buffers)
+		.def_readonly("results", &VQETaskResult::results);
 
 	py::class_<PauliOperator>(m,"PauliOperator")
 			.def(py::init<>())
@@ -292,67 +169,5 @@ PYBIND11_MODULE(pyxaccvqe, m) {
 				);
 				return compileFermionHamiltonian(src);
 			});
-
-	m.def("execute_vqe",
-			[](const std::string& hamiltonianSrc,
-					const int nQbits, const std::string& accelerator = "tnqvm") -> std::pair<Eigen::VectorXd, double> {
-				py::scoped_ostream_redirect stream(
-						std::cout,                              // std::ostream&
-						py::module::import("sys").attr("stdout")// Python output
-				);
-				return execute_vqe(hamiltonianSrc, nQbits, accelerator);
-			});
-
-	m.def("execute_vqe",
-			[](const std::string& hamiltonianSrc,
-					const std::string& statePrepSrc, const int nQbits, const std::string& accelerator = "tnqvm") -> std::pair<Eigen::VectorXd, double> {
-				py::scoped_ostream_redirect stream(
-						std::cout,                              // std::ostream&
-						py::module::import("sys").attr("stdout")// Python output
-				);
-				return execute_vqe(hamiltonianSrc, statePrepSrc, nQbits, accelerator);
-			});
-
-	m.def("execute_vqe",
-			[](const std::string& hamiltonianSrc,
-					const std::string& statePrepSrc, const int nQbits, Eigen::VectorXd& params, const std::string& accelerator = "tnqvm") -> std::pair<Eigen::VectorXd, double> {
-				py::scoped_ostream_redirect stream(
-						std::cout,                              // std::ostream&
-						py::module::import("sys").attr("stdout")// Python output
-				);
-				return execute_vqe(hamiltonianSrc, statePrepSrc, nQbits, params, accelerator);
-			});
-
-	m.def("sweepParameter1D",
-			[](const std::string& hamiltonianSrc,
-					const std::string& statePrepSrc, const int nQbits, const Eigen::VectorXd& range, const std::string& accelerator = "tnqvm") -> std::vector<double> {
-				py::scoped_ostream_redirect stream(
-						std::cout,                              // std::ostream&
-						py::module::import("sys").attr("stdout")// Python output
-				);
-				return sweepParameter1D(hamiltonianSrc, statePrepSrc, nQbits, range, accelerator);
-			});
-
-	m.def("computeEnergyAtParameters", [](
-			const std::string& hamiltonianSrc, const std::string& statePrepSrc,
-			const int nQbits, Eigen::VectorXd& params,
-			const std::string& accelerator = "tnqvm") -> double {
-		py::scoped_ostream_redirect stream(
-				std::cout,                               // std::ostream&
-			py::module::import("sys").attr("stdout")// Python output
-	);
-	return computeEnergyAtParameters(hamiltonianSrc, statePrepSrc, nQbits, params, accelerator);
-});
-
-	m.def("computeKernelExpectationValues", [](
-			const std::string& hamiltonianSrc, const std::string& statePrepSrc,
-			const int nQbits, Eigen::VectorXd& params,
-			const std::string& accelerator = "tnqvm") -> std::vector<double> {
-		py::scoped_ostream_redirect stream(
-				std::cout,                               // std::ostream&
-			py::module::import("sys").attr("stdout")// Python output
-	);
-	return computeKernelExpectationValues(hamiltonianSrc, statePrepSrc, nQbits, params, accelerator);
-});
 }
 

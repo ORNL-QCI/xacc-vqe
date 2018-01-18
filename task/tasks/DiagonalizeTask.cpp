@@ -28,8 +28,11 @@ VQETaskResult DiagonalizeTask::execute(
 
 	auto energy = backend->diagonalize(hamiltonianInstruction,
 			nQubits);
-	return std::vector<std::pair<Eigen::VectorXd, double>> { { parameters,
-			energy } };
+
+	VQETaskResult result;
+	result.results.push_back({parameters, energy});
+
+	return result;
 }
 
 double EigenDiagonalizeBackend::diagonalize(

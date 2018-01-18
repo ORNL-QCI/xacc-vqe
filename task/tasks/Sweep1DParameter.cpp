@@ -18,23 +18,23 @@ VQETaskResult Sweep1DParameter::execute(
 		int idx = std::stoi(xacc::getOption("vqe-restart-index"));
 		for (int i = idx; i < parameters.rows(); i++) {
 			param[0] = parameters(i);
-			auto energy = computeTask->execute(param)[0].second;
-			result.push_back( { param, energy });
+			auto energy = computeTask->execute(param).results[0].second;
+			result.results.push_back( { param, energy });
 		}
 
 	} else {
 
 		for (int i = 0; i < parameters.rows(); i++) {
 			param[0] = parameters(i);
-			auto energy = computeTask->execute(param)[0].second;
-			result.push_back( { param, energy });
+			auto energy = computeTask->execute(param).results[0].second;
+			result.results.push_back( { param, energy });
 		}
 
 	}
 
 	if (xacc::optionExists("vqe-sweep-persist")) {
 		std::ofstream out(xacc::getOption("vqe-sweep-persist"));
-		for (auto r : result) {
+		for (auto r : result.results) {
 			out << r.first(0) << ", " << r.second << "\n";
 		}
 		out.flush();

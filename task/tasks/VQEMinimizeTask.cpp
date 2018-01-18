@@ -7,7 +7,7 @@ namespace xacc {
 namespace vqe {
 
 double VQEMinimizeTask::value(const Eigen::VectorXd& params) {
-	currentEnergy = computeTask->execute(params)[0].second;
+	currentEnergy = computeTask->execute(params).results[0].second;
 	return currentEnergy;
 }
 
@@ -23,7 +23,9 @@ VQETaskResult VQEMinimizeTask::execute(
 	XACCInfo("");
 	XACCInfo(ss.str());
 
-	return VQETaskResult {{parameters, currentEnergy}};
+	VQETaskResult r;
+	r.results.push_back({parameters, currentEnergy});
+	return r;
 }
 
 }

@@ -26,9 +26,16 @@ VQETaskResult ComputeExpectationValues::execute(
 	auto kernels = program->getVQEKernels();
 
 	VQETaskResult expVals;
-	if (qpu->isPhysical()) {
 
-		XACCInfo("Computing Energy with XACC Kernel Multi-Exec.");
+	bool multiExec = false;
+	if (xacc::optionExists("vqe-compute-energies-multi-exec")
+			|| qpu->name() == "ibm") {
+		multiExec = true;
+	}
+
+	if (multiExec) {
+
+		XACCInfo("Computing Exp Vals with XACC Kernel Multi-Exec.");
 		std::vector<double> coeffs;
 		KernelList<> modifiedKernelList(qpu);
 		KernelList<> identityKernels(qpu);
@@ -53,14 +60,15 @@ VQETaskResult ComputeExpectationValues::execute(
 		nlocalqpucalls += tmpBuffers.size();
 
 		for (auto k : identityKernels) {
-			expVals.push_back({parameters, 1.0});
+			expVals.results.push_back({parameters, 1.0});
 		}
 
 
 		int counter = 0;
 		for (auto b : tmpBuffers) {
+			expVals.buffers.push_back(b);
 			localExpectationValue = b->getExpectationValueZ();
-			expVals.push_back({parameters, localExpectationValue});
+			expVals.results.push_back({parameters, localExpectationValue});
 			counter++;
 		}
 
@@ -93,6 +101,8 @@ VQETaskResult ComputeExpectationValues::execute(
 
 				localExpectationValue = buff->getExpectationValueZ();
 
+				expVals.buffers.push_back(buff);
+
 				// The next iteration will have a different
 				// state prep circuit, so toss the current one.
 				kernel.getIRFunction()->removeInstruction(0);
@@ -103,7 +113,7 @@ VQETaskResult ComputeExpectationValues::execute(
 			// Sum up the expectation values, the Hamiltonian
 			// terms coefficient is stored in the first
 			// parameter of the Kernels IR Function representation
-			expVals.push_back({parameters, localExpectationValue});
+			expVals.results.push_back({parameters, localExpectationValue});
 		}
 
 	}

@@ -8,7 +8,11 @@
 namespace xacc {
 namespace vqe {
 
-using VQETaskResult = std::vector<std::pair<Eigen::VectorXd, double>>;
+class VQETaskResult {
+public:
+	std::vector<std::shared_ptr<AcceleratorBuffer>> buffers;
+	std::vector<std::pair<Eigen::VectorXd, double>> results;
+};
 
 class VQETask : public xacc::Identifiable, public OptionsProvider {
 
