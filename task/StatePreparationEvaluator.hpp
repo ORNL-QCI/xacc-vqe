@@ -44,7 +44,7 @@ public:
 
 		auto evaluatedStatePrep = std::make_shared<GateFunction>("stateprep");
 		for (auto inst : statePrep->getInstructions()) {
-			if (!inst->isComposite() && inst->isParameterized()
+			if (inst->isParameterized()
 					&& inst->getParameter(0).which() == 3) {
 				int idx = -1;
 				auto expression = boost::get<std::string>(

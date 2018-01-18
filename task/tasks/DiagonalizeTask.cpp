@@ -14,17 +14,7 @@ VQETaskResult DiagonalizeTask::execute(
 
 	boost::mpi::communicator world;
 
-	std::shared_ptr<FermionToSpinTransformation> transform;
-	if (xacc::optionExists("fermion-transformation")) {
-		auto transformStr = xacc::getOption("fermion-transformation");
-		transform = ServiceRegistry::instance()->getService<FermionToSpinTransformation>(
-				transformStr);
-	} else {
-		transform = ServiceRegistry::instance()->getService<FermionToSpinTransformation>(
-				"jw");
-	}
-
-	auto hamiltonianInstruction = transform->getResult();
+	auto hamiltonianInstruction = program->getPauliOperator();
 
 	std::shared_ptr<DiagonalizeBackend> backend;
 	if (xacc::optionExists("diagonalize-backend")) {

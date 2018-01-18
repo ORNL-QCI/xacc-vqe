@@ -18,6 +18,10 @@ PauliOperator::PauliOperator(double c) {
 	terms.emplace(std::make_pair("I",c));
 }
 
+PauliOperator::PauliOperator(std::string var) {
+	terms.emplace(std::make_pair("I", var));
+}
+
 PauliOperator::PauliOperator(std::complex<double> c, std::string var) {
 	terms.emplace(std::piecewise_construct,
             std::forward_as_tuple("I"),
@@ -292,6 +296,27 @@ Term& Term::operator*=( const Term& v ) noexcept {
 	return *this;
 }
 
+PauliOperator PauliOperator::eval(const std::map<std::string, std::complex<double>> varToValMap) {
+	PauliOperator ret;
+
+	for (auto& kv : terms) {
+
+		auto id = kv.first;
+		auto term = kv.second;
+
+		for (auto& varVal : varToValMap) {
+			if (varVal.first == term.var()) {
+				term.var() = "";
+				term.coeff() *= varVal.second;
+			}
+		}
+
+		ret.terms.insert({id, term});
+	}
+
+	return ret;
+}
+
 std::shared_ptr<IR> PauliOperator::toXACCIR() {
 // Create a new GateQIR to hold the spin based terms
 	auto newIr = std::make_shared<xacc::quantum::GateQIR>();
@@ -300,7 +325,7 @@ std::shared_ptr<IR> PauliOperator::toXACCIR() {
 	boost::replace_all(resultsStr, "+", "+\n");
 	mpi::communicator world;
 	if (world.rank() == 0)
-		std::cout << "[PauliOperator] ransformed Fermion to Spin:\nBEGIN\n" << resultsStr
+		std::cout << "[PauliOperator] Transformed Fermion to Spin:\nBEGIN\n" << resultsStr
 				<< "\nEND\n\n";
 	auto pi = boost::math::constants::pi<double>();
 

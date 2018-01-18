@@ -115,9 +115,8 @@ VQETaskResult ComputeEnergyVQETask::execute(
 			// Get the ith Kernel
 			auto kernel = kernels[i];
 
-			auto t = std::real(
-                                        boost::get<std::complex<double>>(
-                                                        kernel.getIRFunction()->getParameter(0)));
+			auto t = std::real(boost::get<std::complex<double>>(
+                               kernel.getIRFunction()->getParameter(0)));
 
 			// If not an identity kernel...
 			if (kernel.getIRFunction()->nInstructions() > 0) {
@@ -140,7 +139,6 @@ VQETaskResult ComputeEnergyVQETask::execute(
 				kernel.getIRFunction()->removeInstruction(0);
 			}
 
-			//std::cout << "Kernel " << i << ", " << t << ", " << lexpval << ":\n" << kernel.getIRFunction()->toString("") << "\n"; 
 			// Sum up the expectation values, the Hamiltonian
 			// terms coefficient is stored in the first
 			// parameter of the Kernels IR Function representation

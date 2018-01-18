@@ -1,5 +1,5 @@
 /***********************************************************************************
- * Copyright (c) 2016, UT-Battelle
+ * Copyright (c) 2018, UT-Battelle
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -107,6 +107,12 @@ public:
 		std::get<2>(*this) = ops;
 	}
 
+	Term(std::string var) {
+		std::get<0>(*this) = std::complex<double>(1,0);
+		std::get<1>(*this) = var;
+		std::get<2>(*this) = {};
+	}
+
 	Term(std::complex<double> c, std::string var) {
 		std::get<0>(*this) = c;
 		std::get<1>(*this) = var;
@@ -179,7 +185,7 @@ public:
 		return std::get<0>(*this);
 	}
 
-	const std::string var() {
+	std::string& var() {
 		return std::get<1>(*this);
 	}
 
@@ -204,6 +210,7 @@ public:
 	PauliOperator();
 	PauliOperator(std::complex<double> c);
 	PauliOperator(double c);
+	PauliOperator(std::string var);
 	PauliOperator(std::complex<double> c, std::string var);
 	PauliOperator(const PauliOperator& i);
 	PauliOperator(std::map<int, std::string> operators);
@@ -231,6 +238,7 @@ public:
 	}
 
 	std::shared_ptr<IR> toXACCIR();
+	PauliOperator eval(const std::map<std::string, std::complex<double>> varToValMap);
 
 	PauliOperator& operator+=( const PauliOperator& v ) noexcept;
 	PauliOperator& operator-=( const PauliOperator& v ) noexcept;

@@ -5,6 +5,8 @@
 #include "XACC.hpp"
 #include "Function.hpp"
 #include "IRGenerator.hpp"
+#include "PauliOperator.hpp"
+#include "FermionToSpinTransformation.hpp"
 
 #include <boost/mpi.hpp>
 #include "CountGatesOfTypeVisitor.hpp"
@@ -60,10 +62,16 @@ class VQEProgram: public xacc::Program {
 
 public:
 
+	VQEProgram(std::shared_ptr<Accelerator> acc, PauliOperator& op,
+			std::shared_ptr<xacc::quantum::GateFunction> sprep,
+			boost::mpi::communicator& c) :
+			Program(acc, ""), pauli(op), comm(c), nParameters(sprep ? sprep->nParameters() : 0), statePrep(
+					sprep), kernels(acc) {
+	}
+
 	VQEProgram(std::shared_ptr<Accelerator> acc, const std::string& kernelSrc,
 			boost::mpi::communicator& c) :
 			Program(acc, kernelSrc), nParameters(0), comm(c) {
-
 	}
 
 	VQEProgram(std::shared_ptr<Accelerator> acc,
@@ -71,7 +79,6 @@ public:
 			boost::mpi::communicator& c) :
 			Program(acc, kernelSource), statePrepSource(statePrepSrc), nParameters(
 					0), comm(c) {
-
 	}
 
 	boost::mpi::communicator& getCommunicator() {
@@ -79,86 +86,115 @@ public:
 	}
 
 	virtual void build() {
-		bool userProvidedKernels = false;
 
-		// This class only takes kernels
-		// represented as Fermion Kernels.
-		xacc::setCompiler("fermion");
+		if (pauli == PauliOperator()) {
+			bool userProvidedKernels = false;
 
-		auto nKernels = 0;
-		size_t nPos = src.find("__qpu__", 0);
-		while (nPos != std::string::npos) {
-			nKernels++;
-			nPos = src.find("__qpu__", nPos + 1);
-		}
+			// This class only takes kernels
+			// represented as Fermion Kernels.
+			xacc::setCompiler("fermion");
 
-		// Create a buffer of qubits
-
-		std::vector<double> coeffs;
-		// If nKernels > 1, we have non-fermioncompiler kernels
-		// so lets check to see if they provided any coefficients
-		if (nKernels > 1) { // && boost::contains(src, "coefficients")) {
-			xacc::setCompiler("scaffold");
-			if (xacc::optionExists("vqe-kernels-compiler")) {
-				xacc::setCompiler(xacc::getOption("vqe-kernels-compiler"));
+			auto nKernels = 0;
+			size_t nPos = src.find("__qpu__", 0);
+			while (nPos != std::string::npos) {
+				nKernels++;
+				nPos = src.find("__qpu__", nPos + 1);
 			}
-			if (!xacc::optionExists("n-qubits")) {
-				XACCError("You must provide --n-qubits arg if "
-						"running with custom hamiltonian kernels.");
+
+			// Create a buffer of qubits
+
+			std::vector<double> coeffs;
+			// If nKernels > 1, we have non-fermioncompiler kernels
+			// so lets check to see if they provided any coefficients
+			if (nKernels > 1) { // && boost::contains(src, "coefficients")) {
+				xacc::setCompiler("scaffold");
+				if (xacc::optionExists("vqe-kernels-compiler")) {
+					xacc::setCompiler(xacc::getOption("vqe-kernels-compiler"));
+				}
+				if (!xacc::optionExists("n-qubits")) {
+					XACCError("You must provide --n-qubits arg if "
+							"running with custom hamiltonian kernels.");
+				}
+				nQubits = std::stoi(xacc::getOption("n-qubits"));
+				userProvidedKernels = true;
+				accelerator->createBuffer("qreg", nQubits);
 			}
+
+			addPreprocessor("fcidump-preprocessor");
+
+			// Start compilation
+			Program::build();
+
+			std::shared_ptr<FermionToSpinTransformation> transform;
+			if (xacc::optionExists("fermion-transformation")) {
+				auto transformStr = xacc::getOption("fermion-transformation");
+				transform = ServiceRegistry::instance()->getService<FermionToSpinTransformation>(
+						transformStr);
+			} else {
+				transform = ServiceRegistry::instance()->getService<FermionToSpinTransformation>(
+						"jw");
+			}
+
+			pauli = transform->getResult();
+
 			nQubits = std::stoi(xacc::getOption("n-qubits"));
-			userProvidedKernels = true;
-			accelerator->createBuffer("qreg", nQubits);
-		}
 
-		addPreprocessor("fcidump-preprocessor");
+			// Get the Kernels that were created
+			kernels = getRuntimeKernels();
 
-		// Start compilation
-		Program::build();
-
-		nQubits = std::stoi(xacc::getOption("n-qubits"));
-
-		// Get the Kernels that were created
-		kernels = getRuntimeKernels();
-
-		if (userProvidedKernels) {
-			if (boost::contains(src, "pragma")
-					&& boost::contains(src, "coefficient")) {
-				std::vector<std::string> lines;
-				boost::split(lines, src, boost::is_any_of("\n"));
-				int counter = 0;
-				for (int i = 0; i < lines.size(); ++i) {
-					auto line = lines[i];
-					if (boost::contains(line, "#pragma vqe-coefficient")) {
-						std::vector<std::string> splitspaces;
-						boost::split(splitspaces, line, boost::is_any_of(" "));
-						boost::trim(splitspaces[2]);
-						coeffs.push_back(std::stod(splitspaces[2]));
-						InstructionParameter p(
-								std::complex<double>(std::stod(splitspaces[2]),
-										0.0));
-						InstructionParameter q(
-								(kernels[counter].getIRFunction()->nInstructions()
-										== 0 ? 1 : 0));
-						kernels[counter].getIRFunction()->addParameter(p);
-						kernels[counter].getIRFunction()->addParameter(q);
-						counter++;
+			if (userProvidedKernels) {
+				if (boost::contains(src, "pragma")
+						&& boost::contains(src, "coefficient")) {
+					std::vector<std::string> lines;
+					boost::split(lines, src, boost::is_any_of("\n"));
+					int counter = 0;
+					for (int i = 0; i < lines.size(); ++i) {
+						auto line = lines[i];
+						if (boost::contains(line, "#pragma vqe-coefficient")) {
+							std::vector<std::string> splitspaces;
+							boost::split(splitspaces, line,
+									boost::is_any_of(" "));
+							boost::trim(splitspaces[2]);
+							coeffs.push_back(std::stod(splitspaces[2]));
+							InstructionParameter p(
+									std::complex<double>(
+											std::stod(splitspaces[2]), 0.0));
+							InstructionParameter q(
+									(kernels[counter].getIRFunction()->nInstructions()
+											== 0 ? 1 : 0));
+							kernels[counter].getIRFunction()->addParameter(p);
+							kernels[counter].getIRFunction()->addParameter(q);
+							counter++;
+						}
 					}
 				}
+			}
+
+		} else {
+			nQubits = std::stoi(xacc::getOption("n-qubits"));
+			auto tmpKernels = pauli.toXACCIR()->getKernels();
+			for (auto t : tmpKernels) {
+				kernels.push_back(Kernel<>(accelerator,t));
 			}
 		}
 
 		// We don't need state prep if we are brute
 		// force computing ground state energy
-		if (xacc::getOption("vqe-task") != "vqe-diagonalize" &&
-				xacc::getOption("vqe-task") != "vqe-profile" &&
-				xacc::getOption("vqe-task") != "vqe-openfermion-eigenspectrum") {
+		if (!statePrep && xacc::getOption("vqe-task") != "vqe-diagonalize"
+				&& xacc::getOption("vqe-task") != "vqe-profile"
+				&& xacc::getOption("vqe-task")
+						!= "vqe-openfermion-eigenspectrum") {
+			XACCInfo("Creating a StatePreparation Circuit");
 			statePrep = createStatePreparationCircuit();
 
 			// Set the number of VQE parameters
 			nParameters = statePrep->nParameters();
 		}
 
+	}
+
+	PauliOperator getPauliOperator() {
+		return pauli;
 	}
 
 	KernelList<> getVQEKernels() {
@@ -214,6 +250,8 @@ protected:
 	 * followed by appropriately constructed qubit measurements.
 	 */
 	KernelList<> kernels;
+
+	PauliOperator pauli = PauliOperator();
 
 	/**
 	 * The number of parameters in the
