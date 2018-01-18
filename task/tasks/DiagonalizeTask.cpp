@@ -35,112 +35,49 @@ VQETaskResult DiagonalizeTask::execute(
 double EigenDiagonalizeBackend::diagonalize(
 		PauliOperator& inst, const int nQubits) {
 	boost::mpi::communicator world;
-//	= inst.toSparseRealMatrix(
-//			nQubits);
+	int rank = world.rank();
+	int nRanks = world.size();
+	std::complex<double> gsReal;
+	auto nTerms = inst.nTerms();
 
-//	auto nTerms = inst.nInstructions();
-//
-//	// Get Identity coefficient
-//	std::complex<double> identityCoeff(0.0, 0.0);
-//	for (int i = 0; i < nTerms; i++) {
-//		std::shared_ptr<SpinInstruction> spinInst = std::dynamic_pointer_cast<
-//				SpinInstruction>(inst.getInstruction(i));
-//		if (spinInst->isIdentity()) {
-//			identityCoeff = spinInst->coefficient;
-//			break;
-//		}
-//	}
-//
-//	std::size_t dim = 1;
-//	std::size_t two = 2;
-//	for (int i = 0; i < nQubits; i++)
-//		dim *= two;
-//
-//	// Generate all bit strings
-//	std::vector<std::string> bitStrings(dim);
-//#pragma omp parallel for
-//	for (std::uint64_t j = 0; j < dim; j++) {
-//
-//		std::stringstream s;
-//		for (int k = nQubits - 1; k >= 0; k--) {
-//			s << ((j >> k) & 1);
-//		}
-//		bitStrings[j] = s.str();
-//	}
-//
-//	int Istart =0;
-//	int Iend = dim;
-//
-//	using Triplet = Eigen::Triplet<double>;
-//	using IndexPair = std::pair<std::uint64_t, std::uint64_t>;
-//
-//	std::unordered_map<IndexPair,
-//					std::complex<double>,
-//					boost::hash<IndexPair> > nonZeros;
-//
-//	for (int i = 0; i < dim; i++)
-//			nonZeros.insert(
-//					std::make_pair(IndexPair { i, i },
-//							std::complex<double>(0, 0)));
-//
-//	std::vector<Triplet> triplets;
-//	for (std::uint64_t myRow = Istart; myRow < Iend; myRow++) {
-//
-//		XACCInfo(
-//				"Matrix Construction for rank " + std::to_string(0)
-//						+ ", row " + std::to_string(myRow));
-//
-//		if (identityCoeff != std::complex<double>(0.0, 0.0)) {
-//			nonZeros[std::make_pair(myRow,myRow)] += identityCoeff;
-//		}
-//
-//		for (int i = 0; i < nTerms; i++) {
-//
-//			std::shared_ptr<SpinInstruction> spinInst =
-//					std::dynamic_pointer_cast<SpinInstruction>(
-//							inst.getInstruction(i));
-//			std::pair<std::string, std::complex<double>> newBitStrCoeff;
-//
-//			if (!spinInst->isIdentity()) {
-//				if (spinInst->isDiagonal()) {
-//					newBitStrCoeff = spinInst->computeActionOnBra(
-//							bitStrings[myRow]);
-//					nonZeros[std::make_pair(myRow,myRow)] += newBitStrCoeff.second;
-//				} else {
-//					newBitStrCoeff = spinInst->computeActionOnBra(
-//							bitStrings[myRow]);
-//					std::uint64_t k = std::stol(newBitStrCoeff.first, nullptr,
-//							2);
-//
-//					auto p = std::make_pair(myRow, k);
-//					if (nonZeros.find(p) != nonZeros.end()) {
-//						nonZeros[p] += newBitStrCoeff.second;
-//					} else {
-//						nonZeros.insert(
-//								std::make_pair(p, newBitStrCoeff.second));
-//					}
-//				}
-//			}
-//		}
-//	}
-//
-//	for (auto& kv : nonZeros) {
-//		triplets.push_back(Triplet(kv.first.first, kv.first.second, std::real(kv.second)));
-//	}
-//
-//	Eigen::SparseMatrix<double> ham(dim,dim);
-//	ham.setFromTriplets(triplets.begin(), triplets.end());
-//	ham.makeCompressed();
-//
-//	Eigen::SelfAdjointEigenSolver<Eigen::SparseMatrix<double>> es(
-//			ham);
-//	auto eigenvalues = es.eigenvalues();
-//	std::stringstream ss;
-//	ss << eigenvalues.transpose();
-//	if (world.rank() == 0)
-//		XACCInfo("HamiltonianEigenvalues:\n" + ss.str());
-//	return std::real(eigenvalues(0));
-	return 0.0;
+	std::size_t dim = 1;
+	std::size_t two = 2;
+	for (int i = 0; i < nQubits; i++)
+		dim *= two;
+
+	auto getBitStrForIdx = [&](std::uint64_t i) {
+		std::stringstream s;
+		for (int k = nQubits - 1; k >= 0; k--) s << ((i >> k) & 1);
+		return s.str();
+	};
+
+	Eigen::MatrixXcd A(dim, dim);
+	A.setZero();
+
+	if (rank == 0) XACCInfo(
+			"Building Matrix for Eigen.");
+
+	for (std::uint64_t myRow = 0; myRow < dim; myRow++) {
+		auto rowBitStr = getBitStrForIdx(myRow);
+		auto results = inst.computeActionOnBra(rowBitStr);
+		for (auto& result : results) {
+			std::uint64_t k = std::stol(result.first, nullptr, 2);
+			A(myRow, k) += result.second;
+		}
+	}
+
+	if (rank == 0) XACCInfo(
+			"Done building Matrix for Eigen.");
+
+
+	Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> es(
+			A);
+	auto eigenvalues = es.eigenvalues();
+	gsReal = eigenvalues(0);
+	std::stringstream ss;
+	ss << std::setprecision(12) << gsReal;
+	if (rank == 0) XACCInfo("Lowest Eigenvalue = " + ss.str());
+	return std::real(gsReal);
 }
 
 }
