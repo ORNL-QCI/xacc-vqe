@@ -99,6 +99,10 @@ VQETaskResult execute(PauliOperator& op, py::kwargs kwargs) {
 		if (kwargs.contains("ansatz")) {
 			statePrep = kwargs["ansatz"].cast<GateFunctionPtr>();
 		}
+
+		if (kwargs.contains("vqe-params")) {
+			xacc::setOption("vqe-parameters", kwargs["vqe-params"].cast<std::string>());
+		}
 	}
 
 	XACCInfo("XACC VQE Python set n-qubits = " + std::to_string(nQubits));
