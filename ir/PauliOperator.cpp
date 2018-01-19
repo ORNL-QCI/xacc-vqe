@@ -321,12 +321,12 @@ std::shared_ptr<IR> PauliOperator::toXACCIR() {
 // Create a new GateQIR to hold the spin based terms
 	auto newIr = std::make_shared<xacc::quantum::GateQIR>();
 	int counter = 0;
-	auto resultsStr = toString();
-	boost::replace_all(resultsStr, "+", "+\n");
+//	auto resultsStr = toString();
+//	boost::replace_all(resultsStr, "+", "+\n");
 	mpi::communicator world;
-	if (world.rank() == 0)
-		std::cout << "[PauliOperator] Transformed Fermion to Spin:\nBEGIN\n" << resultsStr
-				<< "\nEND\n\n";
+//	if (world.rank() == 0)
+//		std::cout << "[PauliOperator] Transformed Fermion to Spin:\nBEGIN\n" << resultsStr
+//				<< "\nEND\n\n";
 	auto pi = boost::math::constants::pi<double>();
 
 	// Populate GateQIR now...
