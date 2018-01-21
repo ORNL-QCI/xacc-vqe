@@ -61,7 +61,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 
 		int counter = 0;
 		for (auto b : tmpBuffers) {
-			taskResult.buffers.push_back(b);
+//			taskResult.buffers.push_back(b);
 			localExpectationValue = b->getExpectationValueZ();
 			sum += coeffs[counter] * localExpectationValue;
 			counter++;
@@ -135,7 +135,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 				kernel(buff);
 				nlocalqpucalls++;
 
-				taskResult.buffers.push_back(buff);
+//				taskResult.buffers.push_back(buff);
 
 				lexpval = buff->getExpectationValueZ();
 

@@ -37,6 +37,10 @@ file (GLOB SRC *.cpp)
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib;${CheMPS2_ROOT}/lib64")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
+if (NOT CheMPS2_ROOT)
+   set (CheMPS2_ROOT "/usr/local")
+endif()
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CheMPS2_ROOT}/include)
 
