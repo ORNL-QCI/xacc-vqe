@@ -59,6 +59,54 @@ PauliOperator compile(const std::string& fermiSrc) {
 	return program->getPauliOperator();
 }
 
+PauliOperator compile(py::object fermionOperator, py::kwargs kwargs) {
+
+	auto mpi4py = pybind11::module::import("mpi4py.MPI");
+	auto comm = mpi4py.attr("COMM_WORLD");
+
+	if (!xacc::isInitialized()) {
+		xacc::Initialize();
+		XACCInfo("You did not initialize the XACC framework. "
+				"Auto-running xacc::Initialize().");
+	}
+
+	auto terms = fermionOperator.attr("terms").cast<py::dict>();
+
+	std::stringstream s;
+	s << "__qpu__ openfermion_kernel() {\n";
+	for (auto& kv : terms) {
+
+		auto fTerm = kv.first.cast<py::tuple>();
+		auto coeff = kv.second.cast<std::complex<double>>();
+		s << std::real(coeff) << " ";
+		for (auto t : fTerm) {
+			auto ct = t.cast<py::tuple>();
+			s << ct[0].cast<int>() << " " << ct[1].cast<int>() << " ";
+		}
+		s << "\n";
+	}
+	s << "}";
+
+	// Get the user-specified Accelerator,
+	// or TNQVM if none specified
+	xacc::setAccelerator("vqe-dummy");
+	// Set the default Accelerator to TNQVM
+	if (xacc::hasAccelerator("tnqvm")) {
+		xacc::setAccelerator("tnqvm");
+	}
+
+	auto accelerator = xacc::getAccelerator();
+	boost::mpi::communicator world;
+
+	// Set to vqe-profile because it doesn't require state prep
+	xacc::setOption("vqe-task", "vqe-profile");
+	auto program = std::make_shared<VQEProgram>(accelerator, s.str(), world);
+	program->build();
+
+	return program->getPauliOperator();
+}
+
+
 /**
  * kwargs can be {'accelerator':'name', 'task':'name', 'ansatz':GateFunctionPtr,
  * 'diagonalize-backend':'backendname', 'n-qubits':nqubitsint }
@@ -305,5 +353,15 @@ PYBIND11_MODULE(pyxaccvqe, m) {
 				);
 				return compile(src);
 			});
+
+	m.def("compile",
+			[](py::object& op, py::kwargs kwargs) -> PauliOperator {
+				py::scoped_ostream_redirect stream(
+						std::cout,                              // std::ostream&
+						py::module::import("sys").attr("stdout")// Python output
+				);
+				return compile(op, kwargs);
+			});
+
 }
 
