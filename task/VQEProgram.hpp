@@ -69,6 +69,13 @@ public:
 					sprep), kernels(acc) {
 	}
 
+	VQEProgram(std::shared_ptr<Accelerator> acc, const std::string& kernelSource,
+			std::shared_ptr<xacc::quantum::GateFunction> sprep,
+			boost::mpi::communicator& c) :
+			Program(acc, kernelSource), comm(c), nParameters(sprep ? sprep->nParameters() : 0), statePrep(
+					sprep), kernels(acc) {
+	}
+
 	VQEProgram(std::shared_ptr<Accelerator> acc, const std::string& kernelSrc,
 			boost::mpi::communicator& c) :
 			Program(acc, kernelSrc), nParameters(0), comm(c) {
@@ -108,8 +115,8 @@ public:
 			// so lets check to see if they provided any coefficients
 			if (nKernels > 1) { // && boost::contains(src, "coefficients")) {
 				xacc::setCompiler("scaffold");
-				if (xacc::optionExists("vqe-kernels-compiler")) {
-					xacc::setCompiler(xacc::getOption("vqe-kernels-compiler"));
+				if (xacc::optionExists("compiler")) {
+					xacc::setCompiler(xacc::getOption("compiler"));
 				}
 				if (!xacc::optionExists("n-qubits")) {
 					XACCError("You must provide --n-qubits arg if "
@@ -263,9 +270,9 @@ protected:
 
 		if (!statePrepSource.empty()) {
 			xacc::setCompiler("scaffold");
-			if (xacc::optionExists("vqe-state-prep-kernel-compiler")) {
+			if (xacc::optionExists("compiler")) {
 				xacc::setCompiler(
-						xacc::getOption("vqe-state-prep-kernel-compiler"));
+						xacc::getOption("compiler"));
 			}
 
 			statePrepType = "custom";
@@ -276,14 +283,14 @@ protected:
 			auto kernel = p.getRuntimeKernels()[0];
 
 			return kernel.getIRFunction();
-		} else if (xacc::optionExists("vqe-state-prep-kernel")) {
-			auto filename = xacc::getOption("vqe-state-prep-kernel");
+		} else if (xacc::optionExists("vqe-ansatz")) {
+			auto filename = xacc::getOption("vqe-ansatz");
 			std::ifstream filess(filename);
 
 			xacc::setCompiler("scaffold");
-			if (xacc::optionExists("vqe-state-prep-kernel-compiler")) {
+			if (xacc::optionExists("compiler")) {
 				xacc::setCompiler(
-						xacc::getOption("vqe-state-prep-kernel-compiler"));
+						xacc::getOption("compiler"));
 			}
 
 			statePrepType = "custom";

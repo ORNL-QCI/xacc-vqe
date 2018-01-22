@@ -26,19 +26,15 @@ int main(int argc, char** argv) {
 
 	auto vqeOptions = std::make_shared<options_description>("XACC-VQE Options");
 	vqeOptions->add_options()
-				("vqe-kernel-file,f",value<std::string>(), "(required) The file containing "
-							"XACC Kernels describing a Hamiltonian.")
-				("vqe-kernels-compiler,c", value<std::string>(), "")
-				("vqe-task,t", value<std::string>(), "(required)")
+				("vqe-program,f",value<std::string>(), "(required) The file containing "
+							"XACC Kernels describing the Hamiltonian to simulate.")
+				("vqe-task,t", value<std::string>(), "(required) The XACC-VQE Task to run.")
 				("vqe-list-tasks,l","List available VQE Tasks.")
-				("vqe-state-prep-kernel,p", value<std::string>(),"(optional) Provide the file name of the state "
-				"preparation circuit.")
-				("vqe-state-prep-kernel-compiler,s",  value<std::string>(),"(optional) If not scaffold, provide the "
-				"compiler to use in compiling the state prep circuit")
+				("vqe-ansatz,a", value<std::string>(),"Provide the file name of the ansatz circuit.")
 				("n-qubits,n",  value<std::string>(),"The number of qubits in the calculation")
 				("n-electrons,e",  value<std::string>(),"The number of electrons in the calculation")
-				("vqe-parameters",  value<std::string>(),"")
-				("vqe-energy-delta", value<std::string>(), "");
+				("vqe-parameters,p",  value<std::string>(),"The initial parameters to seed VQE with, pass as string of comma separated parameters.")
+				("vqe-energy-delta,d", value<std::string>(), "The change in energy to consider during classsical optimization.");
 
 	 xacc::addCommandLineOptions(vqeOptions);
 
@@ -61,7 +57,7 @@ int main(int argc, char** argv) {
 	}
 
 	// Users must specify a file containing VQE Hamiltonian kernels
-	if (!xacc::optionExists("vqe-kernel-file")) {
+	if (!xacc::optionExists("vqe-program")) {
 		XACCError("You must at least specify a kernel file to run this app.");
 	}
 
@@ -73,12 +69,12 @@ int main(int argc, char** argv) {
 	auto task = xacc::getOption("vqe-task");
 
 	// Read in the Hamiltonian kernel file
-	std::ifstream moleculeKernelHpp(xacc::getOption("vqe-kernel-file"));
+	std::ifstream moleculeKernelHpp(xacc::getOption("vqe-program"));
 	std::string src((std::istreambuf_iterator<char>(moleculeKernelHpp)),
 			std::istreambuf_iterator<char>());
 
-	if (xacc::optionExists("vqe-state-prep-kernel")) {
-		std::ifstream spKernelHpp(xacc::getOption("vqe-state-prep-kernel"));
+	if (xacc::optionExists("vqe-ansatz")) {
+		std::ifstream spKernelHpp(xacc::getOption("vqe-ansatz"));
 		std::string spsrc((std::istreambuf_iterator<char>(spKernelHpp)),
 				std::istreambuf_iterator<char>());
 		program = std::make_shared<VQEProgram>(accelerator, src, spsrc, world);

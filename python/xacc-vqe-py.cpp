@@ -23,6 +23,15 @@ using GateFunctionPtr = std::shared_ptr<xacc::quantum::GateFunction>;
 
 PauliOperator compileFermionHamiltonian(const std::string& fermiSrc) {
 
+	auto mpi4py = pybind11::module::import("mpi4py.MPI");
+	auto comm = mpi4py.attr("COMM_WORLD");
+
+	if (!xacc::isInitialized()) {
+		xacc::Initialize();
+		XACCInfo("You did not initialize the XACC framework. "
+				"Auto-running xacc::Initialize().");
+	}
+
 	// Get the user-specified Accelerator,
 	// or TNQVM if none specified
 	xacc::setAccelerator("vqe-dummy");
@@ -52,6 +61,15 @@ PauliOperator compileFermionHamiltonian(const std::string& fermiSrc) {
  * @return
  */
 VQETaskResult execute(PauliOperator& op, py::kwargs kwargs) {
+
+	auto mpi4py = pybind11::module::import("mpi4py.MPI");
+	auto comm = mpi4py.attr("COMM_WORLD");
+
+	if (!xacc::isInitialized()) {
+		xacc::Initialize();
+		XACCInfo("You did not initialize the XACC framework. "
+				"Auto-running xacc::Initialize().");
+	}
 
 	// Get the user-specified Accelerator,
 	// or TNQVM if none specified
@@ -120,6 +138,95 @@ VQETaskResult execute(PauliOperator& op, py::kwargs kwargs) {
 	return vqeTask->execute(parameters);
 }
 
+VQETaskResult execute(py::object& fermionOperator, py::kwargs kwargs) {
+
+	if (!fermionOperator) {
+		XACCError("FermionOperator was null. Exiting.");
+	}
+
+	auto mpi4py = pybind11::module::import("mpi4py.MPI");
+	auto comm = mpi4py.attr("COMM_WORLD");
+
+	if(!pybind11::hasattr(fermionOperator, "terms")) {
+		XACCError("This is not a FermionOperator, it does not have a terms dict");
+	}
+
+	if (!xacc::isInitialized()) {
+		xacc::Initialize();
+		XACCInfo("You did not initialize the XACC framework. "
+				"Auto-running xacc::Initialize().");
+	}
+
+	auto terms = fermionOperator.attr("terms").cast<py::dict>();
+
+	std::stringstream s;
+	s << "__qpu__ openfermion_kernel() {\n";
+	for (auto& kv : terms) {
+
+		auto fTerm = kv.first.cast<py::tuple>();
+		auto coeff = kv.second.cast<std::complex<double>>();
+		s << std::real(coeff) << " ";
+		for (auto t : fTerm) {
+			auto ct = t.cast<py::tuple>();
+			s << ct[0].cast<int>() << " " << ct[1].cast<int>() << " ";
+		}
+		s << "\n";
+	}
+	s << "}";
+
+	// Get the user-specified Accelerator,
+	// or TNQVM if none specified
+	xacc::setAccelerator("vqe-dummy");
+	// Set the default Accelerator to TNQVM
+	if (xacc::hasAccelerator("tnqvm")) {
+		xacc::setAccelerator("tnqvm");
+	}
+
+	auto accelerator = xacc::getAccelerator();
+	auto statePrep = GateFunctionPtr(nullptr);
+	boost::mpi::communicator world;
+
+	// Get the task to run
+	std::string task = "vqe-diagonalize";
+
+	if (kwargs) {
+		task = kwargs.contains("task") ?
+				kwargs["task"].cast<std::string>() : task;
+		std::string accStr =
+				kwargs.contains("accelerator") ?
+						kwargs["accelerator"].cast<std::string>() : "";
+		if (!accStr.empty())
+			accelerator = xacc::getAccelerator(accStr);
+
+		if (kwargs.contains("diagonalize-backend")) {
+			xacc::setOption("diagonalize-backend",
+					kwargs["diagonalize-backend"].cast<std::string>());
+		}
+
+		if (kwargs.contains("ansatz")) {
+			statePrep = kwargs["ansatz"].cast<GateFunctionPtr>();
+		}
+
+		if (kwargs.contains("vqe-params")) {
+			xacc::setOption("vqe-parameters",
+					kwargs["vqe-params"].cast<std::string>());
+		}
+	}
+
+	xacc::setOption("vqe-task", task);
+
+	auto program = std::make_shared<VQEProgram>(accelerator, s.str(), statePrep,
+			world);
+	program->build();
+
+	auto parameters = VQEParameterGenerator::generateParameters(
+			program->getNParameters(), world);
+	auto vqeTask = xacc::ServiceRegistry::instance()->getService<VQETask>(task);
+	vqeTask->setVQEProgram(program);
+
+	return vqeTask->execute(parameters);
+}
+
 PYBIND11_MODULE(pyxaccvqe, m) {
 	m.doc() = "Python bindings for XACC VQE.";
 
@@ -154,6 +261,15 @@ PYBIND11_MODULE(pyxaccvqe, m) {
 
 	m.def("execute",
 			[](PauliOperator& op, py::kwargs kwargs) -> VQETaskResult {
+				py::scoped_ostream_redirect stream(
+						std::cout,                              // std::ostream&
+						py::module::import("sys").attr("stdout")// Python output
+				);
+				return execute(op, kwargs);
+			});
+
+	m.def("execute",
+			[](py::object& op, py::kwargs kwargs) -> VQETaskResult {
 				py::scoped_ostream_redirect stream(
 						std::cout,                              // std::ostream&
 						py::module::import("sys").attr("stdout")// Python output
