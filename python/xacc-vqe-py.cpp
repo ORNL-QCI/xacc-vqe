@@ -21,7 +21,15 @@ using namespace xacc::vqe;
 
 using GateFunctionPtr = std::shared_ptr<xacc::quantum::GateFunction>;
 
-PauliOperator compileFermionHamiltonian(const std::string& fermiSrc) {
+/**
+ * Compile the given source code string and produce
+ * the corresponding PauliOperator instance.
+ *
+ * @param fermiSrc Source code describing Fermionic Hamiltonian
+ * @return op Pauli Hamiltonian representation of given Fermion Hamiltonian source code
+ *
+ */
+PauliOperator compile(const std::string& fermiSrc) {
 
 	auto mpi4py = pybind11::module::import("mpi4py.MPI");
 	auto comm = mpi4py.attr("COMM_WORLD");
@@ -43,12 +51,10 @@ PauliOperator compileFermionHamiltonian(const std::string& fermiSrc) {
 	auto accelerator = xacc::getAccelerator();
 	boost::mpi::communicator world;
 
+	// Set to vqe-profile because it doesn't require state prep
 	xacc::setOption("vqe-task", "vqe-profile");
-
 	auto program = std::make_shared<VQEProgram>(accelerator, fermiSrc, world);
 	program->build();
-
-	auto parameters = VQEParameterGenerator::generateParameters(program->getNParameters(), world);
 
 	return program->getPauliOperator();
 }
@@ -121,6 +127,12 @@ VQETaskResult execute(PauliOperator& op, py::kwargs kwargs) {
 		if (kwargs.contains("vqe-params")) {
 			xacc::setOption("vqe-parameters", kwargs["vqe-params"].cast<std::string>());
 		}
+
+		if (kwargs.contains("n-electrons")) {
+			auto nElectrons = kwargs["n-electrons"].cast<int>();
+			xacc::setOption("n-electrons", std::to_string(nElectrons));
+		}
+
 	}
 
 	XACCInfo("XACC VQE Python set n-qubits = " + std::to_string(nQubits));
@@ -282,13 +294,13 @@ PYBIND11_MODULE(pyxaccvqe, m) {
 				return execute(op, kwargs);
 			});
 
-	m.def("compileFermionHamiltonian",
+	m.def("compile",
 			[](const std::string& src) -> PauliOperator {
 				py::scoped_ostream_redirect stream(
 						std::cout,                              // std::ostream&
 						py::module::import("sys").attr("stdout")// Python output
 				);
-				return compileFermionHamiltonian(src);
+				return compile(src);
 			});
 }
 
