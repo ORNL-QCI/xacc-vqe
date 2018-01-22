@@ -211,6 +211,11 @@ VQETaskResult execute(py::object& fermionOperator, py::kwargs kwargs) {
 			xacc::setOption("vqe-parameters",
 					kwargs["vqe-params"].cast<std::string>());
 		}
+
+		if (kwargs.contains("n-electrons")) {
+			auto nElectrons = kwargs["n-electrons"].cast<int>();
+			xacc::setOption("n-electrons", std::to_string(nElectrons));
+		}
 	}
 
 	xacc::setOption("vqe-task", task);

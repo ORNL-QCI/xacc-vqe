@@ -71,7 +71,7 @@ PauliOperator BravyiKitaevIRTransformation::transform(FermionKernel& kernel) {
 
 		result += ladderProduct;
 	}
-	std::cout << (std::clock() - start) / (double) (CLOCKS_PER_SEC) << "\n";
+//	std::cout << (std::clock() - start) / (double) (CLOCKS_PER_SEC) << "\n";
 
 	return result;
 }

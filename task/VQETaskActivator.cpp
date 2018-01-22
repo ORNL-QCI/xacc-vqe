@@ -35,8 +35,6 @@
 #include <memory>
 #include <set>
 #include "ComputeEnergyVQETask.hpp"
-#include "ComputeExpectationValues.hpp"
-#include "Sweep1DParameter.hpp"
 #include "VQEMinimizeTask.hpp"
 #include "GenerateOpenFermionEigenspectrumScript.hpp"
 #include "DiagonalizeTask.hpp"
@@ -61,8 +59,6 @@ public:
 		auto c = std::make_shared<xacc::vqe::ComputeEnergyVQETask>();
 		auto c2 = std::make_shared<xacc::vqe::VQEMinimizeTask>();
 		auto c3 = std::make_shared<xacc::vqe::ProfileHamiltonianTask>();
-		auto c4 = std::make_shared<xacc::vqe::Sweep1DParameter>();
-		auto c5 = std::make_shared<xacc::vqe::ComputeExpectationValues>();
 		auto c6 = std::make_shared<xacc::vqe::DiagonalizeTask>();
 		auto c7 = std::make_shared<xacc::vqe::EigenDiagonalizeBackend>();
 		auto c8 = std::make_shared<xacc::vqe::VQEDummyAccelerator>();
@@ -71,15 +67,12 @@ public:
 		context.RegisterService<xacc::vqe::VQETask>(c);
 		context.RegisterService<xacc::vqe::VQETask>(c2);
 		context.RegisterService<xacc::vqe::VQETask>(c3);
-		context.RegisterService<xacc::vqe::VQETask>(c4);
-		context.RegisterService<xacc::vqe::VQETask>(c5);
 		context.RegisterService<xacc::vqe::VQETask>(c6);
 		context.RegisterService<xacc::vqe::VQETask>(c9);
 
 		context.RegisterService<xacc::Accelerator>(c8);
 
 		context.RegisterService<xacc::OptionsProvider>(c);
-		context.RegisterService<xacc::OptionsProvider>(c4);
 		context.RegisterService<xacc::OptionsProvider>(c6);
 		context.RegisterService<xacc::OptionsProvider>(c3);
 

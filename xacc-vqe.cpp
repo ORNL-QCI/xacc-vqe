@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
 
 	VQETaskResult result = vqeTask->execute(parameters);
 
-	std::string msg = (task == "compute-expectation-values" ? "Expectation Value = " : "Energy = ");
+	std::string msg = "Energy = ";
 	for (auto r : result.results) {
 		std::stringstream ss;
 		ss << std::setprecision(12) << r.second << " at (" << r.first.transpose() << ")";

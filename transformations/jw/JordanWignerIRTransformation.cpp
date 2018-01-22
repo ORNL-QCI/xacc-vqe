@@ -51,7 +51,7 @@ PauliOperator JordanWignerIRTransformation::transform(FermionKernel& kernel) {
 		result += current;
 	}
 
-	std::cout << (std::clock() - start) / (double) (CLOCKS_PER_SEC) << "\n";
+//	std::cout << (std::clock() - start) / (double) (CLOCKS_PER_SEC) << "\n";
 
 	return result;
 }
