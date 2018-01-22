@@ -250,7 +250,7 @@ PYBIND11_MODULE(pyxaccvqe, m) {
 	py::add_ostream_redirect(m, "ostream_redirect");
 
 	py::class_<VQETaskResult>(m, "VQETaskResult")
-	    .def_readonly("buffers", &VQETaskResult::buffers)
+//	    .def_readonly("buffers", &VQETaskResult::buffers)
 		.def_readonly("results", &VQETaskResult::results);
 
 	py::class_<PauliOperator>(m,"PauliOperator")
@@ -271,9 +271,12 @@ PYBIND11_MODULE(pyxaccvqe, m) {
 			.def(py::self *= std::complex<double>())
 			.def(py::self -= py::self)
 			.def(py::self - py::self)
+			.def("__eq__", &PauliOperator::operator==)
 			.def("__repr__", &PauliOperator::toString)
 			.def("eval", &PauliOperator::eval)
-			.def("toXACCIR", &PauliOperator::toXACCIR);
+			.def("toXACCIR", &PauliOperator::toXACCIR)
+			.def("nTerms", &PauliOperator::nTerms)
+			.def("isClose", &PauliOperator::isClose);
 
 
 	m.def("execute",

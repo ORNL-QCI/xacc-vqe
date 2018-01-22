@@ -10,7 +10,6 @@ namespace vqe {
 
 class VQETaskResult {
 public:
-	std::vector<std::shared_ptr<AcceleratorBuffer>> buffers;
 	std::vector<std::pair<Eigen::VectorXd, double>> results;
 };
 

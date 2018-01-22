@@ -239,6 +239,7 @@ public:
 
 	std::shared_ptr<IR> toXACCIR();
 	PauliOperator eval(const std::map<std::string, std::complex<double>> varToValMap);
+	bool isClose(PauliOperator& other);
 
 	PauliOperator& operator+=( const PauliOperator& v ) noexcept;
 	PauliOperator& operator-=( const PauliOperator& v ) noexcept;

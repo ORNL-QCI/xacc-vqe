@@ -18,6 +18,9 @@ SET_TARGET_PROPERTIES(pyxaccvqe PROPERTIES PREFIX "")
 # do not mess with the ordering of libraries here!
 target_link_libraries(pyxaccvqe ${PYTHON_LIBRARY} xacc-vqe-tasks ${XACC_LIBRARIES} ${Boost_LIBRARIES})
 install(TARGETS pyxaccvqe DESTINATION ${XACC_ROOT}/lib/python)
+
+file (GLOB PYTESTS tests/*.py)
+
 endif()
 
 

@@ -133,6 +133,22 @@ const int PauliOperator::nTerms() {
 	return terms.size();
 }
 
+bool PauliOperator::isClose(PauliOperator& other) {
+	if (!operator==(other)) {
+		return false;
+	}
+
+	// These are equal, check their coeffs
+	for (auto& kv : terms) {
+		Term otherTerm = other.terms[kv.first];
+		if (std::abs(kv.second.coeff() - otherTerm.coeff()) > 1e-6) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 /**
  * Persist this Instruction to an assembly-like
  * string.
