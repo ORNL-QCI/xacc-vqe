@@ -217,6 +217,10 @@ public:
 		return false;
 	}
 
+	virtual const std::string getTag() {
+		return "";
+	}
+
 	/**
 	 * FermionKernel has 0 parameters.
 	 * @return

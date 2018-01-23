@@ -189,6 +189,10 @@ public:
 	 */
 	virtual bool isComposite() { return false; }
 
+	virtual const std::string getTag() {
+		return "";
+	}
+
 	/**
 	 * Returns true if this Instruction is enabled
 	 *

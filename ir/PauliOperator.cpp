@@ -353,6 +353,8 @@ std::shared_ptr<IR> PauliOperator::toXACCIR() {
 		// Create a GateFunction and specify that it has
 		// a parameter that is the Spin Instruction coefficient
 		// that will help us get it to the user for their purposes.
+
+		// FIXME NAME SHOULD BE inst.first!!!
 		auto gateFunction = std::make_shared<xacc::quantum::GateFunction>(
 				"term" + std::to_string(counter),
 				std::vector<InstructionParameter> { InstructionParameter(

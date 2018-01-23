@@ -91,6 +91,10 @@ public:
 		xacc::error("Invalid kernel name.");
 	}
 
+	virtual const int maxBit() {
+		return 0;
+	}
+
 	virtual std::vector<std::shared_ptr<Function>> getKernels() {
 		return kernels;
 	}

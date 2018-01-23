@@ -56,6 +56,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 
 		auto buff = qpu->createBuffer("qreg", nQubits);
 
+		// FIXME, Goal here is to run AcceleratorBufferPostprocessors in KernelList.execute...
 		auto tmpBuffers = modifiedKernelList.execute(buff);
 		nlocalqpucalls += tmpBuffers.size();
 
