@@ -170,6 +170,10 @@ VQETaskResult ComputeEnergyVQETask::execute(
 
 	taskResult.results.push_back({parameters, currentEnergy});
 
+	taskResult.energy = currentEnergy;
+	taskResult.angles = parameters;
+	taskResult.nQpuCalls = totalQpuCalls;
+
 	return taskResult;
 }
 

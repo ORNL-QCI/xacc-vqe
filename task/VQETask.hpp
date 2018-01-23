@@ -11,6 +11,11 @@ namespace vqe {
 class VQETaskResult {
 public:
 	std::vector<std::pair<Eigen::VectorXd, double>> results;
+	std::map<std::string, std::vector<double>> data;
+	double energy = 0.0;
+	Eigen::VectorXd angles;
+	int nQpuCalls = 0;
+	int vqeIterations = 0;
 };
 
 class VQETask : public xacc::Identifiable, public OptionsProvider {

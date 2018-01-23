@@ -85,7 +85,6 @@ protected:
 
 	std::shared_ptr<ComputeEnergyVQETask> computeTask;
 
-	std::vector<VQETaskResult> results;
 };
 }
 }

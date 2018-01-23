@@ -298,8 +298,11 @@ PYBIND11_MODULE(pyxaccvqe, m) {
 	py::add_ostream_redirect(m, "ostream_redirect");
 
 	py::class_<VQETaskResult>(m, "VQETaskResult")
-//	    .def_readonly("buffers", &VQETaskResult::buffers)
-		.def_readonly("results", &VQETaskResult::results);
+	    .def_readonly("angles", &VQETaskResult::angles)
+	    .def_readonly("nQpuCalls", &VQETaskResult::nQpuCalls)
+	    .def_readonly("vqeIterations", &VQETaskResult::vqeIterations)
+	    .def_readonly("data", &VQETaskResult::data)
+		.def_readonly("energy", &VQETaskResult::energy);
 
 	py::class_<PauliOperator>(m,"PauliOperator")
 			.def(py::init<>())
