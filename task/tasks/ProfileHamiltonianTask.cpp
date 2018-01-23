@@ -53,14 +53,14 @@ VQETaskResult ProfileHamiltonianTask::execute(
 			s << "jordan-wigner\n";
 		}
 
-		XACCInfo("Number of Qubits = " + xacc::getOption("n-qubits"));
-		XACCInfo(
+		xacc::info("Number of Qubits = " + xacc::getOption("n-qubits"));
+		xacc::info(
 				"Number of Hamiltonian Terms = "
 						+ std::to_string(kernels.size()));
 
 		if (nParameters > 0) {
-			XACCInfo("State Prep Type: " + statePrepType);
-			XACCInfo(
+			xacc::info("State Prep Type: " + statePrepType);
+			xacc::info(
 					"Number of Variational Parameters = "
 							+ std::to_string(nParameters));
 		}
@@ -82,7 +82,7 @@ VQETaskResult ProfileHamiltonianTask::execute(
 		std::map<int, int> ordered(countKLocals.begin(),
 				countKLocals.end());
 		for (auto& it : ordered) {
-			XACCInfo(
+			xacc::info(
 					"N k-Local Terms (k,N) = (" + std::to_string(it.first)
 							+ ", " + std::to_string(it.second) + ")");
 			s << "N k-Local Terms (k,N) = (" << std::to_string(it.first)

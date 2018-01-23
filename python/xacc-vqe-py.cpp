@@ -36,7 +36,7 @@ PauliOperator compile(const std::string& fermiSrc) {
 
 	if (!xacc::isInitialized()) {
 		xacc::Initialize();
-		XACCInfo("You did not initialize the XACC framework. "
+		xacc::info("You did not initialize the XACC framework. "
 				"Auto-running xacc::Initialize().");
 	}
 
@@ -66,7 +66,7 @@ PauliOperator compile(py::object fermionOperator, py::kwargs kwargs) {
 
 	if (!xacc::isInitialized()) {
 		xacc::Initialize();
-		XACCInfo("You did not initialize the XACC framework. "
+		xacc::info("You did not initialize the XACC framework. "
 				"Auto-running xacc::Initialize().");
 	}
 
@@ -121,7 +121,7 @@ VQETaskResult execute(PauliOperator& op, py::kwargs kwargs) {
 
 	if (!xacc::isInitialized()) {
 		xacc::Initialize();
-		XACCInfo("You did not initialize the XACC framework. "
+		xacc::info("You did not initialize the XACC framework. "
 				"Auto-running xacc::Initialize().");
 	}
 
@@ -183,7 +183,7 @@ VQETaskResult execute(PauliOperator& op, py::kwargs kwargs) {
 
 	}
 
-	XACCInfo("XACC VQE Python set n-qubits = " + std::to_string(nQubits));
+	xacc::info("XACC VQE Python set n-qubits = " + std::to_string(nQubits));
 
 	xacc::setOption("vqe-task", task);
 	xacc::setOption("n-qubits", std::to_string(nQubits));
@@ -201,19 +201,19 @@ VQETaskResult execute(PauliOperator& op, py::kwargs kwargs) {
 VQETaskResult execute(py::object& fermionOperator, py::kwargs kwargs) {
 
 	if (!fermionOperator) {
-		XACCError("FermionOperator was null. Exiting.");
+		xacc::error("FermionOperator was null. Exiting.");
 	}
 
 	auto mpi4py = pybind11::module::import("mpi4py.MPI");
 	auto comm = mpi4py.attr("COMM_WORLD");
 
 	if(!pybind11::hasattr(fermionOperator, "terms")) {
-		XACCError("This is not a FermionOperator, it does not have a terms dict");
+		xacc::error("This is not a FermionOperator, it does not have a terms dict");
 	}
 
 	if (!xacc::isInitialized()) {
 		xacc::Initialize();
-		XACCInfo("You did not initialize the XACC framework. "
+		xacc::info("You did not initialize the XACC framework. "
 				"Auto-running xacc::Initialize().");
 	}
 

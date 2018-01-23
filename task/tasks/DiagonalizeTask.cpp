@@ -57,7 +57,7 @@ double EigenDiagonalizeBackend::diagonalize(
 	Eigen::MatrixXcd A(dim, dim);
 	A.setZero();
 
-	if (rank == 0) XACCInfo(
+	if (rank == 0) xacc::info(
 			"Building Matrix for Eigen.");
 
 	for (std::uint64_t myRow = 0; myRow < dim; myRow++) {
@@ -69,7 +69,7 @@ double EigenDiagonalizeBackend::diagonalize(
 		}
 	}
 
-	if (rank == 0) XACCInfo(
+	if (rank == 0) xacc::info(
 			"Done building Matrix for Eigen.");
 
 
@@ -79,7 +79,7 @@ double EigenDiagonalizeBackend::diagonalize(
 	gsReal = eigenvalues(0);
 	std::stringstream ss;
 	ss << std::setprecision(12) << gsReal;
-	if (rank == 0) XACCInfo("Lowest Eigenvalue = " + ss.str());
+	if (rank == 0) xacc::info("Lowest Eigenvalue = " + ss.str());
 	return std::real(gsReal);
 }
 

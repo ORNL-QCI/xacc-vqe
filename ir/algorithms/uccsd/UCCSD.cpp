@@ -18,12 +18,12 @@ std::shared_ptr<Function> UCCSD::generate(
 	auto runtimeOptions = RuntimeOptions::instance();
 
 	if (!runtimeOptions->exists("n-electrons")) {
-		XACCError("To use this UCCSD State Prep IRGenerator, you "
+		xacc::error("To use this UCCSD State Prep IRGenerator, you "
 				"must specify the number of electrons.");
 	}
 
 	if (!runtimeOptions->exists("n-qubits")) {
-		XACCError("To use this UCCSD State Prep IRGenerator, you "
+		xacc::error("To use this UCCSD State Prep IRGenerator, you "
 				"must specify the number of qubits.");
 	}
 
@@ -57,7 +57,7 @@ std::shared_ptr<Function> UCCSD::generate(
 	}
 
 	auto kernel = std::make_shared<FermionKernel>("fermiUCCSD");
-	XACCInfo("Constructing UCCSD Fermion Operator.");
+	xacc::info("Constructing UCCSD Fermion Operator.");
 	for (int i = 0; i < _nVirtual; i++) {
 		for (int j = 0; j < _nOccupied; j++) {
 			for (int l = 0; l < 2; l++) {
@@ -131,8 +131,8 @@ std::shared_ptr<Function> UCCSD::generate(
 	auto fermionir = std::make_shared<FermionIR>();
 	fermionir->addKernel(kernel);
 
-	XACCInfo("Done constructing UCCSD Fermion Operator.");
-	XACCInfo("Mapping UCCSD Fermion Operator to Spin. ");
+	xacc::info("Done constructing UCCSD Fermion Operator.");
+	xacc::info("Mapping UCCSD Fermion Operator to Spin. ");
 
 	std::shared_ptr<FermionToSpinTransformation> transform;
 	if (xacc::optionExists("fermion-transformation")) {
@@ -150,7 +150,7 @@ std::shared_ptr<Function> UCCSD::generate(
 
 	// Create the Spin Hamiltonian
 	auto transformedIR = compositeResult.toXACCIR();
-	XACCInfo("Done mapping UCCSD Fermion Operator to Spin.");
+	xacc::info("Done mapping UCCSD Fermion Operator to Spin.");
 
 	std::unordered_map<std::string, Term> terms = compositeResult.getTerms();
 

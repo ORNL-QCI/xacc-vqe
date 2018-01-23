@@ -42,10 +42,10 @@ int main(int argc, char** argv) {
 	xacc::Initialize(argc, argv);
 
 	if (xacc::optionExists("vqe-list-tasks")) {
-		XACCInfo("");
+		xacc::info("");
 		auto allTasks = xacc::ServiceRegistry::instance()->getServices<VQETask>();
 		for (auto a : allTasks) {
-			XACCInfo("VQE Task: " + a->name());
+			xacc::info("VQE Task: " + a->name());
 		}
 		xacc::Finalize();
 		exit(0);
@@ -53,12 +53,12 @@ int main(int argc, char** argv) {
 
 	// Users must specify a task
 	if (!xacc::optionExists("vqe-task")) {
-		XACCError("You must specify a vqe task to run.");
+		xacc::error("You must specify a vqe task to run.");
 	}
 
 	// Users must specify a file containing VQE Hamiltonian kernels
 	if (!xacc::optionExists("vqe-program")) {
-		XACCError("You must at least specify a kernel file to run this app.");
+		xacc::error("You must at least specify a kernel file to run this app.");
 	}
 
 	// Get the user-specified Accelerator,
@@ -94,7 +94,7 @@ int main(int argc, char** argv) {
 	for (auto r : result.results) {
 		std::stringstream ss;
 		ss << std::setprecision(12) << r.second << " at (" << r.first.transpose() << ")";
-		if (world.rank() == 0) XACCInfo(msg + ss.str());
+		if (world.rank() == 0) xacc::info(msg + ss.str());
 	}
 
 	xacc::Finalize();

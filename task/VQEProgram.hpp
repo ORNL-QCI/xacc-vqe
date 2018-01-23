@@ -30,24 +30,24 @@ public:
 	}
 	virtual void execute(std::shared_ptr<AcceleratorBuffer> buffer,
 				const std::shared_ptr<Function> function) {
-		XACCError("Error - you have tried to execute the VQEDummyAccelerator. "
+		xacc::error("Error - you have tried to execute the VQEDummyAccelerator. "
 				"Please use a real Accelerator.");
 	}
 	virtual std::vector<std::shared_ptr<AcceleratorBuffer>> execute(
 			std::shared_ptr<AcceleratorBuffer> buffer,
 			const std::vector<std::shared_ptr<Function>> functions) {
-		XACCError("Error - you have tried to execute the VQEDummyAccelerator. "
+		xacc::error("Error - you have tried to execute the VQEDummyAccelerator. "
 						"Please use a real Accelerator.");
 	}
 	virtual std::shared_ptr<AcceleratorBuffer> createBuffer(
 				const std::string& varId) {
-		XACCError("Error - you have tried to create an AcceleratorBuffer "
+		xacc::error("Error - you have tried to create an AcceleratorBuffer "
 				"with the VQEDummyAccelerator. "
 						"Please use a real Accelerator.");
 	}
 	virtual std::shared_ptr<AcceleratorBuffer> createBuffer(
 			const std::string& varId, const int size) {
-		XACCError("Error - you have tried to create an AcceleratorBuffer "
+		xacc::error("Error - you have tried to create an AcceleratorBuffer "
 				"with the VQEDummyAccelerator. "
 						"Please use a real Accelerator.");
 	}
@@ -119,7 +119,7 @@ public:
 					xacc::setCompiler(xacc::getOption("compiler"));
 				}
 				if (!xacc::optionExists("n-qubits")) {
-					XACCError("You must provide --n-qubits arg if "
+					xacc::error("You must provide --n-qubits arg if "
 							"running with custom hamiltonian kernels.");
 				}
 				nQubits = std::stoi(xacc::getOption("n-qubits"));
@@ -191,7 +191,7 @@ public:
 				&& xacc::getOption("vqe-task") != "vqe-profile"
 				&& xacc::getOption("vqe-task")
 						!= "vqe-openfermion-eigenspectrum") {
-			XACCInfo("Creating a StatePreparation Circuit");
+			xacc::info("Creating a StatePreparation Circuit");
 			statePrep = createStatePreparationCircuit();
 
 			// Set the number of VQE parameters

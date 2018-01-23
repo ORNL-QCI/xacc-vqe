@@ -34,7 +34,7 @@
 #include "Registry.hpp"
 #include "Function.hpp"
 #include "FermionInstruction.hpp"
-#include "Utils.hpp"
+#include "XACC.hpp"
 
 namespace xacc {
 namespace vqe {
@@ -87,7 +87,7 @@ public:
 		if (instructions.size() > idx) {
 			return *std::next(instructions.begin(), idx);
 		} else {
-			XACCError("Invalid instruction index.");
+			xacc::error("Invalid instruction index.");
 		}
 	}
 
@@ -180,7 +180,7 @@ public:
 	 */
 
 	virtual InstructionParameter getParameter(const int idx) const{
-		XACCError("FermionKernel does not contain runtime parameters.");
+		xacc::error("FermionKernel does not contain runtime parameters.");
 	}
 
 	/**
@@ -192,7 +192,7 @@ public:
 	 */
 
 	virtual void setParameter(const int idx, InstructionParameter& p) {
-		XACCError("FermionKernel does not contain runtime parameters.");
+		xacc::error("FermionKernel does not contain runtime parameters.");
 	}
 
 	/**
@@ -204,11 +204,11 @@ public:
 	 */
 
 	virtual std::vector<InstructionParameter> getParameters() {
-		XACCError("FermionKernel does not contain runtime parameters.");
+		xacc::error("FermionKernel does not contain runtime parameters.");
 	}
 
 	virtual void addParameter(InstructionParameter instParam) {
-		XACCError("FermionKernel does not contain runtime parameters.");
+		xacc::error("FermionKernel does not contain runtime parameters.");
 	}
 	/**
 	 * FermionKernel is not parameterized.
@@ -233,7 +233,7 @@ public:
 	 * @return
 	 */
 	virtual void evaluateVariableParameters(std::vector<InstructionParameter> parameters) {
-		XACCError("FermionKernel does not contain runtime parameters.");
+		xacc::error("FermionKernel does not contain runtime parameters.");
 	}
 
 

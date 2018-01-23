@@ -95,7 +95,7 @@ public:
 			auto ids = ServiceRegistry::instance()->getRegisteredIds<
 					IRTransformation>();
 			for (auto i : ids) {
-				XACCInfo("Registered Fermion To Spin Transformation: " + i);
+				xacc::info("Registered Fermion To Spin Transformation: " + i);
 			}
 			return true;
 			return true;
@@ -111,7 +111,7 @@ public:
 	 */
 	virtual const std::string translate(const std::string& bufferVariable,
 			std::shared_ptr<Function> function) {
-		XACCError("FermionCompiler::translate - Method not implemented");
+		xacc::error("FermionCompiler::translate - Method not implemented");
 	};
 
 	virtual const std::string name() const {

@@ -52,11 +52,11 @@ const std::string FCIDumpPreprocessor::process(const std::string& source,
 		std::string kernelString = "";
 
 		if (world.rank() == 0) {
-			XACCInfo("Running FCIDump Preprocessor.");
+			xacc::info("Running FCIDump Preprocessor.");
 			int symGroup = 7;
 			if (xacc::optionExists("vqe-fcidump-symmetry")) {
 				symGroup = std::stoi(xacc::getOption("vqe-fcidump-symmetry"));
-				XACCInfo("Setting Symmetry Group to " + std::to_string(symGroup));
+				xacc::info("Setting Symmetry Group to " + std::to_string(symGroup));
 			}
 
 			std::ofstream tmpFile(".tmp.fcidump");
@@ -192,7 +192,7 @@ const std::string FCIDumpPreprocessor::process(const std::string& source,
 		}
 
 		boost::mpi::broadcast(world, kernelString, 0);
-		XACCInfo("Done running FCIDump Preprocessor.");
+		xacc::info("Done running FCIDump Preprocessor.");
 
 //		std::cout << kernelString << "\n";
 		return kernelString;

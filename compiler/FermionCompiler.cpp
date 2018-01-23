@@ -117,18 +117,18 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 	}
 
 	// Create the Spin Hamiltonian
-	if (world.rank() == 0) XACCInfo("Mapping Fermion to Spin with " + transform->name());
+	if (world.rank() == 0) xacc::info("Mapping Fermion to Spin with " + transform->name());
 	auto transformedIR = transform->transform(fermionir);
-	if (world.rank() == 0) XACCInfo("Done mapping Fermion to Spin.");
+	if (world.rank() == 0) xacc::info("Done mapping Fermion to Spin.");
 
 	// Prepend State Preparation if requested.
 	if (xacc::optionExists("state-preparation")) {
 		auto statePrepIRTransformStr = xacc::getOption("state-preparation");
 		auto statePrepIRTransform = serviceRegistry->getService<
 				IRTransformation>(statePrepIRTransformStr);
-		if (world.rank() == 0) XACCInfo("Generating State Preparation Circuit with " + statePrepIRTransform->name());
+		if (world.rank() == 0) xacc::info("Generating State Preparation Circuit with " + statePrepIRTransform->name());
 		auto ir = statePrepIRTransform->transform(transformedIR);
-		if (world.rank() == 0) XACCInfo("Done generating State Preparation Circuit with " + statePrepIRTransform->name());
+		if (world.rank() == 0) xacc::info("Done generating State Preparation Circuit with " + statePrepIRTransform->name());
 		return ir;
 	} else {
 		return transformedIR;

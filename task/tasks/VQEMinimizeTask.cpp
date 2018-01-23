@@ -22,8 +22,8 @@ VQETaskResult VQEMinimizeTask::execute(
 
 	std::stringstream ss;
 	ss << computeTask->totalQpuCalls << " total QPU calls over " << computeTask->vqeIteration << " VQE iterations.";
-	XACCInfo("");
-	XACCInfo(ss.str());
+	xacc::info("");
+	xacc::info(ss.str());
 
 	VQETaskResult r;
 	r.results.push_back({parameters, currentEnergy});

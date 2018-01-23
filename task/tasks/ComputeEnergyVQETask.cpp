@@ -35,7 +35,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 
 	if (multiExec) {
 
-		XACCInfo("Computing Energy with XACC Kernel Multi-Exec.");
+		xacc::info("Computing Energy with XACC Kernel Multi-Exec.");
 		std::vector<double> coeffs;
 		KernelList<> modifiedKernelList(qpu);
 		KernelList<> identityKernels(qpu);
@@ -73,7 +73,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 			boost::filesystem::path dir(base);
 			if (!boost::filesystem::exists(dir)) {
 				if (!boost::filesystem::create_directory(dir)) {
-					XACCError("Could not create directory: " + base);
+					xacc::error("Could not create directory: " + base);
 				}
 			}
 			std::stringstream s;
@@ -163,7 +163,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 	ss << std::setprecision(10) << currentEnergy << " at (" << parameters.transpose() << ")";
 
 	if (rank == 0) {
-		XACCInfo("Iteration " + std::to_string(vqeIteration) + ", Computed VQE Energy = " + ss.str());
+		xacc::info("Iteration " + std::to_string(vqeIteration) + ", Computed VQE Energy = " + ss.str());
 	}
 
 	vqeIteration++;

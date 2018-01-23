@@ -57,7 +57,7 @@ double SlepcDiagonalizeBackend::diagonalize(
 	MatGetOwnershipRange(A, &Istart, &Iend);
 
 
-	if (rank == 0) XACCInfo(
+	if (rank == 0) xacc::info(
 			"Building Matrix for SLEPc.");
 
 	for (std::uint64_t myRow = Istart; myRow < Iend; myRow++) {
@@ -71,7 +71,7 @@ double SlepcDiagonalizeBackend::diagonalize(
 
 	MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY);
 	MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY);
-	if (rank == 0) XACCInfo(
+	if (rank == 0) xacc::info(
 			"Done building Matrix for SLEPc.");
 
 
@@ -83,10 +83,10 @@ double SlepcDiagonalizeBackend::diagonalize(
 	EPSSetWhichEigenpairs(eps, EPS_SMALLEST_REAL);
 	EPSSetType(eps, EPSLANCZOS);
 	if (rank == 0)
-		XACCInfo("Starting SLEPc EPS Solve");
+		xacc::info("Starting SLEPc EPS Solve");
 	EPSSolve(eps);
 	if (rank == 0)
-		XACCInfo("Done with SLEPc EPS Solve");
+		xacc::info("Done with SLEPc EPS Solve");
 	EPSGetEigenpair(eps, 0, &gsReal, NULL, NULL, NULL);
 	EPSDestroy(&eps);
 	MatDestroy(&A);
@@ -94,7 +94,7 @@ double SlepcDiagonalizeBackend::diagonalize(
 
 	std::stringstream s;
 	s << std::setprecision(12) << gsReal;
-	if (rank == 0) XACCInfo("Lowest Eigenvalue = " + s.str());
+	if (rank == 0) xacc::info("Lowest Eigenvalue = " + s.str());
 	return std::real(gsReal);
 }
 
