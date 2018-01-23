@@ -61,9 +61,8 @@ VQETaskResult ComputeEnergyVQETask::execute(
 
 		int counter = 0;
 		for (auto b : tmpBuffers) {
-//			taskResult.buffers.push_back(b);
 			localExpectationValue = b->getExpectationValueZ();
-			taskResult.data[kernels[counter].getIRFunction()->getName()].push_back(localExpectationValue);
+//			taskResult.data[kernels[counter].getIRFunction()->getName()].push_back(localExpectationValue);
 			sum += coeffs[counter] * localExpectationValue;
 			counter++;
 		}
@@ -136,11 +135,9 @@ VQETaskResult ComputeEnergyVQETask::execute(
 				kernel(buff);
 				nlocalqpucalls++;
 
-//				taskResult.buffers.push_back(buff);
-
 				lexpval = buff->getExpectationValueZ();
 
-				taskResult.data[kernel.getIRFunction()->getName()].push_back(lexpval);
+//				taskResult.data[kernel.getIRFunction()->getName()].push_back(lexpval);
 
 				// The next iteration will have a different
 				// state prep circuit, so toss the current one.
