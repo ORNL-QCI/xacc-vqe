@@ -129,6 +129,11 @@ public:
 
 			addPreprocessor("fcidump-preprocessor");
 
+			if (xacc::optionExists("correct-readout-errors")) {
+
+				addIRPreprocessor("readout-error-preprocessor");
+
+			}
 			// Start compilation
 			Program::build();
 

@@ -30,7 +30,8 @@ VQETaskResult DiagonalizeTask::execute(
 			nQubits);
 
 	VQETaskResult result;
-	result.results.push_back({parameters, energy});
+	result.angles = parameters;
+	result.energy = energy;
 
 	return result;
 }

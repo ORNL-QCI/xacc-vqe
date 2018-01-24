@@ -356,7 +356,7 @@ std::shared_ptr<IR> PauliOperator::toXACCIR() {
 
 		// FIXME NAME SHOULD BE inst.first!!!
 		auto gateFunction = std::make_shared<xacc::quantum::GateFunction>(
-				"term" + std::to_string(counter),
+				inst.first,
 				std::vector<InstructionParameter> { InstructionParameter(
 						spinInst.coeff()), InstructionParameter(
 						spinInst.isIdentity() ? 1 : 0) });
