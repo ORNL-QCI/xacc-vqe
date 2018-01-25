@@ -91,6 +91,9 @@ public:
 		}
 	}
 
+	virtual void mapBits(std::vector<int> bitMap) {
+	}
+
 	/**
 	 * Return all FermionInstruction
 	 *

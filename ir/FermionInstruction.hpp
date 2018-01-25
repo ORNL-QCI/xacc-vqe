@@ -45,10 +45,6 @@ public:
 	std::vector<InstructionParameter> parameters;
 
 public:
-//
-//	std::complex<double> coefficient;
-//
-//	std::string variable = "";
 
 	/**
 	 * The constructor, takes the (site, creation/annihilation) pairs
@@ -104,6 +100,9 @@ public:
 	virtual const std::string getName() {
 		return "fermion-instruction";
 	};
+
+	virtual void mapBits(std::vector<int> bitMap) {
+	}
 
 	/**
 	 * Persist this Instruction to an assembly-like

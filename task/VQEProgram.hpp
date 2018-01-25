@@ -7,6 +7,7 @@
 #include "IRGenerator.hpp"
 #include "PauliOperator.hpp"
 #include "FermionToSpinTransformation.hpp"
+#include "GateQIR.hpp"
 
 #include <boost/mpi.hpp>
 #include "CountGatesOfTypeVisitor.hpp"
@@ -130,10 +131,9 @@ public:
 			addPreprocessor("fcidump-preprocessor");
 
 			if (xacc::optionExists("correct-readout-errors")) {
-
 				addIRPreprocessor("readout-error-preprocessor");
-
 			}
+
 			// Start compilation
 			Program::build();
 
@@ -203,6 +203,16 @@ public:
 			nParameters = statePrep->nParameters();
 		}
 
+		if (statePrep) {
+
+			for (auto pp : irpreprocessors) {
+				if (pp->name() == "qubit-map-preprocessor") {
+					xacc::quantum::GateQIR ir;
+					ir.addKernel(statePrep);
+					pp->process(ir);
+				}
+			}
+		}
 	}
 
 	PauliOperator getPauliOperator() {

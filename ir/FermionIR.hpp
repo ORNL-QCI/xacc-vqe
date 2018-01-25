@@ -73,6 +73,9 @@ public:
 	virtual void load(std::istream& inStream) {
 	}
 
+	virtual void mapBits(std::vector<int> bitMap) {
+	}
+
 	virtual void addKernel(std::shared_ptr<Function> kernel) {
 		kernels.push_back(kernel);
 	}

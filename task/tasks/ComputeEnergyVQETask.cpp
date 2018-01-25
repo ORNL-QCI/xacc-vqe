@@ -1,5 +1,5 @@
 #include "ComputeEnergyVQETask.hpp"
-
+#include "XACC.hpp"
 #include "VQEProgram.hpp"
 
 namespace xacc {
@@ -19,6 +19,8 @@ VQETaskResult ComputeEnergyVQETask::execute(
 	auto nQubits = program->getNQubits();
 	auto qpu = program->getAccelerator();
 
+	auto pauli = program->getPauliOperator();
+
 	// Evaluate our variable parameterized State Prep circuite
 	// to produce a state prep circuit with actual rotations
 	auto evaluatedStatePrep = StatePreparationEvaluator::evaluateCircuit(
@@ -37,14 +39,15 @@ VQETaskResult ComputeEnergyVQETask::execute(
 
 		xacc::info("Computing Energy with XACC Kernel Multi-Exec.");
 		std::vector<double> coeffs;
-		KernelList<> modifiedKernelList(qpu);
-		KernelList<> identityKernels(qpu);
+		std::vector<Kernel<>> identityKernels;
 
-		for (auto& k : kernels) {
+		for (int i = 0; i < pauli.nTerms(); i++) {
+			auto k = kernels[i];
 			// If not identity
-			if (k.getIRFunction()->nInstructions() > 0) {
+			if (k.getIRFunction()->nInstructions() > 0
+					&& !boost::contains(k.getIRFunction()->getTag(),
+							"readout-error")) {
 				k.getIRFunction()->insertInstruction(0, evaluatedStatePrep);
-				modifiedKernelList.push_back(k);
 				coeffs.push_back(
 						std::real(
 								boost::get<std::complex<double>>(
@@ -57,40 +60,17 @@ VQETaskResult ComputeEnergyVQETask::execute(
 		auto buff = qpu->createBuffer("qreg", nQubits);
 
 		// FIXME, Goal here is to run AcceleratorBufferPostprocessors in KernelList.execute...
-		auto tmpBuffers = modifiedKernelList.execute(buff);
+		auto tmpBuffers = kernels.execute(buff);
 		nlocalqpucalls += tmpBuffers.size();
 
 		int counter = 0;
-		for (auto b : tmpBuffers) {
-			localExpectationValue = b->getExpectationValueZ();
-//			taskResult.data[kernels[counter].getIRFunction()->getName()].push_back(localExpectationValue);
+		for (int i = 0; i < coeffs.size(); i++) {
+			localExpectationValue = tmpBuffers[i]->getExpectationValueZ();
+			xacc::info(
+					"Fixed Expectation for Kernel " + std::to_string(counter) + " = "
+							+ std::to_string(localExpectationValue));
 			sum += coeffs[counter] * localExpectationValue;
 			counter++;
-		}
-
-		counter = 0;
-		if (xacc::optionExists("vqe-compute-persist-buffer-data")) {
-			auto base = xacc::getOption("vqe-compute-persist-buffer-data");
-			boost::filesystem::path dir(base);
-			if (!boost::filesystem::exists(dir)) {
-				if (!boost::filesystem::create_directory(dir)) {
-					xacc::error("Could not create directory: " + base);
-				}
-			}
-			std::stringstream s;
-			s << parameters.transpose();
-			std::ofstream out(base + "/" + base + std::string("_") + s.str());
-
-			for (auto b : tmpBuffers) {
-				out << "kernel: "
-						<< modifiedKernelList[counter].getIRFunction()->getName()
-						<< "\n";
-				out << "angle: " << s.str() << "\n";
-				tmpBuffers[counter]->print(out);
-				out << "\n";
-				counter++;
-			}
-			out.close();
 		}
 
 		for (auto k : identityKernels) {
@@ -139,6 +119,9 @@ VQETaskResult ComputeEnergyVQETask::execute(
 				lexpval = buff->getExpectationValueZ();
 
 //				taskResult.data[kernel.getIRFunction()->getName()].push_back(lexpval);
+				xacc::info(
+						"Fixed Expectation for Kernel " + std::to_string(i) + " = "
+								+ std::to_string(lexpval));
 
 				// The next iteration will have a different
 				// state prep circuit, so toss the current one.

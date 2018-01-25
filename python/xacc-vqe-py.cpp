@@ -181,6 +181,21 @@ VQETaskResult execute(PauliOperator& op, py::kwargs kwargs) {
 			xacc::setOption("n-electrons", std::to_string(nElectrons));
 		}
 
+		if (kwargs.contains("error-mitigation")) {
+			auto errorMitigationStrategies = kwargs["error-mitigation"].cast<std::vector<std::string>>();
+			for (auto e : errorMitigationStrategies) {
+				xacc::setOption(e,"");
+			}
+		}
+
+		if (kwargs.contains("qubit-map")) {
+			auto qbitmap = kwargs["qubit-map"].cast<std::vector<int>>();
+			auto mapStr = std::to_string(qbitmap[0]);
+			for (int i = 1; i < qbitmap.size();i++) {
+				mapStr += "," + std::to_string(qbitmap[i]);
+			}
+			xacc::setOption("qubit-map",mapStr);
+		}
 	}
 
 	xacc::info("XACC VQE Python set n-qubits = " + std::to_string(nQubits));
@@ -276,6 +291,23 @@ VQETaskResult execute(py::object& fermionOperator, py::kwargs kwargs) {
 			auto nElectrons = kwargs["n-electrons"].cast<int>();
 			xacc::setOption("n-electrons", std::to_string(nElectrons));
 		}
+
+		if (kwargs.contains("error-mitigation")) {
+			auto errorMitigationStrategies = kwargs["error-mitigation"].cast<std::vector<std::string>>();
+			for (auto e : errorMitigationStrategies) {
+				xacc::setOption(e,"");
+			}
+		}
+
+		if (kwargs.contains("qubit-map")) {
+			auto qbitmap = kwargs["qubit-map"].cast<std::vector<int>>();
+			auto mapStr = std::to_string(qbitmap[0]);
+			for (int i = 1; i < qbitmap.size();i++) {
+				mapStr += "," + std::to_string(qbitmap[i]);
+			}
+			xacc::setOption("qubit-map",mapStr);
+		}
+
 	}
 
 	xacc::setOption("vqe-task", task);
