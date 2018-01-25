@@ -118,11 +118,6 @@ VQETaskResult ComputeEnergyVQETask::execute(
 
 				lexpval = buff->getExpectationValueZ();
 
-//				taskResult.data[kernel.getIRFunction()->getName()].push_back(lexpval);
-				xacc::info(
-						"Fixed Expectation for Kernel " + std::to_string(i) + " = "
-								+ std::to_string(lexpval));
-
 				// The next iteration will have a different
 				// state prep circuit, so toss the current one.
 				kernel.getIRFunction()->removeInstruction(0);
