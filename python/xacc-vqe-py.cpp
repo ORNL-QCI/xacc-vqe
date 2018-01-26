@@ -35,7 +35,7 @@ PauliOperator compile(const std::string& fermiSrc) {
 	auto comm = mpi4py.attr("COMM_WORLD");
 
 	if (!xacc::isInitialized()) {
-		xacc::Initialize();
+		xacc::Initialize({"--use-cout", "--no-color"});
 		xacc::info("You did not initialize the XACC framework. "
 				"Auto-running xacc::Initialize().");
 	}
@@ -66,7 +66,7 @@ PauliOperator compile(py::object fermionOperator, py::kwargs kwargs) {
 	auto comm = mpi4py.attr("COMM_WORLD");
 
 	if (!xacc::isInitialized()) {
-		xacc::Initialize();
+		xacc::Initialize({"--use-cout", "--no-color"});
 		xacc::info("You did not initialize the XACC framework. "
 				"Auto-running xacc::Initialize().");
 	}
@@ -121,7 +121,7 @@ VQETaskResult execute(PauliOperator& op, py::kwargs kwargs) {
 	auto comm = mpi4py.attr("COMM_WORLD");
 
 	if (!xacc::isInitialized()) {
-		xacc::Initialize();
+		xacc::Initialize({"--use-cout", "--no-color"});
 		xacc::info("You did not initialize the XACC framework. "
 				"Auto-running xacc::Initialize().");
 	}
@@ -229,7 +229,7 @@ VQETaskResult execute(py::object& fermionOperator, py::kwargs kwargs) {
 	}
 
 	if (!xacc::isInitialized()) {
-		xacc::Initialize();
+		xacc::Initialize({"--use-cout", "--no-color"});
 		xacc::info("You did not initialize the XACC framework. "
 				"Auto-running xacc::Initialize().");
 	}
@@ -324,6 +324,7 @@ VQETaskResult execute(py::object& fermionOperator, py::kwargs kwargs) {
 	vqeTask->setVQEProgram(program);
 
 	auto result = vqeTask->execute(parameters);
+
 	xacc::clearOptions();
 	return result;
 }
@@ -365,34 +366,45 @@ PYBIND11_MODULE(pyxaccvqe, m) {
 			.def("nTerms", &PauliOperator::nTerms)
 			.def("isClose", &PauliOperator::isClose);
 
+	m.def("execute", (VQETaskResult (*)(PauliOperator& op, py::kwargs kwargs))
+			&execute, py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>(), "");
 
-	m.def("execute",
-			[](PauliOperator& op, py::kwargs kwargs) -> VQETaskResult {
-				py::scoped_ostream_redirect stream(
-						std::cout,                              // std::ostream&
-						py::module::import("sys").attr("stdout")// Python output
-				);
-				return execute(op, kwargs);
-			});
+	m.def("execute", (VQETaskResult (*)(py::object& op, py::kwargs kwargs))
+			&execute, py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>(), "");
 
-	m.def("execute",
-			[](py::object& op, py::kwargs kwargs) -> VQETaskResult {
-				py::scoped_ostream_redirect stream(
-						std::cout,                              // std::ostream&
-						py::module::import("sys").attr("stdout")// Python output
-				);
-				return execute(op, kwargs);
-			});
+	m.def("compile", (PauliOperator (*)(const std::string& src))
+			&compile, py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>(), "");
 
-	m.def("compile",
-			[](const std::string& src) -> PauliOperator {
-				py::scoped_ostream_redirect stream(
-						std::cout,                              // std::ostream&
-						py::module::import("sys").attr("stdout")// Python output
-				);
-				return compile(src);
-			});
+//	m.def("compile", (PauliOperator (*)(py::object& op, py::kwargs kwargs))
+//			&compile, py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>(), "");
 
+//	m.def("execute",
+//			[](PauliOperator& op, py::kwargs kwargs) -> VQETaskResult {
+//				py::scoped_ostream_redirect stream(
+//						std::cout,                              // std::ostream&
+//						py::module::import("sys").attr("stdout")// Python output
+//				);
+//				return execute(op, kwargs);
+//			});
+//
+//	m.def("execute",
+//			[](py::object& op, py::kwargs kwargs) -> VQETaskResult {
+//				py::scoped_ostream_redirect stream(
+//						std::cout,                              // std::ostream&
+//						py::module::import("sys").attr("stdout")// Python output
+//				);
+//				return execute(op, kwargs);
+//			});
+//
+//	m.def("compile",
+//			[](const std::string& src) -> PauliOperator {
+//				py::scoped_ostream_redirect stream(
+//						std::cout,                              // std::ostream&
+//						py::module::import("sys").attr("stdout")// Python output
+//				);
+//				return compile(src);
+//			});
+//
 	m.def("compile",
 			[](py::object& op, py::kwargs kwargs) -> PauliOperator {
 				py::scoped_ostream_redirect stream(
