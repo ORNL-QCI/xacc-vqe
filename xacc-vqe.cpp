@@ -34,7 +34,11 @@ int main(int argc, char** argv) {
 				("n-qubits,n",  value<std::string>(),"The number of qubits in the calculation")
 				("n-electrons,e",  value<std::string>(),"The number of electrons in the calculation")
 				("vqe-parameters,p",  value<std::string>(),"The initial parameters to seed VQE with, pass as string of comma separated parameters.")
-				("vqe-energy-delta,d", value<std::string>(), "The change in energy to consider during classsical optimization.");
+				("vqe-energy-delta,d", value<std::string>(), "The change in energy to consider during classsical optimization.")
+				("correct-readout-error", "Correct qubit readout errors.")
+				("qubit-map", "Provide a list of qubit indices as a comma-separated "
+						"string to use in this computation. The 0th integer corresponds "
+						"to the 0th logical qubit, etc.");
 
 	 xacc::addCommandLineOptions(vqeOptions);
 

@@ -56,6 +56,7 @@ PauliOperator compile(const std::string& fermiSrc) {
 	auto program = std::make_shared<VQEProgram>(accelerator, fermiSrc, world);
 	program->build();
 
+	xacc::clearOptions();
 	return program->getPauliOperator();
 }
 
@@ -102,7 +103,7 @@ PauliOperator compile(py::object fermionOperator, py::kwargs kwargs) {
 	xacc::setOption("vqe-task", "vqe-profile");
 	auto program = std::make_shared<VQEProgram>(accelerator, s.str(), world);
 	program->build();
-
+	xacc::clearOptions();
 	return program->getPauliOperator();
 }
 
@@ -209,8 +210,9 @@ VQETaskResult execute(PauliOperator& op, py::kwargs kwargs) {
 	auto parameters = VQEParameterGenerator::generateParameters(program->getNParameters(), world);
 	auto vqeTask = xacc::ServiceRegistry::instance()->getService<VQETask>(task);
 	vqeTask->setVQEProgram(program);
-
-	return vqeTask->execute(parameters);
+	auto result = vqeTask->execute(parameters);
+	xacc::clearOptions();
+	return result;
 }
 
 VQETaskResult execute(py::object& fermionOperator, py::kwargs kwargs) {
@@ -321,7 +323,9 @@ VQETaskResult execute(py::object& fermionOperator, py::kwargs kwargs) {
 	auto vqeTask = xacc::ServiceRegistry::instance()->getService<VQETask>(task);
 	vqeTask->setVQEProgram(program);
 
-	return vqeTask->execute(parameters);
+	auto result = vqeTask->execute(parameters);
+	xacc::clearOptions();
+	return result;
 }
 
 PYBIND11_MODULE(pyxaccvqe, m) {

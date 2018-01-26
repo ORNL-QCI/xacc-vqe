@@ -29,7 +29,7 @@ public:
 
 	virtual VQETaskResult execute(Eigen::VectorXd parameters) = 0;
 
-	void setVQEProgram(std::shared_ptr<VQEProgram> p) {
+	virtual void setVQEProgram(std::shared_ptr<VQEProgram> p) {
 		program = p;
 	}
 
