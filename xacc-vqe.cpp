@@ -16,12 +16,6 @@ int main(int argc, char** argv) {
 	mpi::environment env(argc, argv);
 	mpi::communicator world;
 
-	xacc::setAccelerator("vqe-dummy");
-	// Set the default Accelerator to TNQVM
-	if (xacc::hasAccelerator("tnqvm")) {
-		xacc::setAccelerator("tnqvm");
-	}
-
 	// Add some command line options for this XACC app
 
 	auto vqeOptions = std::make_shared<options_description>("XACC-VQE Options");
@@ -44,6 +38,14 @@ int main(int argc, char** argv) {
 
 	// Initialize the framework
 	xacc::Initialize(argc, argv);
+
+	if (!xacc::optionExists("accelerator")) {
+		xacc::setAccelerator("vqe-dummy");
+		// Set the default Accelerator to TNQVM
+		if (xacc::hasAccelerator("tnqvm")) {
+			xacc::setAccelerator("tnqvm");
+		}
+	}
 
 	if (xacc::optionExists("vqe-list-tasks")) {
 		xacc::info("");
