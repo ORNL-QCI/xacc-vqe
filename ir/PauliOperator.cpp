@@ -158,10 +158,9 @@ bool PauliOperator::isClose(PauliOperator& other) {
 const std::string PauliOperator::toString() {
 	std::stringstream s;
 	for (auto& kv : terms) {
-		std::complex<double> c;
-		std::string v;
-		std::map<int, std::string> ops;
-		std::tie(c, v, ops) = kv.second;
+		std::complex<double> c = std::get<0>(kv.second);
+		std::string v = std::get<1>(kv.second);
+		std::map<int, std::string> ops = std::get<2>(kv.second);
 
 		s << c << " ";
 		if (!v.empty()) {
