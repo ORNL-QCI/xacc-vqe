@@ -16,7 +16,7 @@ VQETaskResult GenerateOpenFermionEigenspectrumScript::execute(
 	auto comm = program->getCommunicator();
 	auto nParameters = program->getNParameters();
 
-	if (comm.rank() == 0) {
+	if (comm->rank() == 0) {
 		std::string defaultFileName = "gen_openfermion_script.txt";
 		if (xacc::optionExists("vqe-openfermion-script-name")) {
 			defaultFileName = xacc::getOption("vqe-openfermion-script-name");

@@ -16,7 +16,7 @@ VQETaskResult ProfileHamiltonianTask::execute(
 	auto comm = program->getCommunicator();
 	auto nParameters = program->getNParameters();
 
-	if (comm.rank() == 0) {
+	if (comm->rank() == 0) {
 		std::string defaultFileName = "hamiltonianProfile.txt";
 		if (xacc::optionExists("vqe-profile-name")) {
 			defaultFileName = xacc::getOption("vqe-profile-name");

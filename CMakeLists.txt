@@ -24,10 +24,7 @@ if (OPENMP_FOUND)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
-find_package(MPI REQUIRED)
-
-find_package(Boost COMPONENTS filesystem program_options system mpi REQUIRED)
-include_directories(${MPI_CXX_INCLUDE_PATH})
+find_package(Boost COMPONENTS filesystem program_options system REQUIRED)
 
 find_package(XACC REQUIRED)
 
@@ -41,13 +38,14 @@ include_directories(${CMAKE_SOURCE_DIR}/tpls/backward-cpp)
 
 link_directories(${XACC_LIBRARY_DIR})
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/mpi)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ir)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/compiler)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/transformations)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/utils)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/task)
 
-
+add_subdirectory(mpi)
 add_subdirectory(ir)
 add_subdirectory(transformations)
 add_subdirectory(compiler)
@@ -55,5 +53,5 @@ add_subdirectory(task)
 add_subdirectory(python)
 
 add_executable(xacc-vqe xacc-vqe.cpp tpls/backward-cpp/backward.cpp)
-target_link_libraries(xacc-vqe ${Boost_LIBRARIES} xacc-vqe-ir xacc-vqe-tasks ${XACC_LIBRARIES} pthread dl ${MPI_CXX_LIBRARIES}) # petsc)
+target_link_libraries(xacc-vqe ${Boost_LIBRARIES} xacc-vqe-ir xacc-vqe-tasks ${XACC_LIBRARIES} pthread) # petsc)
 

@@ -58,7 +58,6 @@ PauliOperator JordanWignerIRTransformation::transform(FermionKernel& kernel) {
 
 std::shared_ptr<IR> JordanWignerIRTransformation::transform(
 		std::shared_ptr<IR> ir) {
-	boost::mpi::communicator world;
 	auto fermiKernel = ir->getKernels()[0];
 	return transform(*std::dynamic_pointer_cast<FermionKernel>(fermiKernel)).toXACCIR();
 }

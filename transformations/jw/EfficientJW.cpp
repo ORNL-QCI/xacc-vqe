@@ -8,7 +8,6 @@ namespace vqe {
 std::shared_ptr<IR> EfficientJW::transform(
 		std::shared_ptr<IR> ir) {
 
-	boost::mpi::communicator world;
 	std::complex<double> imag(0,1);
 	auto fermiKernel = ir->getKernels()[0];
 

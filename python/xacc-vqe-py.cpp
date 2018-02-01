@@ -31,14 +31,25 @@ using GateFunctionPtr = std::shared_ptr<xacc::quantum::GateFunction>;
  */
 PauliOperator compile(const std::string& fermiSrc) {
 
-	auto mpi4py = pybind11::module::import("mpi4py.MPI");
-	auto comm = mpi4py.attr("COMM_WORLD");
-
 	if (!xacc::isInitialized()) {
 		xacc::Initialize({"--use-cout", "--no-color"});
 		xacc::info("You did not initialize the XACC framework. "
 				"Auto-running xacc::Initialize().");
 	}
+
+	std::shared_ptr<MPIProvider> provider;
+	auto serviceRegistry = xacc::ServiceRegistry::instance();
+	if (serviceRegistry->hasService<MPIProvider>("boost-mpi")) {
+		provider = serviceRegistry->getService<MPIProvider>("boost-mpi");
+		auto mpi4py = pybind11::module::import("mpi4py.MPI");
+		auto comm = mpi4py.attr("COMM_WORLD");
+	} else {
+		provider = serviceRegistry->getService<MPIProvider>("no-mpi");
+	}
+
+	provider->initialize();
+	auto world = provider->getCommunicator();
+
 
 	// Get the user-specified Accelerator,
 	// or TNQVM if none specified
@@ -49,7 +60,6 @@ PauliOperator compile(const std::string& fermiSrc) {
 	}
 
 	auto accelerator = xacc::getAccelerator();
-	boost::mpi::communicator world;
 
 	// Set to vqe-profile because it doesn't require state prep
 	xacc::setOption("vqe-task", "vqe-profile");
@@ -62,14 +72,25 @@ PauliOperator compile(const std::string& fermiSrc) {
 
 PauliOperator compile(py::object fermionOperator, py::kwargs kwargs) {
 
-	auto mpi4py = pybind11::module::import("mpi4py.MPI");
-	auto comm = mpi4py.attr("COMM_WORLD");
-
 	if (!xacc::isInitialized()) {
 		xacc::Initialize({"--use-cout", "--no-color"});
 		xacc::info("You did not initialize the XACC framework. "
 				"Auto-running xacc::Initialize().");
 	}
+
+	std::shared_ptr<MPIProvider> provider;
+	auto serviceRegistry = xacc::ServiceRegistry::instance();
+	if (serviceRegistry->hasService<MPIProvider>("boost-mpi")) {
+		provider = serviceRegistry->getService<MPIProvider>("boost-mpi");
+		auto mpi4py = pybind11::module::import("mpi4py.MPI");
+		auto comm = mpi4py.attr("COMM_WORLD");
+	} else {
+		provider = serviceRegistry->getService<MPIProvider>("no-mpi");
+	}
+
+	provider->initialize();
+	auto world = provider->getCommunicator();
+
 
 	auto terms = fermionOperator.attr("terms").cast<py::dict>();
 
@@ -97,7 +118,6 @@ PauliOperator compile(py::object fermionOperator, py::kwargs kwargs) {
 	}
 
 	auto accelerator = xacc::getAccelerator();
-	boost::mpi::communicator world;
 
 	// Set to vqe-profile because it doesn't require state prep
 	xacc::setOption("vqe-task", "vqe-profile");
@@ -116,15 +136,24 @@ PauliOperator compile(py::object fermionOperator, py::kwargs kwargs) {
  * @return
  */
 VQETaskResult execute(PauliOperator& op, py::kwargs kwargs) {
-
-	auto mpi4py = pybind11::module::import("mpi4py.MPI");
-	auto comm = mpi4py.attr("COMM_WORLD");
-
 	if (!xacc::isInitialized()) {
 		xacc::Initialize({"--use-cout", "--no-color"});
 		xacc::info("You did not initialize the XACC framework. "
 				"Auto-running xacc::Initialize().");
 	}
+
+	std::shared_ptr<MPIProvider> provider;
+	auto serviceRegistry = xacc::ServiceRegistry::instance();
+	if (serviceRegistry->hasService<MPIProvider>("boost-mpi")) {
+		provider = serviceRegistry->getService<MPIProvider>("boost-mpi");
+		auto mpi4py = pybind11::module::import("mpi4py.MPI");
+		auto comm = mpi4py.attr("COMM_WORLD");
+	} else {
+		provider = serviceRegistry->getService<MPIProvider>("no-mpi");
+	}
+
+	provider->initialize();
+	auto world = provider->getCommunicator();
 
 	// Get the user-specified Accelerator,
 	// or TNQVM if none specified
@@ -136,7 +165,6 @@ VQETaskResult execute(PauliOperator& op, py::kwargs kwargs) {
 
 	auto accelerator = xacc::getAccelerator();
 	auto statePrep = GateFunctionPtr(nullptr);
-	boost::mpi::communicator world;
 
 	// Get the task to run
 	std::string task = "vqe-diagonalize";
@@ -221,9 +249,6 @@ VQETaskResult execute(py::object& fermionOperator, py::kwargs kwargs) {
 		xacc::error("FermionOperator was null. Exiting.");
 	}
 
-	auto mpi4py = pybind11::module::import("mpi4py.MPI");
-	auto comm = mpi4py.attr("COMM_WORLD");
-
 	if(!pybind11::hasattr(fermionOperator, "terms")) {
 		xacc::error("This is not a FermionOperator, it does not have a terms dict");
 	}
@@ -233,6 +258,19 @@ VQETaskResult execute(py::object& fermionOperator, py::kwargs kwargs) {
 		xacc::info("You did not initialize the XACC framework. "
 				"Auto-running xacc::Initialize().");
 	}
+
+	std::shared_ptr<MPIProvider> provider;
+	auto serviceRegistry = xacc::ServiceRegistry::instance();
+	if (serviceRegistry->hasService<MPIProvider>("boost-mpi")) {
+		provider = serviceRegistry->getService<MPIProvider>("boost-mpi");
+		auto mpi4py = pybind11::module::import("mpi4py.MPI");
+		auto comm = mpi4py.attr("COMM_WORLD");
+	} else {
+		provider = serviceRegistry->getService<MPIProvider>("no-mpi");
+	}
+
+	provider->initialize();
+	auto world = provider->getCommunicator();
 
 	auto terms = fermionOperator.attr("terms").cast<py::dict>();
 
@@ -261,7 +299,6 @@ VQETaskResult execute(py::object& fermionOperator, py::kwargs kwargs) {
 
 	auto accelerator = xacc::getAccelerator();
 	auto statePrep = GateFunctionPtr(nullptr);
-	boost::mpi::communicator world;
 
 	// Get the task to run
 	std::string task = "vqe-diagonalize";

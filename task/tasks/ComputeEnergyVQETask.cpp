@@ -11,8 +11,8 @@ VQETaskResult ComputeEnergyVQETask::execute(
 	// Local Declarations
 	auto comm = program->getCommunicator();
 	double sum = 0.0, localExpectationValue = 0.0;
-	int rank = comm.rank(), nlocalqpucalls = 0;
-	int nRanks = comm.size();
+	int rank = comm->rank(), nlocalqpucalls = 0;
+	int nRanks = comm->size();
 	bool multiExec = false;
 
 	auto statePrep = program->getStatePreparationCircuit();
@@ -132,8 +132,8 @@ VQETaskResult ComputeEnergyVQETask::execute(
 
 	double result = 0.0;
 	int totalqpucalls = 0;
-	boost::mpi::all_reduce(comm, sum, result, std::plus<double>());
-	boost::mpi::all_reduce(comm, nlocalqpucalls, totalqpucalls, std::plus<double>());
+	comm->sumDoubles(sum, result);
+	comm->sumInts(nlocalqpucalls, totalqpucalls);
 
 	double currentEnergy = result;
 	totalQpuCalls += totalqpucalls;

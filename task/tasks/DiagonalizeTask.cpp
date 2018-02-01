@@ -12,8 +12,6 @@ VQETaskResult DiagonalizeTask::execute(
 		Eigen::VectorXd parameters) {
 	int nQubits = std::stoi(xacc::getOption("n-qubits"));
 
-	boost::mpi::communicator world;
-
 	auto hamiltonianInstruction = program->getPauliOperator();
 
 	std::shared_ptr<DiagonalizeBackend> backend;
@@ -33,14 +31,12 @@ VQETaskResult DiagonalizeTask::execute(
 	result.angles = parameters;
 	result.energy = energy;
 
+	result.results.push_back({parameters, energy});
 	return result;
 }
 
 double EigenDiagonalizeBackend::diagonalize(
 		PauliOperator& inst, const int nQubits) {
-	boost::mpi::communicator world;
-	int rank = world.rank();
-	int nRanks = world.size();
 	std::complex<double> gsReal;
 	auto nTerms = inst.nTerms();
 
@@ -58,9 +54,6 @@ double EigenDiagonalizeBackend::diagonalize(
 	Eigen::MatrixXcd A(dim, dim);
 	A.setZero();
 
-	if (rank == 0) xacc::info(
-			"Building Matrix for Eigen.");
-
 	for (std::uint64_t myRow = 0; myRow < dim; myRow++) {
 		auto rowBitStr = getBitStrForIdx(myRow);
 		auto results = inst.computeActionOnBra(rowBitStr);
@@ -70,17 +63,12 @@ double EigenDiagonalizeBackend::diagonalize(
 		}
 	}
 
-	if (rank == 0) xacc::info(
-			"Done building Matrix for Eigen.");
-
-
 	Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> es(
 			A);
 	auto eigenvalues = es.eigenvalues();
 	gsReal = eigenvalues(0);
 	std::stringstream ss;
 	ss << std::setprecision(12) << gsReal;
-	if (rank == 0) xacc::info("Lowest Eigenvalue = " + ss.str());
 	return std::real(gsReal);
 }
 

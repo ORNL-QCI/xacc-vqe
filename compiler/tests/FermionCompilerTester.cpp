@@ -39,23 +39,6 @@ using namespace xacc::vqe;
 
 using namespace boost;
 
-// Create Global MPI Fixture to initialize MPI environment
-struct MPIFixture {
-	MPIFixture() :
-			env(new mpi::environment()) {
-		BOOST_TEST_MESSAGE("Setting up MPI Environment");
-	}
-	~MPIFixture() {
-		BOOST_TEST_MESSAGE("Finalizing MPI Environment");
-	}
-
-	std::shared_ptr<mpi::environment> env;
-};
-
-// Make that fixture globals
-BOOST_GLOBAL_FIXTURE(MPIFixture);
-
-
 class FakeAcc: public xacc::Accelerator {
 public:
 

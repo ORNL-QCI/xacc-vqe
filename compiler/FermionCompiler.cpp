@@ -35,7 +35,7 @@
 #include "GateQIR.hpp"
 #include "ServiceRegistry.hpp"
 #include "FermionKernel.hpp"
-#include <boost/mpi.hpp>
+#include "MPIProvider.hpp"
 
 namespace xacc {
 
@@ -48,9 +48,17 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 	// Set the Kernel Source code
 	kernelSource = src;
 
-	// Here we expect we have a kernel, only one kernel
+	auto serviceRegistry = xacc::ServiceRegistry::instance();
+	std::shared_ptr<MPIProvider> provider;
+	if (serviceRegistry->hasService<MPIProvider>("boost-mpi")) {
+		provider = serviceRegistry->getService<MPIProvider>("boost-mpi");
+	} else {
+		provider = serviceRegistry->getService<MPIProvider>("no-mpi");
+	}
 
-	boost::mpi::communicator world;
+	auto world = provider->getCommunicator();
+
+	// Here we expect we have a kernel, only one kernel
 
 	// First off, split the string into lines
 	std::vector<std::string> lines, fLineSpaces;
@@ -105,7 +113,6 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 	// about the fermion representation of the Hamiltonian
 	// we are compiling. We need to transform it to a spin
 	// hamiltonian.
-	auto serviceRegistry = ServiceRegistry::instance();
 	std::shared_ptr<IRTransformation> transform;
 	if (xacc::optionExists("fermion-transformation")) {
 		auto transformStr = xacc::getOption("fermion-transformation");
@@ -117,18 +124,18 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 	}
 
 	// Create the Spin Hamiltonian
-	if (world.rank() == 0) xacc::info("Mapping Fermion to Spin with " + transform->name());
+	if (world->rank() == 0) xacc::info("Mapping Fermion to Spin with " + transform->name());
 	auto transformedIR = transform->transform(fermionir);
-	if (world.rank() == 0) xacc::info("Done mapping Fermion to Spin.");
+	if (world->rank() == 0) xacc::info("Done mapping Fermion to Spin.");
 
 	// Prepend State Preparation if requested.
 	if (xacc::optionExists("state-preparation")) {
 		auto statePrepIRTransformStr = xacc::getOption("state-preparation");
 		auto statePrepIRTransform = serviceRegistry->getService<
 				IRTransformation>(statePrepIRTransformStr);
-		if (world.rank() == 0) xacc::info("Generating State Preparation Circuit with " + statePrepIRTransform->name());
+		if (world->rank() == 0) xacc::info("Generating State Preparation Circuit with " + statePrepIRTransform->name());
 		auto ir = statePrepIRTransform->transform(transformedIR);
-		if (world.rank() == 0) xacc::info("Done generating State Preparation Circuit with " + statePrepIRTransform->name());
+		if (world->rank() == 0) xacc::info("Done generating State Preparation Circuit with " + statePrepIRTransform->name());
 		return ir;
 	} else {
 		return transformedIR;

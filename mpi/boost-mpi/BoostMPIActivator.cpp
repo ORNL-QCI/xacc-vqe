@@ -1,5 +1,5 @@
 /***********************************************************************************
- * Copyright (c) 2016, UT-Battelle
+ * Copyright (c) 2017, UT-Battelle
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,26 +28,41 @@
  *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
-#define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE UCCSDTester
+#include "cppmicroservices/BundleActivator.h"
+#include "cppmicroservices/BundleContext.h"
+#include "cppmicroservices/ServiceProperties.h"
 
-#include <boost/test/included/unit_test.hpp>
-#include "UCCSD.hpp"
+#include <memory>
+#include <set>
+#include "BoostMPIProvider.hpp"
 
-using namespace xacc::vqe;
+using namespace cppmicroservices;
 
-using namespace boost;
+namespace {
 
-BOOST_AUTO_TEST_CASE(checkUCCSD) {
+/**
+ */
+class US_ABI_LOCAL BoostMPIProvider: public BundleActivator {
 
-	auto options = xacc::RuntimeOptions::instance();
-	options->insert(std::make_pair("n-qubits", "4"));
-	options->insert(std::make_pair("n-electrons", "2"));
+public:
 
-	UCCSD statePrepGen;
-	auto buffer = std::make_shared<xacc::AcceleratorBuffer>("",4);
-	auto f = statePrepGen.generate(buffer);
+	BoostMPIProvider() {
+	}
 
-	std::cout << f->toString("qreg") << "\n";
+	/**
+	 */
+	void Start(BundleContext context) {
+		auto c = std::make_shared<xacc::vqe::BoostMPIProvider>();
+		context.RegisterService<xacc::vqe::MPIProvider>(c);
+	}
+
+	/**
+	 */
+	void Stop(BundleContext /*context*/) {
+	}
+
+};
+
 }
 
+CPPMICROSERVICES_EXPORT_BUNDLE_ACTIVATOR(BoostMPIProvider)

@@ -40,22 +40,6 @@ using namespace xacc::vqe;
 
 using namespace boost;
 
-// Create Global MPI Fixture to initialize MPI environment
-struct MPIFixture {
-	MPIFixture() :
-			env(new mpi::environment()) {
-		BOOST_TEST_MESSAGE("Setting up MPI Environment");
-	}
-	~MPIFixture() {
-		BOOST_TEST_MESSAGE("Finalizing MPI Environment");
-	}
-
-	std::shared_ptr<mpi::environment> env;
-};
-
-// Make that fixture globals
-BOOST_GLOBAL_FIXTURE(MPIFixture);
-
 std::shared_ptr<FermionKernel> compileKernel(const std::string src) {
 	// First off, split the string into lines
 	std::vector<std::string> lines, fLineSpaces;
@@ -107,7 +91,6 @@ std::shared_ptr<FermionKernel> compileKernel(const std::string src) {
 }
 
 BOOST_AUTO_TEST_CASE(checkEasyTransform) {
-	mpi::communicator world;
 
 	const std::string code =
 			R"code(__qpu__ kernel() {
@@ -145,8 +128,6 @@ BOOST_AUTO_TEST_CASE(checkEasyTransform) {
 }
 
 BOOST_AUTO_TEST_CASE(checkH2Transform) {
-
-	mpi::communicator world;
 
 	const std::string code =
 			R"code(__qpu__ kernel() {
@@ -215,7 +196,6 @@ BOOST_AUTO_TEST_CASE(checkH2Transform) {
 
 BOOST_AUTO_TEST_CASE(checkJWTransform) {
 
-	mpi::communicator world;
 
 	auto Instruction = std::make_shared<FermionInstruction>(
 			std::vector<std::pair<int, int>> { { 2, 1 }, { 0, 0 } }, 3.17);

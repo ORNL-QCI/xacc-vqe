@@ -1,0 +1,6 @@
+{
+  "bundle.symbolic_name" : "xacc_vqe_no_mpi",
+  "bundle.activator" : true,
+  "bundle.name" : "XACC VQE No MPI Extension",
+  "bundle.description" : "This bundle provides access a communicator with no MPI."
+}

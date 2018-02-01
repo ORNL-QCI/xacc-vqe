@@ -3,8 +3,7 @@
 #include "VQEProgram.hpp"
 #include "VQETask.hpp"
 #include "VQEParameterGenerator.hpp"
-
-#include <boost/mpi.hpp>
+#include "MPIProvider.hpp"
 
 int main(int argc, char** argv) {
 
@@ -13,11 +12,8 @@ int main(int argc, char** argv) {
 
 	// Initialize MPI, create a VQEProgram pointer
 	std::shared_ptr<VQEProgram> program;
-	mpi::environment env(argc, argv);
-	mpi::communicator world;
 
 	// Add some command line options for this XACC app
-
 	auto vqeOptions = std::make_shared<options_description>("XACC-VQE Options");
 	vqeOptions->add_options()
 				("vqe-program,f",value<std::string>(), "(required) The file containing "
@@ -34,11 +30,24 @@ int main(int argc, char** argv) {
 						"string to use in this computation. The 0th integer corresponds "
 						"to the 0th logical qubit, etc.");
 
-	 xacc::addCommandLineOptions(vqeOptions);
+	xacc::addCommandLineOptions(vqeOptions);
 
 	// Initialize the framework
 	xacc::Initialize(argc, argv);
+	auto serviceRegistry = xacc::ServiceRegistry::instance();
+	std::shared_ptr<MPIProvider> provider;
+	if (serviceRegistry->hasService<MPIProvider>("boost-mpi")) {
+		provider = serviceRegistry->getService<MPIProvider>("boost-mpi");
+		xacc::info("Using Boost MPI for distributed computations.");
+	} else {
+		provider = serviceRegistry->getService<MPIProvider>("no-mpi");
+		xacc::info("XACC-VQE Built without MPI Support.");
+	}
 
+	provider->initialize(argc,argv);
+	auto world = provider->getCommunicator();
+
+	xacc::info("Number of Ranks = " + std::to_string(world->size()));
 	if (!xacc::optionExists("accelerator")) {
 		xacc::setAccelerator("vqe-dummy");
 		// Set the default Accelerator to TNQVM
@@ -91,7 +100,7 @@ int main(int argc, char** argv) {
 	program->build();
 
 	auto parameters = VQEParameterGenerator::generateParameters(program->getNParameters(), world);
-	auto vqeTask = xacc::ServiceRegistry::instance()->getService<VQETask>(task);
+	auto vqeTask = serviceRegistry->getService<VQETask>(task);
 	vqeTask->setVQEProgram(program);
 
 	VQETaskResult result = vqeTask->execute(parameters);
@@ -100,7 +109,7 @@ int main(int argc, char** argv) {
 	for (auto r : result.results) {
 		std::stringstream ss;
 		ss << std::setprecision(12) << r.second << " at (" << r.first.transpose() << ")";
-		if (world.rank() == 0) xacc::info(msg + ss.str());
+		if (world->rank() == 0) xacc::info(msg + ss.str());
 	}
 
 	xacc::Finalize();

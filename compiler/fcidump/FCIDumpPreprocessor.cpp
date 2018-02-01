@@ -31,7 +31,7 @@
 #include "FCIDumpPreprocessor.hpp"
 #include <boost/tokenizer.hpp>
 #include "XACC.hpp"
-#include <boost/mpi.hpp>
+#include "MPIProvider.hpp"
 
 #include "chemps2/Hamiltonian.h"
 #include "unsupported/Eigen/CXX11/Tensor"
@@ -47,11 +47,21 @@ const std::string FCIDumpPreprocessor::process(const std::string& source,
 		std::shared_ptr<Accelerator> accelerator) {
 
 	if (boost::contains(source, "FCI") && boost::contains(source, "NELEC")) {
-		boost::mpi::communicator world;
+
+		auto serviceRegistry = xacc::ServiceRegistry::instance();
+		std::shared_ptr<MPIProvider> provider;
+		if (serviceRegistry->hasService<MPIProvider>("boost-mpi")) {
+			provider = serviceRegistry->getService<MPIProvider>("boost-mpi");
+		} else {
+			provider = serviceRegistry->getService<MPIProvider>("no-mpi");
+		}
+
+		provider->initialize();
+		auto world = provider->getCommunicator();
 
 		std::string kernelString = "";
 
-		if (world.rank() == 0) {
+		if (world->rank() == 0) {
 			xacc::info("Running FCIDump Preprocessor.");
 			int symGroup = 7;
 			if (xacc::optionExists("vqe-fcidump-symmetry")) {
@@ -191,7 +201,7 @@ const std::string FCIDumpPreprocessor::process(const std::string& source,
 
 		}
 
-		boost::mpi::broadcast(world, kernelString, 0);
+		world->broadcast(kernelString, 0);
 		xacc::info("Done running FCIDump Preprocessor.");
 
 //		std::cout << kernelString << "\n";

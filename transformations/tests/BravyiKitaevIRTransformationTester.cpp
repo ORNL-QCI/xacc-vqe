@@ -116,11 +116,6 @@ BOOST_AUTO_TEST_CASE(checkBKTransform) {
 
 BOOST_AUTO_TEST_CASE(checkH2Transform) {
 
-	auto argc = boost::unit_test::framework::master_test_suite().argc;
-	auto argv = boost::unit_test::framework::master_test_suite().argv;
-	mpi::environment env(argc, argv);
-	mpi::communicator world;
-
 	const std::string code =
 			R"code(__qpu__ kernel() {
    0.7137758743754461

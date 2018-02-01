@@ -1,0 +1,6 @@
+{
+  "bundle.symbolic_name" : "xacc_vqe_boost_mpi",
+  "bundle.activator" : true,
+  "bundle.name" : "XACC VQE Boost MPI Extension",
+  "bundle.description" : "This bundle provides access to Boost MPI."
+}

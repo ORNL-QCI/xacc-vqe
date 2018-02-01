@@ -9,7 +9,7 @@
 #include "FermionToSpinTransformation.hpp"
 #include "GateQIR.hpp"
 
-#include <boost/mpi.hpp>
+#include "MPIProvider.hpp"
 #include "CountGatesOfTypeVisitor.hpp"
 #include "Measure.hpp"
 
@@ -65,31 +65,31 @@ public:
 
 	VQEProgram(std::shared_ptr<Accelerator> acc, PauliOperator& op,
 			std::shared_ptr<xacc::quantum::GateFunction> sprep,
-			boost::mpi::communicator& c) :
+			std::shared_ptr<Communicator> c) :
 			Program(acc, ""), pauli(op), comm(c), nParameters(sprep ? sprep->nParameters() : 0), statePrep(
 					sprep), kernels(acc) {
 	}
 
 	VQEProgram(std::shared_ptr<Accelerator> acc, const std::string& kernelSource,
 			std::shared_ptr<xacc::quantum::GateFunction> sprep,
-			boost::mpi::communicator& c) :
+			std::shared_ptr<Communicator> c) :
 			Program(acc, kernelSource), comm(c), nParameters(sprep ? sprep->nParameters() : 0), statePrep(
 					sprep), kernels(acc) {
 	}
 
 	VQEProgram(std::shared_ptr<Accelerator> acc, const std::string& kernelSrc,
-			boost::mpi::communicator& c) :
+			std::shared_ptr<Communicator> c) :
 			Program(acc, kernelSrc), nParameters(0), comm(c) {
 	}
 
 	VQEProgram(std::shared_ptr<Accelerator> acc,
 			const std::string& kernelSource, const std::string& statePrepSrc,
-			boost::mpi::communicator& c) :
+			std::shared_ptr<Communicator> c) :
 			Program(acc, kernelSource), statePrepSource(statePrepSrc), nParameters(
 					0), comm(c) {
 	}
 
-	boost::mpi::communicator& getCommunicator() {
+	std::shared_ptr<Communicator> getCommunicator() {
 		return comm;
 	}
 
@@ -254,7 +254,7 @@ protected:
 
 	std::string statePrepSource = "";
 
-	boost::mpi::communicator comm;
+	std::shared_ptr<Communicator> comm;
 
 	/**
 	 * Reference to the state preparation circuit

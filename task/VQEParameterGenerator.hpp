@@ -4,7 +4,6 @@
 #include "XACC.hpp"
 #include <Eigen/Dense>
 #include <boost/math/constants/constants.hpp>
-#include <boost/mpi.hpp>
 
 namespace xacc {
 namespace vqe {
@@ -13,7 +12,7 @@ class VQEParameterGenerator {
 
 public:
 
-	static Eigen::VectorXd generateParameters(const int nParameters, boost::mpi::communicator& comm) {
+	static Eigen::VectorXd generateParameters(const int nParameters, std::shared_ptr<Communicator> comm) {
 
 		if (xacc::optionExists("vqe-parameters")) {
 			if (xacc::getOption("vqe-task") == "sweep-1d") {
@@ -55,7 +54,7 @@ public:
 			std::vector<double> data;
 
 			// Random parameters between -pi and pi
-			if (comm.rank() == 0) {
+			if (comm->rank() == 0) {
 				rand = -1.0 * pi * Eigen::VectorXd::Ones(nParameters)
 						+ (Eigen::VectorXd::Random(nParameters) * 0.5
 								+ Eigen::VectorXd::Ones(nParameters) * 0.5)
@@ -64,9 +63,9 @@ public:
 				Eigen::VectorXd::Map(&data[0], rand.size()) = rand;
 			}
 
-			boost::mpi::broadcast(comm, data, 0);
+			comm->broadcast(data, 0);
 
-			if (comm.rank() != 0) {
+			if (comm->rank() != 0) {
 				rand = Eigen::Map<Eigen::VectorXd>(data.data(), data.size());
 			}
 			return rand;

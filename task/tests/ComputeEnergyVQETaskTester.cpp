@@ -34,6 +34,8 @@
 
 #include <boost/test/included/unit_test.hpp>
 #include "ComputeEnergyVQETask.hpp"
+#include "ServiceRegistry.hpp"
+#include "MPIProvider.hpp"
 
 using namespace xacc::vqe;
 
@@ -75,9 +77,16 @@ BOOST_AUTO_TEST_CASE(checkSimple) {
 })src";
 
 	xacc::Initialize();
-	mpi::environment env(argc, argv);
-	mpi::communicator world;
+	std::shared_ptr<MPIProvider> provider;
+	auto serviceRegistry = xacc::ServiceRegistry::instance();
+	if (serviceRegistry->hasService<MPIProvider>("boost-mpi")) {
+		provider = serviceRegistry->getService<MPIProvider>("boost-mpi");
+	} else {
+		provider = serviceRegistry->getService<MPIProvider>("no-mpi");
+	}
 
+	provider->initialize(argc,argv);
+	auto world = provider->getCommunicator();
 	xacc::setOption("n-qubits", "4");
 	xacc::setOption("n-electrons", "2");
 	xacc::setOption("vqe-task", "compute-energy");

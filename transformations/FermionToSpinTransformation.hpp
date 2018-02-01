@@ -38,7 +38,6 @@
 #include "PauliOperator.hpp"
 #include "GateFunction.hpp"
 #include <boost/math/constants/constants.hpp>
-#include <boost/mpi.hpp>
 
 #include <boost/serialization/complex.hpp>
 #include <boost/serialization/vector.hpp>
@@ -77,7 +76,6 @@ protected:
 	PauliOperator result;
 
 	std::shared_ptr<IR> generateIR() {
-		boost::mpi::communicator world;
 
 		// Create a new GateQIR to hold the spin based terms
 		auto newIr = std::make_shared<xacc::quantum::GateQIR>();
