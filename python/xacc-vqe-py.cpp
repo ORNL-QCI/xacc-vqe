@@ -13,6 +13,7 @@
 #include "DiagonalizeTask.hpp"
 #include "FermionToSpinTransformation.hpp"
 #include "GateFunction.hpp"
+#include "StatePreparationEvaluator.hpp"
 
 namespace py = pybind11;
 
@@ -20,6 +21,112 @@ using namespace xacc;
 using namespace xacc::vqe;
 
 using GateFunctionPtr = std::shared_ptr<xacc::quantum::GateFunction>;
+
+KernelList<> generateKernels(PauliOperator& op, py::kwargs kwargs) {
+
+	if (!xacc::isInitialized()) {
+		xacc::Initialize({"--use-cout", "--no-color"});
+		xacc::info("You did not initialize the XACC framework. "
+				"Auto-running xacc::Initialize().");
+	}
+
+	std::shared_ptr<MPIProvider> provider;
+	auto serviceRegistry = xacc::ServiceRegistry::instance();
+	if (serviceRegistry->hasService<MPIProvider>("boost-mpi")) {
+		provider = serviceRegistry->getService<MPIProvider>("boost-mpi");
+		auto mpi4py = pybind11::module::import("mpi4py.MPI");
+		auto comm = mpi4py.attr("COMM_WORLD");
+	} else {
+		provider = serviceRegistry->getService<MPIProvider>("no-mpi");
+	}
+
+	provider->initialize();
+	auto world = provider->getCommunicator();
+
+	// Get the user-specified Accelerator,
+	// or TNQVM if none specified
+	xacc::setAccelerator("vqe-dummy");
+	// Set the default Accelerator to TNQVM
+	if (xacc::hasAccelerator("tnqvm")) {
+		xacc::setAccelerator("tnqvm");
+	}
+
+	int maxQbit = 0;
+	for (auto& kv : op.getTerms()) {
+		if (!kv.second.isIdentity()) {
+			int qbit = kv.second.ops().rbegin()->first;
+			if (qbit > maxQbit)
+				maxQbit = qbit;
+		}
+	}
+	int nQubits = maxQbit + 1;
+
+	std::string task = "compute-energy";
+	auto accelerator = xacc::getAccelerator();
+	auto statePrep = GateFunctionPtr(nullptr);
+
+	std::vector<Eigen::VectorXd> range;
+
+	if (kwargs) {
+		std::string accStr =
+				kwargs.contains("accelerator") ?
+						kwargs["accelerator"].cast<std::string>() : "";
+		if (!accStr.empty())
+			accelerator = xacc::getAccelerator(accStr);
+
+		nQubits =
+				kwargs.contains("n-qubits") ?
+						kwargs["n-qubits"].cast<int>() : nQubits;
+
+		if (kwargs.contains("ansatz")) {
+			statePrep = kwargs["ansatz"].cast<GateFunctionPtr>();
+		}
+
+		if (kwargs.contains("range")) {
+			range = kwargs["range"].cast<std::vector<Eigen::VectorXd>>();
+		}
+
+		if (kwargs.contains("error-mitigation")) {
+			auto errorMitigationStrategies = kwargs["error-mitigation"].cast<std::vector<std::string>>();
+			for (auto e : errorMitigationStrategies) {
+				xacc::setOption(e,"");
+			}
+		}
+
+		if (kwargs.contains("qubit-map")) {
+			auto qbitmap = kwargs["qubit-map"].cast<std::vector<int>>();
+			auto mapStr = std::to_string(qbitmap[0]);
+			for (int i = 1; i < qbitmap.size();i++) {
+				mapStr += "," + std::to_string(qbitmap[i]);
+			}
+			xacc::setOption("qubit-map",mapStr);
+		}
+	}
+
+	xacc::setOption("vqe-task", task);
+	xacc::setOption("n-qubits", std::to_string(nQubits));
+
+	int nParams = statePrep->nParameters();
+	Eigen::VectorXd tmp(nParams);
+	tmp(0) = range[0](0); // FIXME ASSUMING 1 PARAM
+	auto newStatePrep = StatePreparationEvaluator::evaluateCircuit(statePrep, nParams, tmp);
+	auto program = std::make_shared<VQEProgram>(accelerator, op, std::dynamic_pointer_cast<GateFunction>(newStatePrep), world);
+	program->build();
+	KernelList<> total = program->getVQEKernels();
+
+	for (int i = 1; i < range[0].rows(); i++) {
+		tmp(0) = range[0](i);
+		newStatePrep = StatePreparationEvaluator::evaluateCircuit(statePrep, nParams, tmp);
+		program = std::make_shared<VQEProgram>(accelerator, op, std::dynamic_pointer_cast<GateFunction>(newStatePrep), world);
+		program->build();
+		auto tmpKernels = program->getVQEKernels();
+		total.insert(std::end(total), std::begin(tmpKernels), std::end(tmpKernels));
+	}
+
+	xacc::clearOptions();
+
+	return total;
+}
 
 /**
  * Compile the given source code string and produce
@@ -412,36 +519,9 @@ PYBIND11_MODULE(pyxaccvqe, m) {
 	m.def("compile", (PauliOperator (*)(const std::string& src))
 			&compile, py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>(), "");
 
-//	m.def("compile", (PauliOperator (*)(py::object& op, py::kwargs kwargs))
-//			&compile, py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>(), "");
-
-//	m.def("execute",
-//			[](PauliOperator& op, py::kwargs kwargs) -> VQETaskResult {
-//				py::scoped_ostream_redirect stream(
-//						std::cout,                              // std::ostream&
-//						py::module::import("sys").attr("stdout")// Python output
-//				);
-//				return execute(op, kwargs);
-//			});
-//
-//	m.def("execute",
-//			[](py::object& op, py::kwargs kwargs) -> VQETaskResult {
-//				py::scoped_ostream_redirect stream(
-//						std::cout,                              // std::ostream&
-//						py::module::import("sys").attr("stdout")// Python output
-//				);
-//				return execute(op, kwargs);
-//			});
-//
-//	m.def("compile",
-//			[](const std::string& src) -> PauliOperator {
-//				py::scoped_ostream_redirect stream(
-//						std::cout,                              // std::ostream&
-//						py::module::import("sys").attr("stdout")// Python output
-//				);
-//				return compile(src);
-//			});
-//
+	m.def("generateKernels", &generateKernels,
+			py::call_guard<py::scoped_ostream_redirect,
+					py::scoped_estream_redirect>(), "");
 	m.def("compile",
 			[](py::object& op, py::kwargs kwargs) -> PauliOperator {
 				py::scoped_ostream_redirect stream(
