@@ -174,6 +174,7 @@ public:
 
 BOOST_AUTO_TEST_CASE(checkH2Process) {
 
+	xacc::Initialize();
 	const std::string h2FciDump =
 			R"h2FciDump(&FCI NORB=  2,NELEC=  2,MS2= 0,
   ORBSYM=1,5,
@@ -231,4 +232,5 @@ BOOST_AUTO_TEST_CASE(checkH2Process) {
 )expected";
 
 	BOOST_VERIFY(expected == newKernelCode);
+	xacc::Finalize();
 }

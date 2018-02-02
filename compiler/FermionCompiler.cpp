@@ -56,6 +56,7 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 		provider = serviceRegistry->getService<MPIProvider>("no-mpi");
 	}
 
+	provider->initialize();
 	auto world = provider->getCommunicator();
 
 	// Here we expect we have a kernel, only one kernel

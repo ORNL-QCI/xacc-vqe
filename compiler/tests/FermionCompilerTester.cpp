@@ -122,6 +122,7 @@ public:
 
 BOOST_AUTO_TEST_CASE(checkSimpleCompile) {
 
+	xacc::Initialize();
 	auto compiler = std::make_shared<FermionCompiler>();
 
 	// 3.17 adag_2 a_0 + 3.17 adag_0 a2
@@ -137,10 +138,12 @@ BOOST_AUTO_TEST_CASE(checkSimpleCompile) {
 	auto ir = compiler->compile(simpleFermionHamiltonian, acc);
 
 	BOOST_VERIFY(ir->getKernels().size() == 2);
+	xacc::Finalize();
 }
 
 BOOST_AUTO_TEST_CASE(checkH2MinBondLength) {
 
+	xacc::Initialize();
 	const std::string code = R"code(__qpu__ H2_sto-3g_singlet_H2_Molecule0_71056() {
 	0.286177854957 1 1 0 1 0 0 1 0
 	0.288294627326 2 1 0 1 0 0 2 0
@@ -177,4 +180,5 @@ BOOST_AUTO_TEST_CASE(checkH2MinBondLength) {
 
 	auto compiler = std::make_shared<FermionCompiler>();
 	auto ir = compiler->compile(code, acc);
+	xacc::Finalize();
 }

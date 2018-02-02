@@ -36,6 +36,17 @@
 #include <map>
 #include <unsupported/Eigen/KroneckerProduct>
 #include "XACC.hpp"
+
+// Putting this here due to clang error
+// not able to find operator!= from operators.hpp
+namespace xacc {
+namespace vqe {
+class PauliOperator;
+}
+}
+bool operator==(const xacc::vqe::PauliOperator& lhs,
+	const xacc::vqe::PauliOperator& rhs);
+
 #include "operators.hpp"
 
 namespace xacc {
@@ -250,8 +261,5 @@ public:
 };
 }
 }
-
-bool operator==(const xacc::vqe::PauliOperator& lhs,
-	const xacc::vqe::PauliOperator& rhs);
 
 #endif

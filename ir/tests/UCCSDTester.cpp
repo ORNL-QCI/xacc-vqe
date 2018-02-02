@@ -40,6 +40,8 @@ using namespace boost;
 
 BOOST_AUTO_TEST_CASE(checkUCCSD) {
 
+	xacc::Initialize();
+
 	auto options = xacc::RuntimeOptions::instance();
 	options->insert(std::make_pair("n-qubits", "4"));
 	options->insert(std::make_pair("n-electrons", "2"));
@@ -49,5 +51,6 @@ BOOST_AUTO_TEST_CASE(checkUCCSD) {
 	auto f = statePrepGen.generate(buffer);
 
 	std::cout << f->toString("qreg") << "\n";
+	xacc::Finalize();
 }
 
