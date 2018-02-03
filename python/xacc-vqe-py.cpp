@@ -22,7 +22,7 @@ using namespace xacc::vqe;
 
 using GateFunctionPtr = std::shared_ptr<xacc::quantum::GateFunction>;
 
-KernelList<> generateKernels(PauliOperator& op, py::kwargs kwargs) {
+std::pair<KernelList<>, std::vector<std::shared_ptr<IR>>> generateKernels(PauliOperator& op, py::kwargs kwargs) {
 
 	if (!xacc::isInitialized()) {
 		xacc::Initialize({"--use-cout", "--no-color"});
@@ -89,17 +89,18 @@ KernelList<> generateKernels(PauliOperator& op, py::kwargs kwargs) {
 		if (kwargs.contains("error-mitigation")) {
 			auto errorMitigationStrategies = kwargs["error-mitigation"].cast<std::vector<std::string>>();
 			for (auto e : errorMitigationStrategies) {
-				xacc::setOption(e,"");
+				std::cout << "SETTING THIS: " << e << "\n";
+				xacc::setOption(e, "true");
 			}
 		}
 
 		if (kwargs.contains("qubit-map")) {
 			auto qbitmap = kwargs["qubit-map"].cast<std::vector<int>>();
 			auto mapStr = std::to_string(qbitmap[0]);
-			for (int i = 1; i < qbitmap.size();i++) {
+			for (int i = 1; i < qbitmap.size(); i++) {
 				mapStr += "," + std::to_string(qbitmap[i]);
 			}
-			xacc::setOption("qubit-map",mapStr);
+			xacc::setOption("qubit-map", mapStr);
 		}
 	}
 
@@ -109,23 +110,45 @@ KernelList<> generateKernels(PauliOperator& op, py::kwargs kwargs) {
 	int nParams = statePrep->nParameters();
 	Eigen::VectorXd tmp(nParams);
 	tmp(0) = range[0](0); // FIXME ASSUMING 1 PARAM
-	auto newStatePrep = StatePreparationEvaluator::evaluateCircuit(statePrep, nParams, tmp);
-	auto program = std::make_shared<VQEProgram>(accelerator, op, std::dynamic_pointer_cast<GateFunction>(newStatePrep), world);
+	auto newStatePrep = StatePreparationEvaluator::evaluateCircuit(statePrep,
+			nParams, tmp);
+	auto program = std::make_shared<VQEProgram>(accelerator, op,
+			std::dynamic_pointer_cast<GateFunction>(newStatePrep), world);
+	if (xacc::optionExists("correct-readout-errors")) {
+		program->addIRPreprocessor("readout-error-preprocessor");
+	}
 	program->build();
 	KernelList<> total = program->getVQEKernels();
+	for (auto k : total) {
+		if (k.getIRFunction()->getTag() != "readout-error") {
+			k.getIRFunction()->insertInstruction(0,newStatePrep);
+		}
+	}
+
+	std::vector<std::shared_ptr<IR>> storedIRs;
+	storedIRs.push_back(program->getIR());
 
 	for (int i = 1; i < range[0].rows(); i++) {
 		tmp(0) = range[0](i);
-		newStatePrep = StatePreparationEvaluator::evaluateCircuit(statePrep, nParams, tmp);
-		program = std::make_shared<VQEProgram>(accelerator, op, std::dynamic_pointer_cast<GateFunction>(newStatePrep), world);
+		newStatePrep = StatePreparationEvaluator::evaluateCircuit(statePrep,
+				nParams, tmp);
+		program->setStatePreparationCircuit(newStatePrep);
 		program->build();
 		auto tmpKernels = program->getVQEKernels();
-		total.insert(std::end(total), std::begin(tmpKernels), std::end(tmpKernels));
+		for (auto k : tmpKernels) {
+			if (k.getIRFunction()->getTag() != "readout-error") {
+				k.getIRFunction()->insertInstruction(0, newStatePrep);
+			}
+		}
+		total.insert(std::end(total), std::begin(tmpKernels),
+				std::end(tmpKernels));
+
+		storedIRs.push_back(program->getIR());
 	}
 
 	xacc::clearOptions();
 
-	return total;
+	return {total, storedIRs};
 }
 
 /**

@@ -131,6 +131,7 @@ public:
 			addPreprocessor("fcidump-preprocessor");
 
 			if (xacc::optionExists("correct-readout-errors")) {
+				xacc::info( "ADDING READOUT ERROR PREPROCESSOR");
 				addIRPreprocessor("readout-error-preprocessor");
 			}
 
@@ -185,9 +186,22 @@ public:
 		} else {
 			nQubits = std::stoi(xacc::getOption("n-qubits"));
 			auto tmpKernels = pauli.toXACCIR()->getKernels();
+			xaccIR = std::make_shared<xacc::quantum::GateQIR>();
 			for (auto t : tmpKernels) {
-				kernels.push_back(Kernel<>(accelerator,t));
+				xaccIR->addKernel(t);
 			}
+
+			// Execute hardware dependent IR Transformations
+			auto accTransforms = accelerator->getIRTransformations();
+			for (auto t : accTransforms) {
+				xaccIR = t->transform(xaccIR);
+			}
+
+			for (auto irp : irpreprocessors) {
+				bufferPostprocessors.push_back(irp->process(*xaccIR));
+			}
+
+			kernels = getRuntimeKernels();
 		}
 
 		// We don't need state prep if we are brute
@@ -227,6 +241,9 @@ public:
 		return statePrep;
 	}
 
+	void setStatePreparationCircuit(std::shared_ptr<Function> s) {
+		statePrep = s;
+	}
 	const int getNParameters() {
 		return nParameters;
 	}
