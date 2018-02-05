@@ -218,6 +218,13 @@ protected:
 
 public:
 
+	std::unordered_map<std::string, Term>::iterator begin() {
+		return terms.begin();
+	}
+	std::unordered_map<std::string, Term>::iterator end() {
+		return terms.end();
+	}
+
 	PauliOperator();
 	PauliOperator(std::complex<double> c);
 	PauliOperator(double c);

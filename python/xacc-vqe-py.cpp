@@ -89,7 +89,6 @@ std::pair<KernelList<>, std::vector<std::shared_ptr<IR>>> generateKernels(PauliO
 		if (kwargs.contains("error-mitigation")) {
 			auto errorMitigationStrategies = kwargs["error-mitigation"].cast<std::vector<std::string>>();
 			for (auto e : errorMitigationStrategies) {
-				std::cout << "SETTING THIS: " << e << "\n";
 				xacc::setOption(e, "true");
 			}
 		}
@@ -120,7 +119,7 @@ std::pair<KernelList<>, std::vector<std::shared_ptr<IR>>> generateKernels(PauliO
 	program->build();
 	KernelList<> total = program->getVQEKernels();
 	for (auto k : total) {
-		if (k.getIRFunction()->getTag() != "readout-error") {
+		if (k.getIRFunction()->getTag() != "readout-error" && k.getIRFunction()->nInstructions() > 0) {
 			k.getIRFunction()->insertInstruction(0,newStatePrep);
 		}
 	}
@@ -136,7 +135,7 @@ std::pair<KernelList<>, std::vector<std::shared_ptr<IR>>> generateKernels(PauliO
 		program->build();
 		auto tmpKernels = program->getVQEKernels();
 		for (auto k : tmpKernels) {
-			if (k.getIRFunction()->getTag() != "readout-error") {
+			if (k.getIRFunction()->getTag() != "readout-error" && k.getIRFunction()->nInstructions() > 0) {
 				k.getIRFunction()->insertInstruction(0, newStatePrep);
 			}
 		}
@@ -508,6 +507,7 @@ PYBIND11_MODULE(pyxaccvqe, m) {
 	    .def_readonly("data", &VQETaskResult::data)
 		.def_readonly("energy", &VQETaskResult::energy);
 
+	py::class_<Term>(m,"Term").def("coeff", &Term::coeff);
 	py::class_<PauliOperator>(m,"PauliOperator")
 			.def(py::init<>())
 			.def(py::init<std::complex<double>>())
@@ -531,7 +531,11 @@ PYBIND11_MODULE(pyxaccvqe, m) {
 			.def("eval", &PauliOperator::eval)
 			.def("toXACCIR", &PauliOperator::toXACCIR)
 			.def("nTerms", &PauliOperator::nTerms)
-			.def("isClose", &PauliOperator::isClose);
+			.def("isClose", &PauliOperator::isClose)
+			.def("__len__", &PauliOperator::nTerms)
+			.def("__iter__",
+			[](PauliOperator& op) {return py::make_iterator(op.begin(), op.end());},
+			py::keep_alive<0, 1>());
 
 	m.def("execute", (VQETaskResult (*)(PauliOperator& op, py::kwargs kwargs))
 			&execute, py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>(), "");
