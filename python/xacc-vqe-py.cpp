@@ -356,8 +356,6 @@ VQETaskResult execute(PauliOperator& op, py::kwargs kwargs) {
 		}
 	}
 
-	xacc::info("XACC VQE Python set n-qubits = " + std::to_string(nQubits));
-
 	xacc::setOption("vqe-task", task);
 	xacc::setOption("n-qubits", std::to_string(nQubits));
 

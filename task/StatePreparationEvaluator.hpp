@@ -88,9 +88,9 @@ public:
 				parser.compile(expression, expr);
 				val = x(idx);
 				auto res = expr.value();
-				if (res < 0.0) {
-					res = 4 * pi + res;
-				}
+//				if (res < 0.0) {
+//					res = 4 * pi + res;
+//				}
 				InstructionParameter p(res);
 				auto updatedInst = GateInstructionRegistry::instance()->create(
 						inst->getName(), inst->bits());
