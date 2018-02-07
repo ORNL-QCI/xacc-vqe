@@ -24,8 +24,7 @@ VQETaskResult DiagonalizeTask::execute(
 				DiagonalizeBackend>("diagonalize-eigen");
 	}
 
-	auto energy = backend->diagonalize(hamiltonianInstruction,
-			nQubits);
+	auto energy = backend->diagonalize(program);
 
 	VQETaskResult result;
 	result.angles = parameters;
@@ -36,9 +35,11 @@ VQETaskResult DiagonalizeTask::execute(
 }
 
 double EigenDiagonalizeBackend::diagonalize(
-		PauliOperator& inst, const int nQubits) {
+		std::shared_ptr<VQEProgram> prog) {
 	std::complex<double> gsReal;
+	auto inst = prog->getPauliOperator();
 	auto nTerms = inst.nTerms();
+	auto nQubits = prog->getNQubits();
 
 	std::size_t dim = 1;
 	std::size_t two = 2;

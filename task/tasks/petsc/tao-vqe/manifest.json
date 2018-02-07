@@ -1,0 +1,6 @@
+{
+  "bundle.symbolic_name" : "xacc_vqe_tao",
+  "bundle.activator" : true,
+  "bundle.name" : "XACC VQE Tao support",
+  "bundle.description" : "This bundle provides VQE tao support."
+}

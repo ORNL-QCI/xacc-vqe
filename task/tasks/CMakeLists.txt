@@ -1,6 +1,7 @@
 find_package(Boost COMPONENTS mpi)
 find_package(MPI)
+find_package(PETSc) 
 
-if (BOOST_FOUND AND MPI_FOUND) 
-   add_subdirectory(slepc)
+if (Boost_FOUND AND MPI_CXX_FOUND AND PETSC_FOUND) 
+   add_subdirectory(petsc)
 endif()

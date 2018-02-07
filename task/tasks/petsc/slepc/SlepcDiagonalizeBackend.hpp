@@ -7,8 +7,7 @@ namespace xacc {
 namespace vqe {
 
 class SlepcDiagonalizeBackend: public DiagonalizeBackend {
-	virtual double diagonalize(PauliOperator& inst,
-			const int nQubits);
+	virtual double diagonalize(std::shared_ptr<VQEProgram> prog);
 
 	virtual const std::string name() const {
 		return "slepc";

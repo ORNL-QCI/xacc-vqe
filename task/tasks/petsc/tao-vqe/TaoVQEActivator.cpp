@@ -34,11 +34,8 @@
 
 #include <memory>
 #include <set>
-#include "ComputeEnergyVQETask.hpp"
-#include "VQEMinimizeTask.hpp"
-#include "GenerateOpenFermionEigenspectrumScript.hpp"
-#include "DiagonalizeTask.hpp"
-#include "ProfileHamiltonianTask.hpp"
+
+#include "TaoVQEBackend.hpp"
 
 using namespace cppmicroservices;
 
@@ -46,38 +43,19 @@ namespace {
 
 /**
  */
-class US_ABI_LOCAL VQETaskActivator: public BundleActivator {
+class US_ABI_LOCAL TaoVQEActivator: public BundleActivator {
 
 public:
 
-	VQETaskActivator() {
+	TaoVQEActivator() {
 	}
 
 	/**
 	 */
 	void Start(BundleContext context) {
-		auto c = std::make_shared<xacc::vqe::ComputeEnergyVQETask>();
-		auto c2 = std::make_shared<xacc::vqe::VQEMinimizeTask>();
-		auto c3 = std::make_shared<xacc::vqe::ProfileHamiltonianTask>();
-		auto c6 = std::make_shared<xacc::vqe::DiagonalizeTask>();
-		auto c7 = std::make_shared<xacc::vqe::EigenDiagonalizeBackend>();
-		auto c8 = std::make_shared<xacc::vqe::VQEDummyAccelerator>();
-		auto c9 = std::make_shared<xacc::vqe::GenerateOpenFermionEigenspectrumScript>();
-
-		context.RegisterService<xacc::vqe::VQETask>(c);
-		context.RegisterService<xacc::vqe::VQETask>(c2);
-		context.RegisterService<xacc::vqe::VQETask>(c3);
-		context.RegisterService<xacc::vqe::VQETask>(c6);
-		context.RegisterService<xacc::vqe::VQETask>(c9);
-
-		context.RegisterService<xacc::Accelerator>(c8);
-
-		context.RegisterService<xacc::OptionsProvider>(c);
-		context.RegisterService<xacc::OptionsProvider>(c6);
-		context.RegisterService<xacc::OptionsProvider>(c3);
-		context.RegisterService<xacc::OptionsProvider>(c2);
-
-		context.RegisterService<xacc::vqe::DiagonalizeBackend>(c7);
+		auto c7 = std::make_shared<xacc::vqe::TaoVQEBackend>();
+		context.RegisterService<xacc::vqe::VQEBackend>(c7);
+		context.RegisterService<xacc::OptionsProvider>(c7);
 	}
 
 	/**
@@ -89,4 +67,4 @@ public:
 
 }
 
-CPPMICROSERVICES_EXPORT_BUNDLE_ACTIVATOR(VQETaskActivator)
+CPPMICROSERVICES_EXPORT_BUNDLE_ACTIVATOR(TaoVQEActivator)

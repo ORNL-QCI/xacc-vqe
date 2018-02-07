@@ -29,7 +29,7 @@
  *
  **********************************************************************************/
 #define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE DWaveCompilerTester
+#define BOOST_TEST_MODULE FermionCompilerTester
 
 #include <boost/test/included/unit_test.hpp>
 #include "FermionCompiler.hpp"
@@ -138,12 +138,7 @@ BOOST_AUTO_TEST_CASE(checkSimpleCompile) {
 	auto ir = compiler->compile(simpleFermionHamiltonian, acc);
 
 	BOOST_VERIFY(ir->getKernels().size() == 2);
-	xacc::Finalize();
-}
 
-BOOST_AUTO_TEST_CASE(checkH2MinBondLength) {
-
-	xacc::Initialize();
 	const std::string code = R"code(__qpu__ H2_sto-3g_singlet_H2_Molecule0_71056() {
 	0.286177854957 1 1 0 1 0 0 1 0
 	0.288294627326 2 1 0 1 0 0 2 0
@@ -176,9 +171,7 @@ BOOST_AUTO_TEST_CASE(checkH2MinBondLength) {
 	0.288294627326 0 1 3 1 3 0 0 0
 })code";
 
-	auto acc = std::make_shared<FakeAcc>();
 
-	auto compiler = std::make_shared<FermionCompiler>();
-	auto ir = compiler->compile(code, acc);
+	ir = compiler->compile(code, acc);
 	xacc::Finalize();
 }

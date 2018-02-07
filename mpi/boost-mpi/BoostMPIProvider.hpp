@@ -54,7 +54,7 @@ protected:
 public:
 
 	virtual void initialize() {
-		env = std::make_shared<boost::mpi::environment>();
+		if (!env) env = std::make_shared<boost::mpi::environment>();
 		boost::mpi::communicator c;
 		comm = std::make_shared<BoostCommunicator>(c);
 	}

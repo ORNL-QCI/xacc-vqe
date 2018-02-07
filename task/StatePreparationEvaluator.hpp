@@ -38,6 +38,8 @@
 #include "exprtk.hpp"
 #include <boost/algorithm/string.hpp>
 
+#include "XACC.hpp"
+
 namespace xacc {
 namespace vqe {
 
@@ -60,7 +62,7 @@ public:
 			const Eigen::VectorXd& x) {
 		auto pi = boost::math::constants::pi<double>();
 		std::vector<std::string> variableNames;
-		for (int i = 0; i < x.rows(); i++) {
+		for (int i = 0; i < nParameters; i++) {
 			variableNames.push_back(
 					boost::get<std::string>(statePrep->getParameter(i)));
 		}
@@ -73,10 +75,12 @@ public:
 				auto expression = boost::get<std::string>(
 						inst->getParameter(0));
 				for (int i = 0; i < nParameters; i++) {
+
 					if (boost::contains(expression, variableNames[i])) {
 						idx = i;
 					}
 				}
+
 				std::string varName = variableNames[idx];
 				double val;
 				symbol_table_t symbol_table;

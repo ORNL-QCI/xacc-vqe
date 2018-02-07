@@ -2,22 +2,20 @@
 #include <petscsys.h>
 #include <petscviewer.h>
 #include <slepceps.h>
-#include <unsupported/Eigen/KroneckerProduct>
 
-#include <boost/functional/hash.hpp>
-#include <unordered_map>
-#include <memory>
 #include "SlepcDiagonalizeBackend.hpp"
+#include "MPIProvider.hpp"
 
 using IndexPair = std::pair<std::uint64_t, std::uint64_t>;
 
 namespace xacc {
 namespace vqe {
-double SlepcDiagonalizeBackend::diagonalize(
-		PauliOperator& inst, const int nQubits) {
-	boost::mpi::communicator world;
-	int rank = world.rank();
-	int nRanks = world.size();
+double SlepcDiagonalizeBackend::diagonalize(std::shared_ptr<VQEProgram> prog) {
+	auto world = prog->getCommunicator();
+	int rank = world->rank();
+	int nRanks = world->size();
+	auto nQubits = prog->getNQubits();
+	auto inst = prog->getPauliOperator();
 	std::complex<double> gsReal;
 	static char help[] = "";
 	std::vector<std::string> argvVec;

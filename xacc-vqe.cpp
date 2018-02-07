@@ -32,20 +32,33 @@ int main(int argc, char** argv) {
 
 	xacc::addCommandLineOptions(vqeOptions);
 
+	// We want to preempt the logger system with a global
+	// predicate that only prints to rank == 0. So here we
+	// tell the framework not to print during startup, but
+	// to queue it so that when we set the predicate it will be dumped.
+	std::vector<std::string> new_argv(argv, argv + argc);
+	new_argv.push_back("--queue-preamble");
+
 	// Initialize the framework
-	xacc::Initialize(argc, argv);
+	xacc::Initialize(new_argv);
+
+	// Get the correct MPI Provider
 	auto serviceRegistry = xacc::ServiceRegistry::instance();
 	std::shared_ptr<MPIProvider> provider;
+	std::shared_ptr<Communicator> world;
 	if (serviceRegistry->hasService<MPIProvider>("boost-mpi")) {
 		provider = serviceRegistry->getService<MPIProvider>("boost-mpi");
+		provider->initialize(argc,argv);
+		world = provider->getCommunicator();
+		int rank = world->rank();
+		xacc::setGlobalLoggerPredicate( [&]() { return rank == 0;});
 		xacc::info("Using Boost MPI for distributed computations.");
 	} else {
 		provider = serviceRegistry->getService<MPIProvider>("no-mpi");
+		provider->initialize(argc,argv);
 		xacc::info("XACC-VQE Built without MPI Support.");
 	}
 
-	provider->initialize(argc,argv);
-	auto world = provider->getCommunicator();
 
 	xacc::info("Number of Ranks = " + std::to_string(world->size()));
 	if (!xacc::optionExists("accelerator")) {

@@ -6,32 +6,27 @@
 namespace xacc {
 namespace vqe {
 
-double VQEMinimizeTask::value(const Eigen::VectorXd& params) {
-	auto r = computeTask->execute(params);
-	currentEnergy = r.results[0].second;
-	return currentEnergy;
-}
 
 VQETaskResult VQEMinimizeTask::execute(
 		Eigen::VectorXd parameters) {
-	currentEnergy = 0.0;
-	computeTask = std::make_shared<ComputeEnergyVQETask>(program);
-	cppoptlib::NelderMeadSolver<VQEMinimizeTask> solver;
-	solver.setStopCriteria(VQEMinimizeTask::getConvergenceCriteria());
-	solver.minimize(*this, parameters);
+
+	auto serviceReg = ServiceRegistry::instance();
+
+	std::shared_ptr<VQEBackend> backend;
+	if (xacc::optionExists("vqe-backend")) {
+		backend = serviceReg->getService<VQEBackend>(xacc::getOption("vqe-backend"));
+	} else {
+		backend = std::make_shared<CppOptVQEBackend>();
+	}
+
+	backend->setProgram(program);
+	auto result = backend->minimize(parameters);
 
 	std::stringstream ss;
-	ss << computeTask->totalQpuCalls << " total QPU calls over " << computeTask->vqeIteration << " VQE iterations.";
+	ss << result.nQpuCalls << " total QPU calls over " << result.vqeIterations << " VQE iterations.";
 	xacc::info("");
 	xacc::info(ss.str());
-
-	VQETaskResult r;
-	r.angles = parameters;
-	r.energy = currentEnergy;
-	r.vqeIterations = computeTask->vqeIteration;
-	r.nQpuCalls = computeTask->totalQpuCalls;
-//	r.results.push_back({parameters, currentEnergy});
-	return r;
+	return result;
 }
 
 }

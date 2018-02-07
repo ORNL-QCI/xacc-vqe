@@ -56,19 +56,15 @@ public:
 };
 
 class DiagonalizeBackend : public Identifiable {
-
 public:
-
-	virtual double diagonalize(PauliOperator& inst,
-			const int nQubits) = 0;
+	virtual double diagonalize(std::shared_ptr<VQEProgram> prog) = 0;
 	virtual ~DiagonalizeBackend() {}
 };
 
 class EigenDiagonalizeBackend: public DiagonalizeBackend {
 public:
 
-	virtual double diagonalize(PauliOperator& inst,
-			const int nQubits);
+	virtual double diagonalize(std::shared_ptr<VQEProgram> prog);
 
 	virtual const std::string name() const {
 		return "diagonalize-eigen";

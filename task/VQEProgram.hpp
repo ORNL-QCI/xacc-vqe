@@ -131,7 +131,6 @@ public:
 			addPreprocessor("fcidump-preprocessor");
 
 			if (xacc::optionExists("correct-readout-errors")) {
-				xacc::info( "ADDING READOUT ERROR PREPROCESSOR");
 				addIRPreprocessor("readout-error-preprocessor");
 			}
 
@@ -204,12 +203,12 @@ public:
 			kernels = getRuntimeKernels();
 		}
 
-		// We don't need state prep if we are brute
-		// force computing ground state energy
-		if (!statePrep && xacc::getOption("vqe-task") != "vqe-diagonalize"
-				&& xacc::getOption("vqe-task") != "vqe-profile"
-				&& xacc::getOption("vqe-task")
-						!= "vqe-openfermion-eigenspectrum") {
+		// We don't need state prep if we are diagonalizing, profiling,
+		// generating openfermion scripts, or if we've already been given
+		// an ansatz
+		auto task = xacc::getOption("vqe-task");
+		xacc::info("Task is " + task);
+		if (!statePrep && (task == "vqe" || task == "compute-energy")) {
 			xacc::info("Creating a StatePreparation Circuit");
 			statePrep = createStatePreparationCircuit();
 
