@@ -73,6 +73,28 @@ PauliOperator::PauliOperator(std::map<int, std::string> operators,
 
 }
 
+std::vector<Triplet> PauliOperator::getSparseMatrixElements() {
+
+	// Get number of qubits
+	std::set<int> distinctSites;
+	for (auto& kv : terms) {
+		for (auto& kv2 : kv.second.ops()) {
+			distinctSites.insert(kv2.first);
+		}
+	}
+
+	auto nQubits = distinctSites.size();
+
+	std::vector<Triplet> triplets;
+
+	for (auto& kv : terms) {
+		auto termTrips = kv.second.getSparseMatrixElements(nQubits);
+		triplets.insert(std::end(triplets), std::begin(termTrips), std::end(termTrips));
+	}
+
+	return triplets;
+}
+
 const std::vector<std::pair<std::string, std::complex<double>>> PauliOperator::computeActionOnKet(
 		const std::string& bitString) {
 
@@ -264,6 +286,110 @@ PauliOperator& PauliOperator::operator*=( const std::complex<double> v ) noexcep
 		std::get<0>(kv.second) *= v;
 	}
 	return *this;
+}
+
+std::vector<Triplet> Term::getSparseMatrixElements(const int nQubits) {
+
+	// X = |1><0| + |0><1|
+	// Y = -i|1><0| + i|0><1|
+	// Z = |0><0| - |1><1|
+
+	auto comb = [](int N, int K) -> std::vector<std::vector<int>>
+	{
+		std::string bitmask(K, 1); // K leading 1's
+			bitmask.resize(N, 0);// N-K trailing 0's
+
+			std::vector<std::vector<int>> allCombinations;
+			// print integers and permute bitmask
+			do {
+				std::vector<int> bits;
+				for (int i = 0; i < N; ++i) {
+					if (bitmask[i]) {
+						bits.push_back(i);
+					}
+
+//					if (bitmask[i]) std::cout << " " << i;
+				}
+
+				bool add = true;
+				for (int i = 1; i < bits.size(); i++) {
+					if(bits[i] % 2 != 0 && std::abs(bits[i] - bits[i-1]) == 1) {
+						add = false;
+						break;
+					}
+				}
+
+				if (add) {
+					allCombinations.push_back(bits);
+				}
+			}while (std::prev_permutation(bitmask.begin(), bitmask.end()));
+
+			for (auto a : allCombinations) {
+				for (auto b : a) {
+					std::cout << b << " ";
+				}
+				std::cout << "\n";
+			}
+
+			std::cout << (3/2) << "\n";
+			return allCombinations;
+		};
+
+	auto nSites = ops().size();
+	auto termCombinations = comb(2*nSites,nSites);
+
+	std::map<std::string, std::vector<std::pair<int, int>>> subterms;
+	subterms["X"] = {{1,0}, {0,1}};
+	subterms["Y"] = {{1,0}, {0,1}};
+	subterms["Z"] = {{0,0}, {1,1}};
+
+	std::string zeroStr = "";
+	for (int i = 0; i < nQubits; i++) zeroStr += "0";
+
+	auto ket = zeroStr;
+	auto bra = zeroStr;
+
+	std::vector<Triplet> triplets;
+	for (auto& combo : termCombinations) {
+
+		std::complex<double> coeff(1,0), i(0,1);
+		for (auto& c : combo) {
+
+			auto iter = ops().begin();
+			std::advance(iter, c/2);
+			auto ithOp = iter->second;
+			auto ithOpSite = iter->first;
+			auto x = (c % 2);
+
+//			Now I know the Operator and whether this is hte 0 or 1st term for that op
+
+			auto term = subterms[ithOp][x];
+
+			ket[ithOpSite] = term.first ? '1' : '0';
+			bra[ithOpSite] = term.second ? '1' : '0';
+
+			if (ithOp == "Y") {
+				if (x) {
+					coeff *= i;
+				} else {
+					coeff *= -i;
+				}
+			} else if (ithOp == "Z") {
+				if (x) {
+					coeff *= -1;
+				}
+			}
+		}
+
+		std::cout << "HEY WORLD: " << bra << ", " << ket << "\n";
+		// now convert bra and ket into integers
+		auto row = std::stol(bra, nullptr, 2);
+		auto col = std::stol(ket, nullptr, 2);
+
+		triplets.emplace_back(row, col, coeff);
+	}
+
+	return triplets;
 }
 
 Term& Term::operator*=( const Term& v ) noexcept {

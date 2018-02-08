@@ -57,6 +57,18 @@ namespace vqe {
 using TermTuple = std::tuple<std::complex<double>, std::string, std::map<int, std::string>>;
 using c = std::complex<double>;
 
+class Triplet : std::tuple<std::uint64_t, std::uint64_t, std::complex<double>> {
+public:
+	Triplet(std::uint64_t r, std::uint64_t c, std::complex<double> coeff) {
+		std::get<0>(*this) = r;
+		std::get<1>(*this) = c;
+		std::get<2>(*this) = coeff;
+	}
+	const std::uint64_t row() {return std::get<0>(*this);}
+	const std::uint64_t col() {return std::get<1>(*this);}
+	const std::complex<double> coeff() {return std::get<2>(*this);}
+};
+
 class Term: public TermTuple,
 		public tao::operators::commutative_multipliable<Term>,
 		public tao::operators::equality_comparable<Term> {
@@ -205,6 +217,9 @@ public:
 	bool operator==( const Term& v ) noexcept {
 		return std::get<1>(*this) == std::get<1>(v) && ops() == std::get<2>(v);
 	}
+
+	std::vector<Triplet> getSparseMatrixElements(const int nQubits);
+
 };
 
 class PauliOperator: public tao::operators::commutative_ring<PauliOperator>,
@@ -255,6 +270,7 @@ public:
 		return terms;
 	}
 
+	std::vector<Triplet> getSparseMatrixElements();
 	std::shared_ptr<IR> toXACCIR();
 	PauliOperator eval(const std::map<std::string, std::complex<double>> varToValMap);
 	bool isClose(PauliOperator& other);

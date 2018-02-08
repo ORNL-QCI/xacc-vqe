@@ -35,8 +35,10 @@ public:
 	virtual std::shared_ptr<options_description> getOptions() {
 		auto desc = std::make_shared<options_description>(
 				"Petsc Tao Options");
-//		desc->add_options()("diagonalize-backend", value<std::string>(),
-//							"The backend to use to compute the Hamiltonian eigenspectrum");
+		desc->add_options()("tao-type", value<std::string>(),
+							"The Tao type to use, can be nm or pounders")
+							("observations", value<std::string>(), "A CSV file "
+									"containing data points to use in fitting the Pounders model.");
 		return desc;
 	}
 

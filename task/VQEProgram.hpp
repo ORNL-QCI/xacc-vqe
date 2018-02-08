@@ -98,10 +98,6 @@ public:
 		if (pauli == PauliOperator()) {
 			bool userProvidedKernels = false;
 
-			// This class only takes kernels
-			// represented as Fermion Kernels.
-			xacc::setCompiler("fermion");
-
 			auto nKernels = 0;
 			size_t nPos = src.find("__qpu__", 0);
 			while (nPos != std::string::npos) {
@@ -115,9 +111,11 @@ public:
 			// If nKernels > 1, we have non-fermioncompiler kernels
 			// so lets check to see if they provided any coefficients
 			if (nKernels > 1) { // && boost::contains(src, "coefficients")) {
-				xacc::setCompiler("scaffold");
 				if (xacc::optionExists("compiler")) {
+					xacc::info("Overridding default compiler to " + xacc::getOption("compiler"));
 					xacc::setCompiler(xacc::getOption("compiler"));
+				} else {
+					xacc::setCompiler("scaffold");
 				}
 				if (!xacc::optionExists("n-qubits")) {
 					xacc::error("You must provide --n-qubits arg if "
@@ -126,6 +124,8 @@ public:
 				nQubits = std::stoi(xacc::getOption("n-qubits"));
 				userProvidedKernels = true;
 				accelerator->createBuffer("qreg", nQubits);
+			} else {
+				xacc::setCompiler("fermion");
 			}
 
 			addPreprocessor("fcidump-preprocessor");
@@ -300,10 +300,11 @@ protected:
 	std::shared_ptr<Function> createStatePreparationCircuit() {
 
 		if (!statePrepSource.empty()) {
-			xacc::setCompiler("scaffold");
 			if (xacc::optionExists("compiler")) {
 				xacc::setCompiler(
 						xacc::getOption("compiler"));
+			} else {
+				xacc::setCompiler("scaffold");
 			}
 
 			statePrepType = "custom";
@@ -318,10 +319,11 @@ protected:
 			auto filename = xacc::getOption("vqe-ansatz");
 			std::ifstream filess(filename);
 
-			xacc::setCompiler("scaffold");
 			if (xacc::optionExists("compiler")) {
 				xacc::setCompiler(
 						xacc::getOption("compiler"));
+			} else {
+				xacc::setCompiler("scaffold");
 			}
 
 			statePrepType = "custom";

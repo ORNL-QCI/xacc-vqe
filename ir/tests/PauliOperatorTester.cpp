@@ -336,3 +336,8 @@ BOOST_AUTO_TEST_CASE(checkComposition) {
 
 	BOOST_VERIFY(expected == added);
 }
+
+BOOST_AUTO_TEST_CASE(checkMatrixElements) {
+	PauliOperator op({{0, "X"}, {1, "Y"}, {2, "Z"}});
+	auto elements = op.getSparseMatrixElements();
+}
