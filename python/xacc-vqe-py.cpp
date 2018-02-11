@@ -535,6 +535,8 @@ PYBIND11_MODULE(pyxaccvqe, m) {
 			[](PauliOperator& op) {return py::make_iterator(op.begin(), op.end());},
 			py::keep_alive<0, 1>());
 
+	py::class_<StatePreparationEvaluator>(m, "AnsatzEvaluator").def_static("evaluate",StatePreparationEvaluator::evaluateCircuit, "");
+
 	m.def("execute", (VQETaskResult (*)(PauliOperator& op, py::kwargs kwargs))
 			&execute, py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>(), "");
 
