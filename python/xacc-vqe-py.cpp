@@ -65,14 +65,21 @@ std::pair<KernelList<>, std::vector<std::shared_ptr<IR>>> generateKernels(PauliO
 	auto accelerator = xacc::getAccelerator();
 	auto statePrep = GateFunctionPtr(nullptr);
 
-	std::vector<Eigen::VectorXd> range;
+	py::tuple range;
 
 	if (kwargs) {
-		std::string accStr =
-				kwargs.contains("accelerator") ?
-						kwargs["accelerator"].cast<std::string>() : "";
-		if (!accStr.empty())
-			accelerator = xacc::getAccelerator(accStr);
+
+		if (kwargs.contains("accelerator")) {
+			if (py::isinstance<py::str>(kwargs["accelerator"])) {
+				std::string accStr =
+						kwargs.contains("accelerator") ?
+								kwargs["accelerator"].cast<std::string>() : "";
+				if (!accStr.empty())
+					accelerator = xacc::getAccelerator(accStr);
+			} else {
+				accelerator = kwargs["accelerator"].cast<std::shared_ptr<Accelerator>>();
+			}
+		}
 
 		nQubits =
 				kwargs.contains("n-qubits") ?
@@ -83,7 +90,7 @@ std::pair<KernelList<>, std::vector<std::shared_ptr<IR>>> generateKernels(PauliO
 		}
 
 		if (kwargs.contains("range")) {
-			range = kwargs["range"].cast<std::vector<Eigen::VectorXd>>();
+			range = kwargs["range"].cast<py::tuple>();
 		}
 
 		if (kwargs.contains("error-mitigation")) {
@@ -106,44 +113,127 @@ std::pair<KernelList<>, std::vector<std::shared_ptr<IR>>> generateKernels(PauliO
 	xacc::setOption("vqe-task", task);
 	xacc::setOption("n-qubits", std::to_string(nQubits));
 
+	// range.size() should equal statePrep->nParameters
 	int nParams = statePrep->nParameters();
+	if (range.size() != nParams) xacc::error("Invalid range parameters");
+
+	int counter = 0;
+	std::vector<Eigen::VectorXd> ranges;
+	std::vector<int> rangeIndices;
 	Eigen::VectorXd tmp(nParams);
-	tmp(0) = range[0](0); // FIXME ASSUMING 1 PARAM
-	auto newStatePrep = StatePreparationEvaluator::evaluateCircuit(statePrep,
-			nParams, tmp);
-	auto program = std::make_shared<VQEProgram>(accelerator, op,
-			std::dynamic_pointer_cast<GateFunction>(newStatePrep), world);
-	if (xacc::optionExists("correct-readout-errors")) {
-		program->addIRPreprocessor("readout-error-preprocessor");
-	}
-	program->build();
-	KernelList<> total = program->getVQEKernels();
-	for (auto k : total) {
-		if (k.getIRFunction()->getTag() != "readout-error" && k.getIRFunction()->nInstructions() > 0) {
-			k.getIRFunction()->insertInstruction(0,newStatePrep);
+	for (auto& rangeElement : range) {
+
+		if (py::isinstance<py::float_>(rangeElement) || py::isinstance<py::int_>(rangeElement)) {
+			tmp(counter) = rangeElement.cast<double>();
+		} else {
+			ranges.push_back(rangeElement.cast<Eigen::VectorXd>());
+			rangeIndices.push_back(counter);
 		}
+
+		counter++;
 	}
 
+	counter = 0;
 	std::vector<std::shared_ptr<IR>> storedIRs;
-	storedIRs.push_back(program->getIR());
+	KernelList<> total(accelerator);
+	if (ranges.empty()) {
 
-	for (int i = 1; i < range[0].rows(); i++) {
-		tmp(0) = range[0](i);
-		newStatePrep = StatePreparationEvaluator::evaluateCircuit(statePrep,
-				nParams, tmp);
+		auto newStatePrep = StatePreparationEvaluator::evaluateCircuit(
+				statePrep, nParams, tmp);
+		auto program = std::make_shared<VQEProgram>(accelerator, op,
+				std::dynamic_pointer_cast<GateFunction>(newStatePrep), world);
 		program->setStatePreparationCircuit(newStatePrep);
 		program->build();
 		auto tmpKernels = program->getVQEKernels();
 		for (auto k : tmpKernels) {
-			if (k.getIRFunction()->getTag() != "readout-error" && k.getIRFunction()->nInstructions() > 0) {
+			if (k.getIRFunction()->getTag() != "readout-error"
+					&& k.getIRFunction()->nInstructions() > 0) {
 				k.getIRFunction()->insertInstruction(0, newStatePrep);
 			}
 		}
+
 		total.insert(std::end(total), std::begin(tmpKernels),
 				std::end(tmpKernels));
 
 		storedIRs.push_back(program->getIR());
+
+	} else {
+
+		bool setBufferPostprocessors = false;
+		for (auto& range : ranges) {
+
+			auto rIdx = rangeIndices[counter];
+
+			for (int i = 0; i < range.rows(); i++) {
+
+				tmp(rIdx) = range(i);
+
+				auto newStatePrep = StatePreparationEvaluator::evaluateCircuit(
+						statePrep, nParams, tmp);
+				auto program = std::make_shared<VQEProgram>(accelerator, op,
+						std::dynamic_pointer_cast<GateFunction>(newStatePrep),
+						world);
+				program->setStatePreparationCircuit(newStatePrep);
+				program->build();
+				auto tmpKernels = program->getVQEKernels();
+				for (auto k : tmpKernels) {
+					if (k.getIRFunction()->getTag() != "readout-error"
+							&& k.getIRFunction()->nInstructions() > 0) {
+						k.getIRFunction()->insertInstruction(0, newStatePrep);
+					}
+				}
+
+				total.insert(std::end(total), std::begin(tmpKernels),
+						std::end(tmpKernels));
+
+				storedIRs.push_back(program->getIR());
+
+				if (!setBufferPostprocessors) {
+					total.setBufferPostprocessors(program->getBufferPostprocessors());
+				}
+			}
+
+			counter++;
+		}
+
 	}
+
+//	tmp(0) = range[0](0); // FIXME ASSUMING 1 PARAM
+//	auto newStatePrep = StatePreparationEvaluator::evaluateCircuit(statePrep,
+//			nParams, tmp);
+//	auto program = std::make_shared<VQEProgram>(accelerator, op,
+//			std::dynamic_pointer_cast<GateFunction>(newStatePrep), world);
+//	if (xacc::optionExists("correct-readout-errors")) {
+//		program->addIRPreprocessor("readout-error-preprocessor");
+//	}
+//	program->build();
+//	KernelList<> total = program->getVQEKernels();
+//	for (auto k : total) {
+//		if (k.getIRFunction()->getTag() != "readout-error" && k.getIRFunction()->nInstructions() > 0) {
+//			k.getIRFunction()->insertInstruction(0,newStatePrep);
+//		}
+//	}
+//
+//	std::vector<std::shared_ptr<IR>> storedIRs;
+//	storedIRs.push_back(program->getIR());
+//
+//	for (int i = 1; i < range[0].rows(); i++) {
+//		tmp(0) = range[0](i);
+//		newStatePrep = StatePreparationEvaluator::evaluateCircuit(statePrep,
+//				nParams, tmp);
+//		program->setStatePreparationCircuit(newStatePrep);
+//		program->build();
+//		auto tmpKernels = program->getVQEKernels();
+//		for (auto k : tmpKernels) {
+//			if (k.getIRFunction()->getTag() != "readout-error" && k.getIRFunction()->nInstructions() > 0) {
+//				k.getIRFunction()->insertInstruction(0, newStatePrep);
+//			}
+//		}
+//		total.insert(std::end(total), std::begin(tmpKernels),
+//				std::end(tmpKernels));
+//
+//		storedIRs.push_back(program->getIR());
+//	}
 
 	xacc::clearOptions();
 
