@@ -56,9 +56,9 @@ int main(int argc, char** argv) {
 	} else {
 		provider = serviceRegistry->getService<MPIProvider>("no-mpi");
 		provider->initialize(argc,argv);
+		world = provider->getCommunicator();
 		xacc::info("XACC-VQE Built without MPI Support.");
 	}
-
 
 	xacc::info("Number of Ranks = " + std::to_string(world->size()));
 	if (!xacc::optionExists("accelerator")) {
