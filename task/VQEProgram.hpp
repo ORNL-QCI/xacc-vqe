@@ -183,6 +183,11 @@ public:
 			}
 
 		} else {
+
+			if (xacc::optionExists("correct-readout-errors")) {
+				addIRPreprocessor("readout-error-preprocessor");
+			}
+
 			nQubits = std::stoi(xacc::getOption("n-qubits"));
 			auto tmpKernels = pauli.toXACCIR()->getKernels();
 			xaccIR = std::make_shared<xacc::quantum::GateQIR>();
@@ -207,7 +212,6 @@ public:
 		// generating openfermion scripts, or if we've already been given
 		// an ansatz
 		auto task = xacc::getOption("vqe-task");
-		xacc::info("Task is " + task);
 		if (!statePrep && (task == "vqe" || task == "compute-energy")) {
 			xacc::info("Creating a StatePreparation Circuit");
 			statePrep = createStatePreparationCircuit();
