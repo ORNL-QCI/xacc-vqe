@@ -14,10 +14,12 @@ VQETaskResult ComputeEnergyVQETask::execute(
 	int rank = comm->rank(), nlocalqpucalls = 0;
 	int nRanks = comm->size();
 	bool multiExec = false;
+	bool persist = xacc::optionExists("vqe-persist-data");
 
 	auto statePrep = program->getStatePreparationCircuit();
 	auto nQubits = program->getNQubits();
 	auto qpu = program->getAccelerator();
+	int nReadoutKernels = 0;
 
 	auto pauli = program->getPauliOperator();
 
@@ -30,9 +32,38 @@ VQETaskResult ComputeEnergyVQETask::execute(
 
 	VQETaskResult taskResult;
 
+	std::vector<std::string> kernelNames;
+	for (auto& k : kernels) {
+		if (k.getIRFunction()->getTag() == "readout-error") {
+			nReadoutKernels++;
+		} else if (k.getIRFunction()->nInstructions() > 0){
+			kernelNames.push_back(k.getIRFunction()->getName());
+		}
+	}
+
 	if (xacc::optionExists("vqe-compute-energies-multi-exec")
 			|| qpu->name() == "ibm") {
 		multiExec = true;
+	}
+
+	std::stringstream outputString;
+
+	if (persist) {
+
+		if (!boost::filesystem::exists(xacc::getOption("vqe-persist-data"))) {
+			for (int i = 0; i < program->getNParameters(); i++) {
+				outputString << "theta" << i << ", ";
+			}
+
+			for (int i = 0; i < kernelNames.size(); i++) {
+				outputString << (i == 0 ? "" : ", ") << kernelNames[i];
+			}
+
+			outputString << ", E\n";
+		}
+		for (int i = 0; i < parameters.rows(); i++) {
+			outputString << parameters(i) << ", ";
+		}
 	}
 
 	if (multiExec) {
@@ -41,7 +72,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 		std::vector<double> coeffs;
 		std::vector<Kernel<>> identityKernels;
 
-		for (int i = 0; i < pauli.nTerms(); i++) {
+		for (int i = 0; i < kernels.size(); i++) {
 			auto k = kernels[i];
 			// If not identity
 			if (k.getIRFunction()->nInstructions() > 0
@@ -52,7 +83,8 @@ VQETaskResult ComputeEnergyVQETask::execute(
 						std::real(
 								boost::get<std::complex<double>>(
 										k.getIRFunction()->getParameter(0))));
-			} else {
+			} else if(!boost::contains(k.getIRFunction()->getTag(),
+							"readout-error")) {
 				identityKernels.push_back(k);
 			}
 		}
@@ -61,14 +93,16 @@ VQETaskResult ComputeEnergyVQETask::execute(
 
 		// FIXME, Goal here is to run AcceleratorBufferPostprocessors in KernelList.execute...
 		auto tmpBuffers = kernels.execute(buff);
-		nlocalqpucalls += tmpBuffers.size();
+		nlocalqpucalls++;
 
 		int counter = 0;
+		std::vector<double> expVals;
 		for (int i = 0; i < coeffs.size(); i++) {
 			localExpectationValue = tmpBuffers[i]->getExpectationValueZ();
 			xacc::info(
 					"Fixed Expectation for Kernel " + std::to_string(counter) + " = "
 							+ std::to_string(localExpectationValue));
+			expVals.push_back(localExpectationValue);
 			sum += coeffs[counter] * localExpectationValue;
 			counter++;
 		}
@@ -79,6 +113,15 @@ VQETaskResult ComputeEnergyVQETask::execute(
 							k.getIRFunction()->getParameter(0)));
 		}
 
+		if (persist) {
+
+			for (int i = 0; i < expVals.size(); i++) {
+				outputString << (i==0 ? "" : ", ") << expVals[i];
+			}
+
+			outputString << ", " << sum << "\n";
+
+		}
 		for (int i = 0; i < kernels.size(); i++) {
 			if (kernels[i].getIRFunction()->nInstructions() > 0) {
 				kernels[i].getIRFunction()->removeInstruction(0);
@@ -86,6 +129,11 @@ VQETaskResult ComputeEnergyVQETask::execute(
 		}
 	} else {
 
+		std::map<std::string, double> expVals;
+
+		for (auto kn : kernelNames) {
+			expVals.insert({kn, 0.0});
+		}
 		// Execute the kernels on the appropriate QPU
 		// in parallel using OpenMP threads per
 		// every MPI rank.
@@ -99,34 +147,52 @@ VQETaskResult ComputeEnergyVQETask::execute(
 			// Get the ith Kernel
 			auto kernel = kernels[i];
 
-			auto t = std::real(boost::get<std::complex<double>>(
-                               kernel.getIRFunction()->getParameter(0)));
+			if (!boost::contains(kernel.getIRFunction()->getTag(),
+					"readout-error")) {
+				auto t = std::real(
+						boost::get<std::complex<double>>(
+								kernel.getIRFunction()->getParameter(0)));
 
-			// If not an identity kernel...
-			if (kernel.getIRFunction()->nInstructions() > 0) {
-				// Insert the state preparation circuit IR
-				// at location 0 in this Kernels IR instructions.
-				kernel.getIRFunction()->insertInstruction(0,
-						evaluatedStatePrep);
+				// If not an identity kernel...
+				if (kernel.getIRFunction()->nInstructions() > 0) {
+					// Insert the state preparation circuit IR
+					// at location 0 in this Kernels IR instructions.
+					kernel.getIRFunction()->insertInstruction(0,
+							evaluatedStatePrep);
 
-				// Create a temporary buffer of qubits
-				auto buff = qpu->createBuffer("qreg", nQubits);
+					// Create a temporary buffer of qubits
+					auto buff = qpu->createBuffer("qreg", nQubits);
 
-				// Execute the kernel!
-				kernel(buff);
-				nlocalqpucalls++;
+					// Execute the kernel!
+					kernel(buff);
+					nlocalqpucalls++;
 
-				lexpval = buff->getExpectationValueZ();
+					lexpval = buff->getExpectationValueZ();
 
-				// The next iteration will have a different
-				// state prep circuit, so toss the current one.
-				kernel.getIRFunction()->removeInstruction(0);
+					expVals[kernel.getIRFunction()->getName()] = lexpval;
+
+					// The next iteration will have a different
+					// state prep circuit, so toss the current one.
+					kernel.getIRFunction()->removeInstruction(0);
+				}
+
+				// Sum up the expectation values, the Hamiltonian
+				// terms coefficient is stored in the first
+				// parameter of the Kernels IR Function representation
+				sum += t * lexpval;
+			}
+		}
+
+		if (persist) {
+
+			int counter = 0;
+			for (auto& kn : kernelNames) {
+//			for (int i = 0; i < expVals.size(); i++) {
+				outputString << (counter == 0 ? "" : ", ") << expVals[kn];
+				counter++;
 			}
 
-			// Sum up the expectation values, the Hamiltonian
-			// terms coefficient is stored in the first
-			// parameter of the Kernels IR Function representation
-			sum += t * lexpval;
+			outputString << ", " << sum << "\n";
 		}
 	}
 
@@ -152,6 +218,11 @@ VQETaskResult ComputeEnergyVQETask::execute(
 	taskResult.energy = currentEnergy;
 	taskResult.angles = parameters;
 	taskResult.nQpuCalls = totalQpuCalls;
+
+	if (persist) {
+		std::ofstream out(xacc::getOption("vqe-persist-data"), std::ios_base::app);
+		out << outputString.str();
+	}
 
 	return taskResult;
 }

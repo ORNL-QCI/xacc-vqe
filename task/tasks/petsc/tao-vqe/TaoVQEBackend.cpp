@@ -18,6 +18,7 @@ typedef struct {
   int nParameters;
   std::shared_ptr<ComputeEnergyVQETask> computeTask;
   double currentEnergy = 0.0;
+  Eigen::VectorXd angles;
 } AppCtx;
 
 PetscErrorCode nelderMeadFunction(Tao tao, Vec X, PetscReal *f, Vec G,
@@ -33,7 +34,7 @@ PetscErrorCode nelderMeadFunction(Tao tao, Vec X, PetscReal *f, Vec G,
 	auto e = user->computeTask->execute(params).energy;
 	*f = e;
 	user->currentEnergy = e;
-
+	user->angles = params;
 	/* Restore vectors */
 	VecRestoreArrayRead(X, &x);
 
@@ -50,7 +51,9 @@ PetscErrorCode poundersFunction(Tao tao, Vec X, Vec F, void * ptr) {
 
 	auto params = Eigen::Map<const Eigen::VectorXd>(x, user->nParameters);
 	auto e = user->computeTask->execute(params).energy;
-	f[0] = e + 10.0;
+	f[0] = e + 5.0;
+	user->currentEnergy = e;
+	user->angles = params;
 	VecRestoreArray(X, &x);
 	VecRestoreArray(F, &f);
 	return 0;
@@ -58,6 +61,7 @@ PetscErrorCode poundersFunction(Tao tao, Vec X, Vec F, void * ptr) {
 
 const VQETaskResult TaoVQEBackend::minimize(Eigen::VectorXd parameters) {
 
+	xacc::info("Running VQE via PETSc Tao.");
 	static char help[] = "";
 	std::vector<std::string> argvVec;
 	std::vector<char*> cstrs;
@@ -100,6 +104,7 @@ const VQETaskResult TaoVQEBackend::minimize(Eigen::VectorXd parameters) {
 	TaoSetInitialVector(tao, x);
 
 	if (t == "pounders") {
+		xacc::info("Running Pounders");
 		Vec F;
 		VecCreateSeq(PETSC_COMM_WORLD, 1, &F);
 		TaoSetSeparableObjectiveRoutine(tao, F, poundersFunction,
@@ -117,6 +122,9 @@ const VQETaskResult TaoVQEBackend::minimize(Eigen::VectorXd parameters) {
 
 	VQETaskResult result;
 	result.energy = user.currentEnergy;
+	result.angles = user.angles;
+	result.nQpuCalls = computeTask->totalQpuCalls;
+	result.vqeIterations = computeTask->vqeIteration;
 	return result;
 }
 

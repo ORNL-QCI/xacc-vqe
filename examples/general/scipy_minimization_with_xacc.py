@@ -49,3 +49,17 @@ print('XACC SciPy Minimze:\n', minimize(energy, [0,0]))
 
 
 
+from bayes_opt import BayesianOptimization
+
+def neg_energy(x, y):
+    return -1*energy([x,y])
+
+bo = BayesianOptimization(neg_energy,
+                          {'x': (0, 1), 'y': (0, 1)})
+
+bo.maximize(init_points=10, n_iter=10, kappa=2)
+
+#{'max': {'max_val': 2.035286440109728, 'max_params': {'x': 0.6745710475274774, 'y': 0.2651970328890534}},
+#print(bo.res)
+
+print('\nMin Energy = ', -1.0*bo.res['max']['max_val'], ' at ', bo.res['max']['max_params'])
