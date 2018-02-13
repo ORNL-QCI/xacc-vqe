@@ -18,8 +18,6 @@ typedef struct {
   int nParameters;
   std::shared_ptr<ComputeEnergyVQETask> computeTask;
   double currentEnergy = 0.0;
-  Eigen::VectorXd observations;
-  std::vector<Eigen::VectorXd> angles;
 } AppCtx;
 
 PetscErrorCode nelderMeadFunction(Tao tao, Vec X, PetscReal *f, Vec G,
@@ -51,14 +49,8 @@ PetscErrorCode poundersFunction(Tao tao, Vec X, Vec F, void * ptr) {
 	VecGetArray(F, &f);
 
 	auto params = Eigen::Map<const Eigen::VectorXd>(x, user->nParameters);
-
-	auto y = user->observations;
-	auto thetas = user->angles;
 	auto e = user->computeTask->execute(params).energy;
-	for (i = 0; i < y.rows(); i++) {
-		f[i] = 0.5 * (y(i) - e);
-		std::cout << "Residual " << i << ": " << f[i] << "\n";
-	}
+	f[0] = e + 10.0;
 	VecRestoreArray(X, &x);
 	VecRestoreArray(F, &f);
 	return 0;
@@ -109,45 +101,9 @@ const VQETaskResult TaoVQEBackend::minimize(Eigen::VectorXd parameters) {
 
 	if (t == "pounders") {
 		Vec F;
-
-		if (!xacc::optionExists("observations")) {
-			xacc::error(
-					"You must provide a file containing previous observations for Pounders.");
-		}
-		auto obsFileName = xacc::getOption("observations");
-		std::ifstream obsFile(obsFileName);
-		std::string contents((std::istreambuf_iterator<char>(obsFile)),
-				std::istreambuf_iterator<char>());
-		std::vector<std::string> split;
-		boost::split(split, contents, boost::is_any_of("\n"));
-		Eigen::VectorXd energies(split.size()-1);
-		std::vector<Eigen::VectorXd> angles;
-
-		VecCreateSeq(PETSC_COMM_WORLD, energies.rows(), &F);
-
-		int counter = 0;
-		for (auto line : split) {
-			if (!line.empty()) {
-				std::vector<std::string> split2;
-				boost::split(split2, line, boost::is_any_of(","));
-				int nParams = split2.size() - 1;
-				Eigen::VectorXd ps(nParams);
-				for (int i = 0; i < nParams; i++) {
-					ps(i) = std::stod(split2[i]);
-				}
-
-				angles.push_back(ps);
-				energies(counter) = std::stod(split2[nParams]);
-				counter++;
-			}
-		}
-
-		user.angles = angles;
-		user.observations = energies;
-
+		VecCreateSeq(PETSC_COMM_WORLD, 1, &F);
 		TaoSetSeparableObjectiveRoutine(tao, F, poundersFunction,
 				(void*) &user);
-
 	} else {
 		/* Set routines for function, gradient, hessian evaluation */
 		TaoSetObjectiveAndGradientRoutine(tao, nelderMeadFunction, &user);
