@@ -223,35 +223,37 @@ public:
 
 		if (statePrep) {
 
-			for (auto pp : irpreprocessors) {
-				if (pp->name() == "qubit-map-preprocessor") {
+			if (xacc::optionExists("qubit-map")) {
+				for (auto pp : irpreprocessors) {
+					if (pp->name() == "qubit-map-preprocessor") {
 
-					// Make sure we haven't already mapped it
-					auto mapStr = xacc::getOption("qubit-map");
-					std::vector<std::string> split;
-					boost::split(split, mapStr, boost::is_any_of(","));
-					std::vector<int> qubitMap;
-					int counter = 0;
-					for (auto s : split) {
-						auto idx = std::stoi(s);
-						qubitMap.push_back(idx);
-					}
+						// Make sure we haven't already mapped it
+						auto mapStr = xacc::getOption("qubit-map");
+						std::vector<std::string> split;
+						boost::split(split, mapStr, boost::is_any_of(","));
+						std::vector<int> qubitMap;
+						int counter = 0;
+						for (auto s : split) {
+							auto idx = std::stoi(s);
+							qubitMap.push_back(idx);
+						}
 
-					bool mapStatePrep = true;
-					for (auto& inst : statePrep->getInstructions()) {
-						for (auto bit : inst->bits()) {
-							if (std::find(qubitMap.begin(), qubitMap.end(), bit)
-									!= qubitMap.end()) {
-								mapStatePrep = false;
-								break;
+						bool mapStatePrep = true;
+						for (auto& inst : statePrep->getInstructions()) {
+							for (auto bit : inst->bits()) {
+								if (std::find(qubitMap.begin(), qubitMap.end(),
+										bit) != qubitMap.end()) {
+									mapStatePrep = false;
+									break;
+								}
 							}
 						}
-					}
 
-					if (mapStatePrep) {
-						xacc::quantum::GateQIR ir;
-						ir.addKernel(statePrep);
-						pp->process(ir);
+						if (mapStatePrep) {
+							xacc::quantum::GateQIR ir;
+							ir.addKernel(statePrep);
+							pp->process(ir);
+						}
 					}
 				}
 			}
