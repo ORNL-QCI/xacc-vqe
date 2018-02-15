@@ -76,7 +76,7 @@ class Term: public TermTuple,
 protected:
 
 	static std::map<std::string, std::pair<c, std::string>> create_map() {
-		std::map<std::string, std::pair<c, std::string>> m;
+		static std::map<std::string, std::pair<c, std::string>> m;
 		m.insert( { "II", { c(1.0, 0.0), "I" } });
 		m.insert( { "IX", { c(1.0, 0.0), "X" } });
 		m.insert( { "XI", { c(1.0, 0.0), "X" } });

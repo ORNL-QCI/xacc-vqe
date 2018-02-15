@@ -3,6 +3,7 @@
 
 #include "StatePreparationEvaluator.hpp"
 #include "VQETask.hpp"
+#include <boost/filesystem.hpp>
 
 namespace xacc {
 namespace vqe {

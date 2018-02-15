@@ -34,7 +34,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 
 	std::vector<std::string> kernelNames;
 	for (auto& k : kernels) {
-		if (k.getIRFunction()->getTag() == "readout-error") {
+		if (!boost::contains(k.getIRFunction()->getTag(), "readout-error")) {
 			nReadoutKernels++;
 		} else if (k.getIRFunction()->nInstructions() > 0){
 			kernelNames.push_back(k.getIRFunction()->getName());
