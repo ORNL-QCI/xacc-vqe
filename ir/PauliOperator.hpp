@@ -272,6 +272,7 @@ public:
 
 	std::vector<Triplet> getSparseMatrixElements();
 	std::shared_ptr<IR> toXACCIR();
+	void fromXACCIR(std::shared_ptr<IR> ir);
 	PauliOperator eval(const std::map<std::string, std::complex<double>> varToValMap);
 	bool isClose(PauliOperator& other);
 

@@ -525,6 +525,37 @@ std::shared_ptr<IR> PauliOperator::toXACCIR() {
 	}
 	return newIr;
 }
+
+void PauliOperator::fromXACCIR(std::shared_ptr<IR> ir) {
+
+	terms.clear();
+
+	for (auto& kernel : ir->getKernels()) {
+		std::map<int, std::string> pauliTerm;
+		for (auto inst : kernel->getInstructions()) {
+			bool seen = false;
+			if (inst->getName() == "H") {
+				pauliTerm.insert({inst->bits()[0], "X"});
+			} else if (inst->getName() == "Rx") {
+				pauliTerm.insert({inst->bits()[0], "Y"});
+			}
+
+			if (pauliTerm.count(inst->bits()[0]) == 0) {
+				pauliTerm.insert({inst->bits()[0], "Z"});
+			}
+		}
+
+		std::complex<double> c(1,0);
+		if (kernel->nParameters() > 0) {
+			c = boost::get<std::complex<double>>(kernel->getParameter(0));
+		}
+
+		Term t(c, pauliTerm);
+		terms.insert({t.id(), t});
+
+	}
+}
+
 }
 }
 

@@ -137,17 +137,20 @@ public:
 			// Start compilation
 			Program::build();
 
-			std::shared_ptr<FermionToSpinTransformation> transform;
-			if (xacc::optionExists("fermion-transformation")) {
-				auto transformStr = xacc::getOption("fermion-transformation");
-				transform = ServiceRegistry::instance()->getService<FermionToSpinTransformation>(
-						transformStr);
-			} else {
-				transform = ServiceRegistry::instance()->getService<FermionToSpinTransformation>(
-						"jw");
+			if (!userProvidedKernels) {
+				std::shared_ptr<FermionToSpinTransformation> transform;
+				if (xacc::optionExists("fermion-transformation")) {
+					auto transformStr = xacc::getOption(
+							"fermion-transformation");
+					transform = ServiceRegistry::instance()->getService<
+							FermionToSpinTransformation>(transformStr);
+				} else {
+					transform = ServiceRegistry::instance()->getService<
+							FermionToSpinTransformation>("jw");
+				}
+				pauli = transform->getResult();
 			}
 
-			pauli = transform->getResult();
 
 			nQubits = std::stoi(xacc::getOption("n-qubits"));
 
@@ -179,6 +182,8 @@ public:
 							counter++;
 						}
 					}
+
+					pauli.fromXACCIR(xaccIR);
 				}
 			}
 
@@ -258,6 +263,7 @@ public:
 				}
 			}
 		}
+
 	}
 
 	PauliOperator getPauliOperator() {
