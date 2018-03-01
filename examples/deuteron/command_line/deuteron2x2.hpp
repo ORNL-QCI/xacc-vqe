@@ -16,10 +16,10 @@ MEASURE 0 [0]
 MEASURE 1 [1]
 }
 #pragma vqe-coefficient .21829
-__qpu__ y0y1(AcceleratorBuffer b) {
+__qpu__ z0(AcceleratorBuffer b) {
 MEASURE 0 [0]
 }
 #pragma vqe-coefficient -6.125
-__qpu__ y0y1(AcceleratorBuffer b) {
+__qpu__ z1(AcceleratorBuffer b) {
 MEASURE 1 [0]
 }
