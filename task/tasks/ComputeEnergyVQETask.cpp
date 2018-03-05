@@ -135,8 +135,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 			expVals.insert({kn, 0.0});
 		}
 		// Execute the kernels on the appropriate QPU
-		// in parallel using OpenMP threads per
-		// every MPI rank.
+		// in parallel MPI, get local rank's Kernels to execute
 		int myStart = (rank) * kernels.size() / nRanks;
 		int myEnd = (rank + 1) * kernels.size() / nRanks;
 		for (int i = myStart; i < myEnd; i++) {
