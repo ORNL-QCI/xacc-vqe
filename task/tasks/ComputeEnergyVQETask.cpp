@@ -139,7 +139,6 @@ VQETaskResult ComputeEnergyVQETask::execute(
 		// every MPI rank.
 		int myStart = (rank) * kernels.size() / nRanks;
 		int myEnd = (rank + 1) * kernels.size() / nRanks;
-//#pragma omp parallel for shared(kernels) reduction (+: sum, nlocalqpucalls)
 		for (int i = myStart; i < myEnd; i++) {
 			
 			double lexpval = 1.0;
