@@ -44,6 +44,7 @@ public:
 		result.energy = currentEnergy;
 		result.nQpuCalls = computeTask->totalQpuCalls;
 		result.vqeIterations = computeTask->vqeIteration;
+		result.execTime = computeTask->execTime;
 		return result;
 	}
 
@@ -74,7 +75,7 @@ public:
 	public:
 		static VQECriteria defaults() {
 			VQECriteria d;
-			d.iterations = 1000;
+			d.iterations = 10000;
 			d.xDelta = 0;
 			d.fDelta = 1e-6;
 			d.gradNorm = 1e-4;

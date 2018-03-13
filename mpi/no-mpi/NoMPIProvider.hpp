@@ -36,6 +36,10 @@ public:
 		result = myVal;
 	}
 
+	virtual void maxDouble(double& myVal, double& result) {
+		result = myVal;
+	}
+
 	virtual ~NullCommunicator() {}
 
 };

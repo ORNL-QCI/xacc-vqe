@@ -40,6 +40,10 @@ public:
 		boost::mpi::all_reduce(comm, myVal, result, std::plus<int>());
 	}
 
+	virtual void maxDouble(double& myVal, double& result) {
+		boost::mpi::all_reduce(comm, myVal, result, boost::mpi::maximum<double>());
+	}
+
 	virtual ~BoostCommunicator() {}
 
 };

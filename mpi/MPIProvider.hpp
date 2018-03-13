@@ -19,6 +19,7 @@ public:
 
 	virtual void sumDoubles(double& myVal, double& result) = 0;
 	virtual void sumInts(int& myVal, int& result) = 0;
+	virtual void maxDouble(double& myVal, double& result) = 0;
 
 	virtual ~Communicator() {}
 

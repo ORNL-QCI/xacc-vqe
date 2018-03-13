@@ -59,7 +59,7 @@ public:
 	virtual const std::string description() const {return "";}
 };
 
-class VQEProgram: public xacc::Program {
+class VQEProgram: public xacc::Program, public OptionsProvider {
 
 public:
 
@@ -87,6 +87,31 @@ public:
 			std::shared_ptr<Communicator> c) :
 			Program(acc, kernelSource), statePrepSource(statePrepSrc), nParameters(
 					0), comm(c) {
+	}
+
+	/**
+	 * Return a Boost options_description instance that
+	 * describes the options available for this
+	 * derived subclass.
+	 */
+	virtual std::shared_ptr<options_description> getOptions() {
+		auto desc = std::make_shared<options_description>(
+				"VQE Program Options");
+		desc->add_options()("correct-readout-errors", "Turn on readout-error correction.");
+		return desc;
+
+	}
+
+	/**
+	 * Given user-input command line options, perform
+	 * some operation. Returns true if runtime should exit,
+	 * false otherwise.
+	 *
+	 * @param map The mapping of options to values
+	 * @return exit True if exit, false otherwise
+	 */
+	virtual bool handleOptions(variables_map& map) {
+		return false;
 	}
 
 	std::shared_ptr<Communicator> getCommunicator() {
@@ -130,9 +155,9 @@ public:
 
 			addPreprocessor("fcidump-preprocessor");
 
-			if (xacc::optionExists("correct-readout-errors")) {
+//			if (xacc::optionExists("correct-readout-errors")) {
 				addIRPreprocessor("readout-error-preprocessor");
-			}
+//			}
 
 			// Start compilation
 			Program::build();

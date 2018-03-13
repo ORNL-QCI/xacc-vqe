@@ -66,6 +66,8 @@ VQETaskResult ComputeEnergyVQETask::execute(
 		}
 	}
 
+	double maxExecTime = 0.0;
+
 	if (multiExec) {
 
 		xacc::info("Computing Energy with XACC Kernel Multi-Exec.");
@@ -90,6 +92,10 @@ VQETaskResult ComputeEnergyVQETask::execute(
 		}
 
 		auto buff = qpu->createBuffer("qreg", nQubits);
+
+		maxExecTime += qpu->getExecutionTime();
+
+		execTime += maxExecTime;
 
 		// FIXME, Goal here is to run AcceleratorBufferPostprocessors in KernelList.execute...
 		auto tmpBuffers = kernels.execute(buff);
@@ -134,10 +140,14 @@ VQETaskResult ComputeEnergyVQETask::execute(
 		for (auto kn : kernelNames) {
 			expVals.insert({kn, 0.0});
 		}
+
+		double localExecTime = 0.0;
+
 		// Execute the kernels on the appropriate QPU
 		// in parallel MPI, get local rank's Kernels to execute
 		int myStart = (rank) * kernels.size() / nRanks;
 		int myEnd = (rank + 1) * kernels.size() / nRanks;
+
 		for (int i = myStart; i < myEnd; i++) {
 			
 			double lexpval = 1.0;
@@ -165,6 +175,8 @@ VQETaskResult ComputeEnergyVQETask::execute(
 					kernel(buff);
 					nlocalqpucalls++;
 
+					localExecTime += qpu->getExecutionTime();
+
 					lexpval = buff->getExpectationValueZ();
 
 					expVals[kernel.getIRFunction()->getName()] = lexpval;
@@ -181,11 +193,14 @@ VQETaskResult ComputeEnergyVQETask::execute(
 			}
 		}
 
+		// Find the max localExecTime across all ranks
+		comm->maxDouble(localExecTime, maxExecTime);
+		execTime += maxExecTime;
+
 		if (persist) {
 
 			int counter = 0;
 			for (auto& kn : kernelNames) {
-//			for (int i = 0; i < expVals.size(); i++) {
 				outputString << (counter == 0 ? "" : ", ") << expVals[kn];
 				counter++;
 			}
@@ -203,7 +218,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 	totalQpuCalls += totalqpucalls;
 
 	std::stringstream ss;
-	ss << std::setprecision(10) << currentEnergy << " at (" << parameters.transpose() << ")";
+	ss << std::setprecision(10) << currentEnergy << " at (" << parameters.transpose() << "), exec_time = " << maxExecTime << " (s)";
 
 	if (rank == 0) {
 		xacc::info("Iteration " + std::to_string(vqeIteration) + ", Computed VQE Energy = " + ss.str());
@@ -216,6 +231,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 	taskResult.energy = currentEnergy;
 	taskResult.angles = parameters;
 	taskResult.nQpuCalls = totalQpuCalls;
+	taskResult.execTime = execTime;
 
 	if (persist) {
 		std::ofstream out(xacc::getOption("vqe-persist-data"), std::ios_base::app);

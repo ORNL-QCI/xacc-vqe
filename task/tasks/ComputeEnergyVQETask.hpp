@@ -64,6 +64,7 @@ public:
 
 	int vqeIteration = 0;
 	int totalQpuCalls = 0;
+	double execTime = 0.0;
 
 };
 }

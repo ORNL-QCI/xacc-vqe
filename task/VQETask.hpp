@@ -16,6 +16,7 @@ public:
 	Eigen::VectorXd angles;
 	int nQpuCalls = 0;
 	int vqeIterations = 0;
+	double execTime = 0.0;
 };
 
 class VQETask : public xacc::Identifiable, public OptionsProvider {
