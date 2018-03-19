@@ -1,5 +1,5 @@
 /***********************************************************************************
- * Copyright (c) 2017, UT-Battelle
+ * Copyright (c) 2018, UT-Battelle
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,57 +28,42 @@
  *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
-#include "JordanWignerIRTransformation.hpp"
-#include "BravyiKitaevIRTransformation.hpp"
-#include "EfficientJW.hpp"
-#include "LongRangeJW.hpp"
+#ifndef VQE_IR_LONGRANGEJW_HPP_
+#define VQE_IR_LONGRANGEJW_HPP_
 
-#include "cppmicroservices/BundleActivator.h"
-#include "cppmicroservices/BundleContext.h"
-#include "cppmicroservices/ServiceProperties.h"
+#include "FermionToSpinTransformation.hpp"
 
-#include <memory>
-#include <set>
+namespace xacc {
 
-using namespace cppmicroservices;
-
-namespace {
+namespace vqe {
 
 /**
  */
-class US_ABI_LOCAL VQEIRTransformationActivator: public BundleActivator {
+class LongRangeJW: public FermionToSpinTransformation {
 
 public:
 
-	VQEIRTransformationActivator() {
+	/**
+	 * Transform a FermionIR instance to a GateQIR instance.
+	 *
+	 * @param ir
+	 * @return
+	 */
+	virtual std::shared_ptr<IR> transform(std::shared_ptr<IR> ir);
+
+	virtual const std::string name() const {
+		return "long-range-jw";
 	}
 
-	/**
-	 */
-	void Start(BundleContext context) {
-		auto c = std::make_shared<xacc::vqe::JordanWignerIRTransformation>();
-		auto c3 = std::make_shared<xacc::vqe::BravyiKitaevIRTransformation>();
-		auto c4 = std::make_shared<xacc::vqe::EfficientJW>();
-		auto c5 = std::make_shared<xacc::vqe::LongRangeJW>();
-
-		context.RegisterService<xacc::IRTransformation>(c);
-		context.RegisterService<xacc::vqe::FermionToSpinTransformation>(c);
-		context.RegisterService<xacc::IRTransformation>(c3);
-		context.RegisterService<xacc::vqe::FermionToSpinTransformation>(c3);
-		context.RegisterService<xacc::IRTransformation>(c4);
-
-		context.RegisterService<xacc::vqe::FermionToSpinTransformation>(c5);
-		context.RegisterService<xacc::IRTransformation>(c5);
-
-	}
-
-	/**
-	 */
-	void Stop(BundleContext /*context*/) {
+	virtual const std::string description() const {
+		return "The Jordan-Wigner IR Transformation uses the Jordan-Wigner "
+				"transformation to map fermionic instructions to spin-based instructions.";
 	}
 
 };
 
 }
 
-CPPMICROSERVICES_EXPORT_BUNDLE_ACTIVATOR(VQEIRTransformationActivator)
+}
+
+#endif

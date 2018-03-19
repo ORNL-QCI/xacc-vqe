@@ -564,6 +564,10 @@ VQETaskResult execute(py::object& fermionOperator, py::kwargs kwargs) {
 			xacc::setOption("qubit-map",mapStr);
 		}
 
+		if (kwargs.contains("transformation")) {
+			xacc::setOption("fermion-transformation",
+								kwargs["transformation"].cast<std::string>());
+		}
 	}
 
 	xacc::setOption("vqe-task", task);

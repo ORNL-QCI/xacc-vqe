@@ -93,13 +93,14 @@ VQETaskResult ComputeEnergyVQETask::execute(
 
 		auto buff = qpu->createBuffer("qreg", nQubits);
 
-		maxExecTime += qpu->getExecutionTime();
-
-		execTime += maxExecTime;
 
 		// FIXME, Goal here is to run AcceleratorBufferPostprocessors in KernelList.execute...
 		auto tmpBuffers = kernels.execute(buff);
 		nlocalqpucalls++;
+
+		maxExecTime += qpu->getExecutionTime();
+
+		execTime += maxExecTime;
 
 		int counter = 0;
 		std::vector<double> expVals;
