@@ -1,0 +1,6 @@
+{
+  "bundle.symbolic_name" : "xacc_vqe_pso",
+  "bundle.activator" : true,
+  "bundle.name" : "XACC VQE PSO support",
+  "bundle.description" : "This bundle provides VQE pso support."
+}
