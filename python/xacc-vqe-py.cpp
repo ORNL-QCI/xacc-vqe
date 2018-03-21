@@ -22,224 +22,6 @@ using namespace xacc::vqe;
 
 using GateFunctionPtr = std::shared_ptr<xacc::quantum::GateFunction>;
 
-std::pair<KernelList<>, std::vector<std::shared_ptr<IR>>> generateKernels(PauliOperator& op, py::kwargs kwargs) {
-
-	if (!xacc::isInitialized()) {
-		xacc::Initialize({"--use-cout", "--no-color"});
-		xacc::info("You did not initialize the XACC framework. "
-				"Auto-running xacc::Initialize().");
-	}
-
-	std::shared_ptr<MPIProvider> provider;
-	auto serviceRegistry = xacc::ServiceRegistry::instance();
-	if (serviceRegistry->hasService<MPIProvider>("boost-mpi")) {
-		provider = serviceRegistry->getService<MPIProvider>("boost-mpi");
-		auto mpi4py = pybind11::module::import("mpi4py.MPI");
-		auto comm = mpi4py.attr("COMM_WORLD");
-	} else {
-		provider = serviceRegistry->getService<MPIProvider>("no-mpi");
-	}
-
-	provider->initialize();
-	auto world = provider->getCommunicator();
-
-	// Get the user-specified Accelerator,
-	// or TNQVM if none specified
-	xacc::setAccelerator("vqe-dummy");
-	// Set the default Accelerator to TNQVM
-	if (xacc::hasAccelerator("tnqvm")) {
-		xacc::setAccelerator("tnqvm");
-	}
-
-	int maxQbit = 0;
-	for (auto& kv : op.getTerms()) {
-		if (!kv.second.isIdentity()) {
-			int qbit = kv.second.ops().rbegin()->first;
-			if (qbit > maxQbit)
-				maxQbit = qbit;
-		}
-	}
-	int nQubits = maxQbit + 1;
-
-	std::string task = "compute-energy";
-	auto accelerator = xacc::getAccelerator();
-	auto statePrep = GateFunctionPtr(nullptr);
-
-	py::tuple range;
-
-	if (kwargs) {
-
-		if (kwargs.contains("accelerator")) {
-			if (py::isinstance<py::str>(kwargs["accelerator"])) {
-				std::string accStr =
-						kwargs.contains("accelerator") ?
-								kwargs["accelerator"].cast<std::string>() : "";
-				if (!accStr.empty())
-					accelerator = xacc::getAccelerator(accStr);
-			} else {
-				accelerator = kwargs["accelerator"].cast<std::shared_ptr<Accelerator>>();
-			}
-		}
-
-		nQubits =
-				kwargs.contains("n-qubits") ?
-						kwargs["n-qubits"].cast<int>() : nQubits;
-
-		if (kwargs.contains("ansatz")) {
-			statePrep = kwargs["ansatz"].cast<GateFunctionPtr>();
-		}
-
-		if (kwargs.contains("range")) {
-			range = kwargs["range"].cast<py::tuple>();
-		}
-
-		if (kwargs.contains("error-mitigation")) {
-			auto errorMitigationStrategies = kwargs["error-mitigation"].cast<std::vector<std::string>>();
-			for (auto e : errorMitigationStrategies) {
-				xacc::setOption(e, "true");
-			}
-		}
-
-		if (kwargs.contains("qubit-map")) {
-			auto qbitmap = kwargs["qubit-map"].cast<std::vector<int>>();
-			auto mapStr = std::to_string(qbitmap[0]);
-			for (int i = 1; i < qbitmap.size(); i++) {
-				mapStr += "," + std::to_string(qbitmap[i]);
-			}
-			xacc::setOption("qubit-map", mapStr);
-		}
-	}
-
-	xacc::setOption("vqe-task", task);
-	xacc::setOption("n-qubits", std::to_string(nQubits));
-
-	// range.size() should equal statePrep->nParameters
-	int nParams = statePrep->nParameters();
-	if (range.size() != nParams) xacc::error("Invalid range parameters");
-
-	int counter = 0;
-	std::vector<Eigen::VectorXd> ranges;
-	std::vector<int> rangeIndices;
-	Eigen::VectorXd tmp(nParams);
-	for (auto& rangeElement : range) {
-
-		if (py::isinstance<py::float_>(rangeElement) || py::isinstance<py::int_>(rangeElement)) {
-			tmp(counter) = rangeElement.cast<double>();
-		} else {
-			ranges.push_back(rangeElement.cast<Eigen::VectorXd>());
-			rangeIndices.push_back(counter);
-		}
-
-		counter++;
-	}
-
-	counter = 0;
-	std::vector<std::shared_ptr<IR>> storedIRs;
-	KernelList<> total(accelerator);
-	if (ranges.empty()) {
-
-		auto newStatePrep = StatePreparationEvaluator::evaluateCircuit(
-				statePrep, nParams, tmp);
-		auto program = std::make_shared<VQEProgram>(accelerator, op,
-				std::dynamic_pointer_cast<GateFunction>(newStatePrep), world);
-		program->setStatePreparationCircuit(newStatePrep);
-		program->build();
-		auto tmpKernels = program->getVQEKernels();
-		for (auto k : tmpKernels) {
-			if (k.getIRFunction()->getTag() != "readout-error"
-					&& k.getIRFunction()->nInstructions() > 0) {
-				k.getIRFunction()->insertInstruction(0, newStatePrep);
-			}
-		}
-
-		total.insert(std::end(total), std::begin(tmpKernels),
-				std::end(tmpKernels));
-
-		storedIRs.push_back(program->getIR());
-
-	} else {
-
-		bool setBufferPostprocessors = false;
-		for (auto& range : ranges) {
-
-			auto rIdx = rangeIndices[counter];
-
-			for (int i = 0; i < range.rows(); i++) {
-
-				tmp(rIdx) = range(i);
-
-				auto newStatePrep = StatePreparationEvaluator::evaluateCircuit(
-						statePrep, nParams, tmp);
-				auto program = std::make_shared<VQEProgram>(accelerator, op,
-						std::dynamic_pointer_cast<GateFunction>(newStatePrep),
-						world);
-				program->setStatePreparationCircuit(newStatePrep);
-				program->build();
-				auto tmpKernels = program->getVQEKernels();
-				for (auto k : tmpKernels) {
-					if (k.getIRFunction()->getTag() != "readout-error"
-							&& k.getIRFunction()->nInstructions() > 0) {
-						k.getIRFunction()->insertInstruction(0, newStatePrep);
-					}
-				}
-
-				total.insert(std::end(total), std::begin(tmpKernels),
-						std::end(tmpKernels));
-
-				storedIRs.push_back(program->getIR());
-
-				if (!setBufferPostprocessors) {
-					total.setBufferPostprocessors(program->getBufferPostprocessors());
-				}
-			}
-
-			counter++;
-		}
-
-	}
-
-//	tmp(0) = range[0](0); // FIXME ASSUMING 1 PARAM
-//	auto newStatePrep = StatePreparationEvaluator::evaluateCircuit(statePrep,
-//			nParams, tmp);
-//	auto program = std::make_shared<VQEProgram>(accelerator, op,
-//			std::dynamic_pointer_cast<GateFunction>(newStatePrep), world);
-//	if (xacc::optionExists("correct-readout-errors")) {
-//		program->addIRPreprocessor("readout-error-preprocessor");
-//	}
-//	program->build();
-//	KernelList<> total = program->getVQEKernels();
-//	for (auto k : total) {
-//		if (k.getIRFunction()->getTag() != "readout-error" && k.getIRFunction()->nInstructions() > 0) {
-//			k.getIRFunction()->insertInstruction(0,newStatePrep);
-//		}
-//	}
-//
-//	std::vector<std::shared_ptr<IR>> storedIRs;
-//	storedIRs.push_back(program->getIR());
-//
-//	for (int i = 1; i < range[0].rows(); i++) {
-//		tmp(0) = range[0](i);
-//		newStatePrep = StatePreparationEvaluator::evaluateCircuit(statePrep,
-//				nParams, tmp);
-//		program->setStatePreparationCircuit(newStatePrep);
-//		program->build();
-//		auto tmpKernels = program->getVQEKernels();
-//		for (auto k : tmpKernels) {
-//			if (k.getIRFunction()->getTag() != "readout-error" && k.getIRFunction()->nInstructions() > 0) {
-//				k.getIRFunction()->insertInstruction(0, newStatePrep);
-//			}
-//		}
-//		total.insert(std::end(total), std::begin(tmpKernels),
-//				std::end(tmpKernels));
-//
-//		storedIRs.push_back(program->getIR());
-//	}
-
-	xacc::clearOptions();
-
-	return {total, storedIRs};
-}
-
 /**
  * Compile the given source code string and produce
  * the corresponding PauliOperator instance.
@@ -361,14 +143,19 @@ VQETaskResult execute(PauliOperator& op, py::kwargs kwargs) {
 				"Auto-running xacc::Initialize().");
 	}
 
-	std::shared_ptr<MPIProvider> provider;
 	auto serviceRegistry = xacc::ServiceRegistry::instance();
-	if (serviceRegistry->hasService<MPIProvider>("boost-mpi")) {
-		provider = serviceRegistry->getService<MPIProvider>("boost-mpi");
-		auto mpi4py = pybind11::module::import("mpi4py.MPI");
-		auto comm = mpi4py.attr("COMM_WORLD");
+	std::shared_ptr<MPIProvider> provider;
+	if (kwargs.contains("mpi-provider")) {
+		provider = serviceRegistry->getService<MPIProvider>(
+				kwargs["mpi-provider"].cast<std::string>());
 	} else {
-		provider = serviceRegistry->getService<MPIProvider>("no-mpi");
+		if (serviceRegistry->hasService<MPIProvider>("boost-mpi")) {
+			provider = serviceRegistry->getService<MPIProvider>("boost-mpi");
+			auto mpi4py = pybind11::module::import("mpi4py.MPI");
+			auto comm = mpi4py.attr("COMM_WORLD");
+		} else {
+			provider = serviceRegistry->getService<MPIProvider>("no-mpi");
+		}
 	}
 
 	provider->initialize();
@@ -640,9 +427,6 @@ PYBIND11_MODULE(pyxaccvqe, m) {
 	m.def("compile", (PauliOperator (*)(const std::string& src))
 			&compile, py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>(), "");
 
-	m.def("generateKernels", &generateKernels,
-			py::call_guard<py::scoped_ostream_redirect,
-					py::scoped_estream_redirect>(), "");
 	m.def("compile",
 			[](py::object& op, py::kwargs kwargs) -> PauliOperator {
 				py::scoped_ostream_redirect stream(
