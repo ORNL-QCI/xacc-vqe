@@ -79,7 +79,7 @@ usFunctionEmbedResources(TARGET ${LIBRARY_NAME}
 
 target_link_libraries(${LIBRARY_NAME} ${Boost_LIBRARIES} ${XACC_LIBRARIES} ${SYMENGINE_LIBRARIES} xacc-vqe-ir chemps2)
 
-install(TARGETS ${LIBRARY_NAME} DESTINATION ${XACC_LIBRARY_DIR}/plugins/preprocessors)
+install(TARGETS ${LIBRARY_NAME} DESTINATION $ENV{HOME}/.xacc/plugins/preprocessors)
 
 # Gather tests
 file (GLOB test_files tests/*.cpp)

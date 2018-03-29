@@ -32,7 +32,6 @@
 #include <boost/algorithm/string.hpp>
 #include "FermionCompiler.hpp"
 #include "RuntimeOptions.hpp"
-#include "GateQIR.hpp"
 #include "ServiceRegistry.hpp"
 #include "FermionKernel.hpp"
 #include "MPIProvider.hpp"

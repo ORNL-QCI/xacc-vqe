@@ -40,5 +40,5 @@ usFunctionEmbedResources(TARGET ${LIBRARY_NAME}
 
 target_link_libraries(${LIBRARY_NAME} ${Boost_LIBRARIES} ${XACC_LIBRARIES} ${PYTHON_LIBRARY} xacc-vqe-ir ${MPI_CXX_LIBRARIES})
 
-install(TARGETS ${LIBRARY_NAME} DESTINATION ${XACC_LIBRARY_DIR}/plugins/misc)
+install(TARGETS ${LIBRARY_NAME} DESTINATION $ENV{HOME}/.xacc/plugins/misc)
 

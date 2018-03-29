@@ -35,9 +35,7 @@
 #include "PauliOperator.hpp"
 #include <boost/algorithm/string.hpp>
 #include "XACC.hpp"
-#include "GateInstruction.hpp"
-#include "GateFunction.hpp"
-#include "GateQIR.hpp"
+#include "IRProvider.hpp"
 
 using namespace xacc::vqe;
 
@@ -348,20 +346,21 @@ BOOST_AUTO_TEST_CASE(checkMatrixElements) {
 BOOST_AUTO_TEST_CASE(checkFromXACCIR) {
 
 	using namespace xacc;
-	using namespace xacc::quantum;
 
-	auto f = std::make_shared<GateFunction>("f");
-	auto f2 = std::make_shared<GateFunction>("f2");
+	xacc::Initialize();
+	auto gateRegistry = xacc::getService<IRProvider>("gate");
+	auto f = gateRegistry->createFunction("f", {}, {});
+	auto f2 = gateRegistry->createFunction("f2", {}, {});
 
-	auto h1 = GateInstructionRegistry::instance()->create("H", std::vector<int>{0});
-	auto h2 = GateInstructionRegistry::instance()->create("H", std::vector<int>{1});
-	auto m1 = GateInstructionRegistry::instance()->create("Measure", std::vector<int>{0});
+	auto h1 = gateRegistry->createInstruction("H", std::vector<int>{0});
+	auto h2 = gateRegistry->createInstruction("H", std::vector<int>{1});
+	auto m1 = gateRegistry->createInstruction("Measure", std::vector<int>{0});
 	InstructionParameter p(0), p1(1), p2(2);
 	m1->setParameter(0, p);
-	auto m2 = GateInstructionRegistry::instance()->create("Measure", std::vector<int>{1});
+	auto m2 = gateRegistry->createInstruction("Measure", std::vector<int>{1});
 	m2->setParameter(0,p1);
 
-	auto m3 = GateInstructionRegistry::instance()->create("Measure", std::vector<int>{2});
+	auto m3 = gateRegistry->createInstruction("Measure", std::vector<int>{2});
 	m3->setParameter(0,p2);
 
 	f->addInstruction(h1);
@@ -370,18 +369,18 @@ BOOST_AUTO_TEST_CASE(checkFromXACCIR) {
 	f->addInstruction(m2);
 	f->addInstruction(m3);
 
-	auto h3 = GateInstructionRegistry::instance()->create("H", std::vector<int>{0});
-	auto rx = GateInstructionRegistry::instance()->create("Rx", std::vector<int>{1});
+	auto h3 = gateRegistry->createInstruction("H", std::vector<int>{0});
+	auto rx = gateRegistry->createInstruction("Rx", std::vector<int>{1});
 	InstructionParameter q(3.1415/2.0);
 	rx->setParameter(0,q);
 
-	auto m4 = GateInstructionRegistry::instance()->create("Measure", std::vector<int>{0});
+	auto m4 = gateRegistry->createInstruction("Measure", std::vector<int>{0});
 	InstructionParameter p3(0), p4(1), p5(2);
 	m4->setParameter(0, p3);
-	auto m5 = GateInstructionRegistry::instance()->create("Measure", std::vector<int>{1});
+	auto m5 = gateRegistry->createInstruction("Measure", std::vector<int>{1});
 	m5->setParameter(0,p4);
 
-	auto m6 = GateInstructionRegistry::instance()->create("Measure", std::vector<int>{2});
+	auto m6 = gateRegistry->createInstruction("Measure", std::vector<int>{2});
 	m6->setParameter(0,p5);
 
 	f2->addInstruction(h3);
@@ -391,7 +390,7 @@ BOOST_AUTO_TEST_CASE(checkFromXACCIR) {
 	f2->addInstruction(m6);
 
 
-	auto ir = std::make_shared<GateQIR>();
+	auto ir = gateRegistry->createIR();
 	ir->addKernel(f);
 	ir->addKernel(f2);
 
@@ -400,5 +399,7 @@ BOOST_AUTO_TEST_CASE(checkFromXACCIR) {
 	op.fromXACCIR(ir);
 
 	std::cout << "HEY: " << op.toString() << "\n";
+
+	xacc::Finalize();
 }
 

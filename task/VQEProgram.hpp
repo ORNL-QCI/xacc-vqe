@@ -7,11 +7,12 @@
 #include "IRGenerator.hpp"
 #include "PauliOperator.hpp"
 #include "FermionToSpinTransformation.hpp"
-#include "GateQIR.hpp"
 
 #include "MPIProvider.hpp"
 #include "CountGatesOfTypeVisitor.hpp"
 #include "Measure.hpp"
+
+#include "IRProvider.hpp"
 
 namespace xacc {
 namespace vqe {
@@ -64,14 +65,14 @@ class VQEProgram: public xacc::Program, public OptionsProvider {
 public:
 
 	VQEProgram(std::shared_ptr<Accelerator> acc, PauliOperator& op,
-			std::shared_ptr<xacc::quantum::GateFunction> sprep,
+			std::shared_ptr<xacc::Function> sprep,
 			std::shared_ptr<Communicator> c) :
 			Program(acc, ""), pauli(op), comm(c), nParameters(sprep ? sprep->nParameters() : 0), statePrep(
 					sprep), kernels(acc) {
 	}
 
 	VQEProgram(std::shared_ptr<Accelerator> acc, const std::string& kernelSource,
-			std::shared_ptr<xacc::quantum::GateFunction> sprep,
+			std::shared_ptr<xacc::Function> sprep,
 			std::shared_ptr<Communicator> c) :
 			Program(acc, kernelSource), comm(c), nParameters(sprep ? sprep->nParameters() : 0), statePrep(
 					sprep), kernels(acc) {
@@ -221,7 +222,7 @@ public:
 
 			nQubits = std::stoi(xacc::getOption("n-qubits"));
 			auto tmpKernels = pauli.toXACCIR()->getKernels();
-			xaccIR = std::make_shared<xacc::quantum::GateQIR>();
+			xaccIR = xacc::getService<IRProvider>("gate")->createIR();
 			for (auto t : tmpKernels) {
 				xaccIR->addKernel(t);
 			}
@@ -280,9 +281,9 @@ public:
 						}
 
 						if (mapStatePrep) {
-							xacc::quantum::GateQIR ir;
-							ir.addKernel(statePrep);
-							pp->process(ir);
+							auto ir = xacc::getService<IRProvider>("gate")->createIR();
+							ir->addKernel(statePrep);
+							pp->process(*ir);
 						}
 					}
 				}

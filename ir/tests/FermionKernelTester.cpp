@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(checkFermionKernelConstruction) {
 	kernel.addInstruction(Instruction3);
 
 	BOOST_VERIFY(kernel.nInstructions() == 3);
-	BOOST_VERIFY(kernel.getName() == "foo");
+	BOOST_VERIFY(kernel.name() == "foo");
 	BOOST_VERIFY(kernel.getInstruction(0) == Instruction);
 	BOOST_VERIFY(kernel.getInstruction(1) == Instruction2);
 	BOOST_VERIFY(kernel.getInstruction(2) == Instruction3);

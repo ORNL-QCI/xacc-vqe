@@ -150,14 +150,6 @@ public:
 
 	}
 
-	/**
-	 * Return the name of this Compiler
-	 * @return name Compiler name
-	 */
-	virtual const std::string getName() {
-		return "fake";
-	}
-
 	virtual const std::string name() const {
 		return "fake";
 	}

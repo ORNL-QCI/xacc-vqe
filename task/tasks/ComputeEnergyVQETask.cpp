@@ -37,7 +37,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 		if (k.getIRFunction()->getTag() == "readout-error") {
 			nReadoutKernels++;
 		} else if (k.getIRFunction()->nInstructions() > 0){
-			kernelNames.push_back(k.getIRFunction()->getName());
+			kernelNames.push_back(k.getIRFunction()->name());
 		}
 	}
 
@@ -180,7 +180,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 
 					lexpval = buff->getExpectationValueZ();
 
-					expVals[kernel.getIRFunction()->getName()] = lexpval;
+					expVals[kernel.getIRFunction()->name()] = lexpval;
 
 					// The next iteration will have a different
 					// state prep circuit, so toss the current one.

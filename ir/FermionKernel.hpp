@@ -55,7 +55,7 @@ protected:
 	/**
 	 * This function's name
 	 */
-	std::string name;
+	std::string _name;
 
 public:
 
@@ -65,7 +65,7 @@ public:
 	 * @param id
 	 * @param name
 	 */
-	FermionKernel(std::string kernelName) : name(kernelName) {
+	FermionKernel(std::string kernelName) : _name(kernelName) {
 	}
 
 	/**
@@ -149,8 +149,12 @@ public:
 	 * Return the name of this function
 	 * @return
 	 */
-	virtual const std::string getName() {
-		return name;
+	virtual const std::string name() const {
+		return _name;
+	}
+
+	virtual const std::string description() const {
+		return "";
 	}
 
 	/**
@@ -239,7 +243,7 @@ public:
 	 * @param idx
 	 * @return
 	 */
-	virtual void evaluateVariableParameters(std::vector<InstructionParameter> parameters) {
+	virtual std::shared_ptr<Function> operator()(const Eigen::VectorXd& params) {
 		xacc::error("FermionKernel does not contain runtime parameters.");
 	}
 

@@ -70,8 +70,7 @@ usFunctionEmbedResources(TARGET ${IR_LIBRARY_NAME}
 
 target_link_libraries(${IR_LIBRARY_NAME} ${Boost_LIBRARIES} ${XACC_LIBRARIES})
 
-install(TARGETS ${IR_LIBRARY_NAME} DESTINATION ${XACC_LIBRARY_DIR})
-install(TARGETS ${IR_LIBRARY_NAME} DESTINATION ${XACC_LIBRARY_DIR}/plugins/ir)
+install(TARGETS ${IR_LIBRARY_NAME} DESTINATION $ENV{HOME}/.xacc/plugins/ir)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/algorithms/uccsd)
 include_directories(${CMAKE_SOURCE_DIR}/vqe/transformation/jw)

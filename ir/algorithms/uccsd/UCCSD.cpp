@@ -157,8 +157,11 @@ std::shared_ptr<Function> UCCSD::generate(
 	CommutingSetGenerator gen;
 	auto commutingSets = gen.getCommutingSet(compositeResult, nQubits);
 	auto pi = boost::math::constants::pi<double>();
-	auto uccsdGateFunction = std::make_shared<xacc::quantum::GateFunction>("uccsdPrep",
+	auto gateRegistry = xacc::getService<IRProvider>("gate");
+
+	auto uccsdGateFunction = gateRegistry->createFunction("uccsdPrep",{},
 			variables);
+
 
 	// Perform Trotterization...
 	for (auto s : commutingSets) {
@@ -177,8 +180,7 @@ std::shared_ptr<Function> UCCSD::generate(
 			}
 			// The largest qubit index is on the last term
 			int largestQbitIdx = terms[terms.size() - 1].first;
-			auto tempFunction = std::make_shared<xacc::quantum::GateFunction>(
-					"");
+			auto tempFunction = gateRegistry->createFunction("temp", {}, {});
 
 			for (int i = 0; i < terms.size(); i++) {
 
@@ -187,7 +189,7 @@ std::shared_ptr<Function> UCCSD::generate(
 
 				if (i < terms.size() - 1) {
 					auto cnot =
-							xacc::quantum::GateInstructionRegistry::instance()->create(
+							gateRegistry->createInstruction(
 									"CNOT",
 									std::vector<int> { qbitIdx,
 											terms[i + 1].first });
@@ -196,12 +198,12 @@ std::shared_ptr<Function> UCCSD::generate(
 
 				if (gateName == "X") {
 					auto hadamard =
-							xacc::quantum::GateInstructionRegistry::instance()->create(
+							gateRegistry->createInstruction(
 									"H", std::vector<int> { qbitIdx });
 					tempFunction->insertInstruction(0, hadamard);
 				} else if (gateName == "Y") {
 					auto rx =
-							xacc::quantum::GateInstructionRegistry::instance()->create(
+							gateRegistry->createInstruction(
 									"Rx", std::vector<int> { qbitIdx });
 					InstructionParameter p(pi / 2.0);
 					rx->setParameter(0, p);
@@ -215,7 +217,7 @@ std::shared_ptr<Function> UCCSD::generate(
 					ss << 2*std::imag(std::get<0>(spinInst)) << " * "
 							<< std::get<1>(spinInst);
 					auto rz =
-							xacc::quantum::GateInstructionRegistry::instance()->create(
+							gateRegistry->createInstruction(
 									"Rz", std::vector<int> { qbitIdx });
 
 					InstructionParameter p(ss.str());
@@ -234,7 +236,7 @@ std::shared_ptr<Function> UCCSD::generate(
 
 				if (i < terms.size() - 1) {
 					auto cnot =
-							xacc::quantum::GateInstructionRegistry::instance()->create(
+							gateRegistry->createInstruction(
 									"CNOT",
 									std::vector<int> { qbitIdx,
 											terms[i + 1].first });
@@ -244,12 +246,12 @@ std::shared_ptr<Function> UCCSD::generate(
 
 				if (gateName == "X") {
 					auto hadamard =
-							xacc::quantum::GateInstructionRegistry::instance()->create(
+							gateRegistry->createInstruction(
 									"H", std::vector<int> { qbitIdx });
 					tempFunction->addInstruction(hadamard);
 				} else if (gateName == "Y") {
 					auto rx =
-							xacc::quantum::GateInstructionRegistry::instance()->create(
+							gateRegistry->createInstruction(
 									"Rx", std::vector<int> { qbitIdx });
 					InstructionParameter p(4 * pi - (pi /2.0));
 					rx->setParameter(0, p);
@@ -265,7 +267,7 @@ std::shared_ptr<Function> UCCSD::generate(
 	}
 
 	for (int i = nElectrons-1; i >= 0; i--) {
-		auto xGate = xacc::quantum::GateInstructionRegistry::instance()->create(
+		auto xGate = gateRegistry->createInstruction(
 				"X", std::vector<int>{i});
 		uccsdGateFunction->insertInstruction(0,xGate);
 	}

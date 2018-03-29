@@ -14,10 +14,15 @@ if(APPLE)
 endif(APPLE)
 
 add_library(pyxaccvqe SHARED xacc-vqe-py.cpp)
-SET_TARGET_PROPERTIES(pyxaccvqe PROPERTIES PREFIX "")
+set_target_properties(pyxaccvqe PROPERTIES PREFIX "")
 # do not mess with the ordering of libraries here!
 target_link_libraries(pyxaccvqe ${PYTHON_LIBRARY} xacc-vqe-tasks ${XACC_LIBRARIES} ${Boost_LIBRARIES})
-install(TARGETS pyxaccvqe DESTINATION ${XACC_ROOT}/lib/python)
+
+set_target_properties(pyxaccvqe PROPERTIES INSTALL_RPATH "$ENV{HOME}/.xacc/plugins/misc;$ENV{HOME}/.xacc/plugins/ir")
+
+install(TARGETS pyxaccvqe DESTINATION ${XACC_ROOT})
+
+#install(TARGETS pyxaccvqe DESTINATION ${XACC_ROOT}/lib/python)
 
 file (GLOB PYTESTS tests/*.py)
 

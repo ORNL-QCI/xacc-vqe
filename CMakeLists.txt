@@ -9,8 +9,11 @@ if(APPLE)
   set(CMAKE_MACOSX_RPATH 1)
 endif()
 
+if (NOT XACC_DIR)
+   set(XACC_DIR "$ENV{HOME}/.xacc")
+endif()
 find_package(XACC REQUIRED)
-set(CMAKE_INSTALL_RPATH "${XACC_ROOT}/lib;${XACC_ROOT}/lib/plugins/misc;/usr/local/lib64")
+set(CMAKE_INSTALL_RPATH "${XACC_ROOT}/lib;/usr/local/lib64;$ENV{HOME}/.xacc/plugins/misc;$ENV{HOME}/.xacc/plugins/ir")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 set(CppMicroServicesConfig_DIR "${XACC_ROOT}/share/cppmicroservices3/cmake")

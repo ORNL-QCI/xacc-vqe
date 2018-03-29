@@ -68,14 +68,6 @@ public:
 	virtual std::shared_ptr<xacc::IR> compile(const std::string& src) {}
 
 	/**
-	 * Return the name of this Compiler
-	 * @return name Compiler name
-	 */
-	virtual const std::string getName() {
-		return "fermion";
-	}
-
-	/**
 	 * Return the command line options for this compiler
 	 *
 	 * @return options Description of command line options.

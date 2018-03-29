@@ -20,7 +20,7 @@ namespace py = pybind11;
 using namespace xacc;
 using namespace xacc::vqe;
 
-using GateFunctionPtr = std::shared_ptr<xacc::quantum::GateFunction>;
+using GateFunctionPtr = std::shared_ptr<xacc::Function>;
 
 /**
  * Compile the given source code string and produce
@@ -204,7 +204,7 @@ VQETaskResult execute(PauliOperator& op, py::kwargs kwargs) {
 						kwargs["n-qubits"].cast<int>() : nQubits;
 
 		if (kwargs.contains("ansatz")) {
-			statePrep = kwargs["ansatz"].cast<GateFunctionPtr>();
+			statePrep = kwargs["ansatz"].cast<std::shared_ptr<Function>>();
 		}
 
 		if (kwargs.contains("vqe-params")) {

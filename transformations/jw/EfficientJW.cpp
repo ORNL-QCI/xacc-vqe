@@ -89,7 +89,7 @@ std::shared_ptr<IR> EfficientJW::transform(
 	}
 
 	std::cout << (std::clock() - start) / (double) (CLOCKS_PER_SEC) << "\n";
-	return generateIR();
+	return result.toXACCIR();
 }
 
 }

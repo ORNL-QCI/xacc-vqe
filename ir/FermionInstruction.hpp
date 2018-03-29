@@ -97,9 +97,13 @@ public:
 	 *
 	 * @return name The name of this Instruction
 	 */
-	virtual const std::string getName() {
+	virtual const std::string name() const {
 		return "fermion-instruction";
 	};
+
+	virtual const std::string description() const {
+		return "";
+	}
 
 	virtual void mapBits(std::vector<int> bitMap) {
 	}

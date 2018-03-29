@@ -1,5 +1,5 @@
 #include "PauliOperator.hpp"
-#include "GateQIR.hpp"
+#include "IRProvider.hpp"
 #include <boost/math/constants/constants.hpp>
 
 namespace xacc {
@@ -459,7 +459,8 @@ PauliOperator PauliOperator::eval(const std::map<std::string, std::complex<doubl
 
 std::shared_ptr<IR> PauliOperator::toXACCIR() {
 // Create a new GateQIR to hold the spin based terms
-	auto newIr = std::make_shared<xacc::quantum::GateQIR>();
+	auto gateRegistry = xacc::getService<IRProvider>("gate");
+	auto newIr = gateRegistry->createIR();
 	int counter = 0;
 	auto pi = boost::math::constants::pi<double>();
 
@@ -472,15 +473,15 @@ std::shared_ptr<IR> PauliOperator::toXACCIR() {
 		// a parameter that is the Spin Instruction coefficient
 		// that will help us get it to the user for their purposes.
 
-		auto gateFunction = std::make_shared<xacc::quantum::GateFunction>(
-				inst.first,
+		auto gateFunction = gateRegistry->createFunction(
+				inst.first, {},
 				std::vector<InstructionParameter> { InstructionParameter(
 						spinInst.coeff()), InstructionParameter(
 						spinInst.isIdentity() ? 1 : 0) });
 
 		// Loop over all terms in the Spin Instruction
 		// and create instructions to run on the Gate QPU.
-		std::vector<std::shared_ptr<xacc::quantum::GateInstruction>> measurements;
+		std::vector<std::shared_ptr<xacc::Instruction>> measurements;
 		auto termsMap = spinInst.ops();
 
 		std::vector<std::pair<int, std::string>> terms;
@@ -493,20 +494,18 @@ std::shared_ptr<IR> PauliOperator::toXACCIR() {
 		for (int i = terms.size() - 1; i >= 0; i--) {
 			auto qbit = terms[i].first;
 			auto gateName = terms[i].second;
-			auto gateRegistry =
-					xacc::quantum::GateInstructionRegistry::instance();
-			auto meas = gateRegistry->create("Measure",
+			auto meas = gateRegistry->createInstruction("Measure",
 					std::vector<int> { qbit });
 			xacc::InstructionParameter classicalIdx(qbit);
 			meas->setParameter(0, classicalIdx);
 			measurements.push_back(meas);
 
 			if (gateName == "X") {
-				auto hadamard = gateRegistry->create("H", std::vector<int> {
+				auto hadamard = gateRegistry->createInstruction("H", std::vector<int> {
 						qbit });
 				gateFunction->addInstruction(hadamard);
 			} else if (gateName == "Y") {
-				auto rx = gateRegistry->create("Rx", std::vector<int> { qbit });
+				auto rx = gateRegistry->createInstruction("Rx", std::vector<int> { qbit });
 				InstructionParameter p(pi / 2.0);
 				rx->setParameter(0, p);
 				gateFunction->addInstruction(rx);
@@ -534,9 +533,9 @@ void PauliOperator::fromXACCIR(std::shared_ptr<IR> ir) {
 		std::map<int, std::string> pauliTerm;
 		for (auto inst : kernel->getInstructions()) {
 			bool seen = false;
-			if (inst->getName() == "H") {
+			if (inst->name() == "H") {
 				pauliTerm.insert({inst->bits()[0], "X"});
-			} else if (inst->getName() == "Rx") {
+			} else if (inst->name() == "Rx") {
 				pauliTerm.insert({inst->bits()[0], "Y"});
 			}
 

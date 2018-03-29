@@ -56,15 +56,6 @@ public:
 			std::shared_ptr<Compiler> compiler,
 			std::shared_ptr<Accelerator> accelerator);
 
-	/**
-	 * Return the name of this Preprocessor
-	 *
-	 * @return name The name of this preprocessor
-	 */
-	virtual const std::string getName() {
-		return "fcidump-preprocessor";
-	}
-
 	virtual const std::string name() const {
 		return "fcidump-preprocessor";
 	}

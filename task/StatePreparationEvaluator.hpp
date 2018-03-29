@@ -31,19 +31,15 @@
 #ifndef TASK_STATEPREPARATIONEVALUATOR_HPP_
 #define TASK_STATEPREPARATIONEVALUATOR_HPP_
 
-#include "GateInstruction.hpp"
-#include "GateFunction.hpp"
 #include <Eigen/Dense>
 #include <boost/math/constants/constants.hpp>
 #include "exprtk.hpp"
 #include <boost/algorithm/string.hpp>
-
+#include "IRProvider.hpp"
 #include "XACC.hpp"
 
 namespace xacc {
 namespace vqe {
-
-using namespace xacc::quantum;
 
 class StatePreparationEvaluator {
 
@@ -67,7 +63,9 @@ public:
 					boost::get<std::string>(statePrep->getParameter(i)));
 		}
 
-		auto evaluatedStatePrep = std::make_shared<GateFunction>("stateprep");
+		auto gateRegistry = xacc::getService<IRProvider>("gate");
+		auto evaluatedStatePrep = gateRegistry->createFunction("evaled_"+statePrep->name(), {}, {});
+
 		for (auto inst : statePrep->getInstructions()) {
 			if (inst->isParameterized()
 					&& inst->getParameter(0).which() == 3) {
@@ -96,8 +94,8 @@ public:
 //					res = 4 * pi + res;
 //				}
 				InstructionParameter p(res);
-				auto updatedInst = GateInstructionRegistry::instance()->create(
-						inst->getName(), inst->bits());
+				auto updatedInst = gateRegistry->createInstruction(
+						inst->name(), inst->bits());
 				updatedInst->setParameter(0, p);
 				evaluatedStatePrep->addInstruction(updatedInst);
 			} else {

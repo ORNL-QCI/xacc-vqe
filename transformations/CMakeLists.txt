@@ -43,7 +43,7 @@ usFunctionEmbedResources(TARGET ${LIBRARY_NAME}
 
 target_link_libraries(${LIBRARY_NAME} ${Boost_LIBRARIES} ${XACC_LIBRARIES} ${PYTHON_LIBRARY} xacc-vqe-ir)
 
-install(TARGETS ${LIBRARY_NAME} DESTINATION ${XACC_LIBRARY_DIR}/plugins/transformations)
+install(TARGETS ${LIBRARY_NAME} DESTINATION $ENV{HOME}/.xacc/plugins/transformations)
 
 # Gather tests
 file (GLOB test_files tests/*.cpp)
