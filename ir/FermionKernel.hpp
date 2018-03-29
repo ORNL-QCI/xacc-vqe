@@ -31,7 +31,6 @@
 #ifndef QUANTUM_AQC_FermionKERNEL_HPP_
 #define QUANTUM_AQC_FermionKERNEL_HPP_
 
-#include "Registry.hpp"
 #include "Function.hpp"
 #include "FermionInstruction.hpp"
 #include "XACC.hpp"
