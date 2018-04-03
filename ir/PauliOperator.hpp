@@ -56,7 +56,8 @@ namespace vqe {
 // A Term can be a coefficient, a variable coefficient, and the terms themselves
 using TermTuple = std::tuple<std::complex<double>, std::string, std::map<int, std::string>>;
 using c = std::complex<double>;
-
+using ActionResult = std::pair<std::string, c>;
+enum ActionType {Bra, Ket};
 class Triplet : std::tuple<std::uint64_t, std::uint64_t, std::complex<double>> {
 public:
 	Triplet(std::uint64_t r, std::uint64_t c, std::complex<double> coeff) {
@@ -219,6 +220,8 @@ public:
 	}
 
 	std::vector<Triplet> getSparseMatrixElements(const int nQubits);
+
+	ActionResult action(const std::string& bitString, ActionType type);
 
 };
 

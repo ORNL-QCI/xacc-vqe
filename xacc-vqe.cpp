@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
 	// tell the framework not to print during startup, but
 	// to queue it so that when we set the predicate it will be dumped.
 	std::vector<std::string> new_argv(argv, argv + argc);
-	new_argv.push_back("--queue-preamble");
+//	new_argv.push_back("--queue-preamble");
 
 	// Initialize the framework
 	xacc::Initialize(new_argv);
@@ -79,14 +79,15 @@ int main(int argc, char** argv) {
 		exit(0);
 	}
 
-	// Users must specify a task
-	if (!xacc::optionExists("vqe-task")) {
-		xacc::error("You must specify a vqe task to run.");
-	}
-
 	// Users must specify a file containing VQE Hamiltonian kernels
 	if (!xacc::optionExists("vqe-program")) {
 		xacc::error("You must at least specify a kernel file to run this app.");
+	}
+
+	// Users must specify a task
+	if (!xacc::optionExists("vqe-task")) {
+		xacc::info("No VQE Task specified, defaulting to 'vqe-diagonalize'");
+		xacc::setOption("vqe-task", "vqe-diagonalize");
 	}
 
 	// Get the user-specified Accelerator,

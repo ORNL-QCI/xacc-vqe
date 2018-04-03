@@ -69,6 +69,32 @@ const std::string FCIDumpPreprocessor::process(const std::string& source,
 				xacc::info("Setting Symmetry Group to " + std::to_string(symGroup));
 			}
 
+			if (!xacc::optionExists("n-electrons")) {
+				std::vector<std::string> split, splitCommas, splitEquals;
+				boost::split(split, source, boost::is_any_of("\n"));
+				for (auto& line : split) {
+					if (boost::contains(line, "NELEC")) {
+
+						boost::split(splitCommas, line, boost::is_any_of(","));
+						for (auto& s : splitCommas) {
+							if (boost::contains(s, "NELEC")) {
+								boost::split(splitEquals, s,
+										boost::is_any_of("="));
+								std::string val = splitEquals[1];
+								boost::trim(val);
+								xacc::setOption("n-electrons", val);
+								xacc::info(
+										"FCIDump Preprocessor Number of Electrons = "
+												+ val);
+								break;
+							}
+						}
+
+						break;
+					}
+				}
+			}
+
 			std::ofstream tmpFile(".tmp.fcidump");
 			tmpFile << source;
 			tmpFile.close();

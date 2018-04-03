@@ -95,6 +95,33 @@ std::vector<Triplet> PauliOperator::getSparseMatrixElements() {
 	return triplets;
 }
 
+ActionResult Term::action(const std::string& bitString, ActionType type) {
+
+	auto _coeff = coeff();
+	auto newBits = bitString;
+	c i(0,1);
+
+	for (auto& t : ops()) {
+		auto idx = t.first;
+		auto gate = t.second;
+
+		if (gate == "Z") {
+			_coeff *= newBits[idx] == '1' ? -1 : 1;
+		} else if (gate == "X") {
+			newBits[idx] = (newBits[idx] == '1' ? '0' : '1');
+		} else if (gate == "Y") {
+			if (type == ActionType::Bra) {
+				_coeff *= newBits[idx] == '1' ? i : -i;
+			} else {
+				_coeff *= newBits[idx] == '1' ? -i : i;
+			}
+			newBits[idx] = (newBits[idx] == '1' ? '0' : '1');
+		}
+	}
+
+	return {newBits, _coeff};
+}
+
 const std::vector<std::pair<std::string, std::complex<double>>> PauliOperator::computeActionOnKet(
 		const std::string& bitString) {
 
@@ -103,23 +130,8 @@ const std::vector<std::pair<std::string, std::complex<double>>> PauliOperator::c
 	std::complex<double> newCoeff(1,0), i(0,1);
 
 	for (auto& kv : terms) {
-		newCoeff = kv.second.coeff();
-		for (auto& t : std::get<2>(kv.second)) {
-			auto idx = t.first;
-			auto gate = t.second;
-			if (gate == "Z") {
-				newCoeff *= newBits[idx] == '1' ? -1 : 1;
-			} else if (gate == "X") {
-				newBits[idx] = (newBits[idx] == '1' ? '0' : '1');
-			} else if (gate == "Y") {
-				newCoeff *= newBits[idx] == '1' ? -i : i;
-				newBits[idx] = (newBits[idx] == '1' ? '0' : '1');
-			}
-		}
-
-		ret.push_back(std::make_pair(newBits, newCoeff));
+		ret.push_back(kv.second.action(bitString, ActionType::Ket));
 	}
-
 	return ret;
 }
 
@@ -128,23 +140,7 @@ const std::vector<std::pair<std::string, std::complex<double>>> PauliOperator::c
 	std::vector<std::pair<std::string, std::complex<double>>> ret;
 
 	for (auto& kv : terms) {
-		std::complex<double> newCoeff(1,0), i(0,1);
-		std::string newBits = bitString;
-		newCoeff = kv.second.coeff();
-		for (auto& t : std::get<2>(kv.second)) {
-			auto idx = t.first;
-			auto gate = t.second;
-			if (gate == "Z") {
-				newCoeff *= newBits[idx] == '1' ? -1 : 1;
-			} else if (gate == "X") {
-				newBits[idx] = (newBits[idx] == '1' ? '0' : '1');
-			} else if (gate == "Y") {
-				newCoeff *= newBits[idx] == '1' ? i : -i;
-				newBits[idx] = (newBits[idx] == '1' ? '0' : '1');
-			}
-		}
-
-		ret.push_back(std::make_pair(newBits, newCoeff));
+		ret.push_back(kv.second.action(bitString, ActionType::Bra));
 	}
 
 	return ret;
