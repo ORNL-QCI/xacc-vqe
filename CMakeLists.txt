@@ -61,4 +61,8 @@ add_subdirectory(python)
 
 add_executable(xacc-vqe xacc-vqe.cpp tpls/backward-cpp/backward.cpp)
 target_link_libraries(xacc-vqe ${Boost_LIBRARIES} xacc-vqe-ir xacc-vqe-tasks ${XACC_LIBRARIES} pthread) # petsc)
+install(TARGETS xacc-vqe DESTINATION $ENV{HOME}/.xacc/bin)
 
+configure_file("${CMAKE_SOURCE_DIR}/cmake/xaccvqe-config.cmake.in" "${CMAKE_BINARY_DIR}/xaccvqe-config.cmake" @ONLY)
+install(FILES "${CMAKE_BINARY_DIR}/xaccvqe-config.cmake" DESTINATION $ENV{HOME}/.xacc)
+INSTALL( DIRECTORY "${CMAKE_SOURCE_DIR}/tpls/cppnumericalsolvers/cppoptlib" DESTINATION $ENV{HOME}/.xacc/include )
