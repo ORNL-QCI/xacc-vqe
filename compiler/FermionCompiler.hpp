@@ -36,6 +36,7 @@
 #include "ServiceRegistry.hpp"
 #include "FermionToSpinTransformation.hpp"
 #include "FermionIR.hpp"
+#include "unsupported/Eigen/CXX11/Tensor"
 
 namespace xacc {
 
@@ -120,6 +121,12 @@ public:
 	 * The destructor
 	 */
 	virtual ~FermionCompiler() {}
+
+protected:
+
+	std::shared_ptr<FermionKernel> fermionKernel;
+
+	int nQubits = 0;
 
 };
 

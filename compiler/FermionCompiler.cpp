@@ -72,10 +72,8 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 	auto lastCodeLine = lines.end() - 1;
 	std::vector<std::string> fermionStrVec(firstCodeLine, lastCodeLine);
 
-	auto fermionKernel = std::make_shared<FermionKernel>("fName");
+	fermionKernel = std::make_shared<FermionKernel>("fName");
 
-	int _nQubits = 0;
-	// Loop over the lines to create DWQMI
 	for (auto termStr : fermionStrVec) {
 		boost::trim(termStr);
 		if (!termStr.empty() && (std::string::npos != termStr.find_first_of("0123456789"))) {
@@ -88,8 +86,8 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 			std::vector<std::pair<int, int>> operators;
 			for (int i = 1; i < splitOnSpaces.size()-1; i+=2) {
 				auto siteIdx = std::stoi(splitOnSpaces[i]);
-				if (siteIdx > _nQubits) {
-					_nQubits = siteIdx;
+				if (siteIdx > nQubits) {
+					nQubits = siteIdx;
 				}
 				operators.push_back(
 						{siteIdx, std::stoi(
@@ -102,8 +100,8 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 		}
 	}
 
-	_nQubits++;
-	xacc::setOption("n-qubits", std::to_string(_nQubits));
+	nQubits++;
+	xacc::setOption("n-qubits", std::to_string(nQubits));
 
 	// Create the FermionIR to pass to our transformation.
 	auto fermionir = std::make_shared<FermionIR>();

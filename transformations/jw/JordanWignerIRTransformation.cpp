@@ -10,6 +10,8 @@ PauliOperator JordanWignerIRTransformation::transform(FermionKernel& kernel) {
 
 	result.clear();
 
+	fermionKernel = std::make_shared<FermionKernel>(kernel);
+
 	auto instructions = kernel.getInstructions();
 	auto instVec = std::vector<InstPtr>(instructions.begin(), instructions.end());
 

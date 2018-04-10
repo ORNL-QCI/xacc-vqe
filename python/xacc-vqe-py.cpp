@@ -112,10 +112,12 @@ PauliOperator compile(py::object fermionOperator, py::kwargs kwargs) {
 
 	// Get the user-specified Accelerator,
 	// or TNQVM if none specified
-	xacc::setAccelerator("vqe-dummy");
-	// Set the default Accelerator to TNQVM
-	if (xacc::hasAccelerator("tnqvm")) {
-		xacc::setAccelerator("tnqvm");
+	if (!xacc::optionExists("accelerator")) {
+		xacc::setAccelerator("vqe-dummy");
+		// Set the default Accelerator to TNQVM
+		if (xacc::hasAccelerator("tnqvm")) {
+			xacc::setAccelerator("tnqvm");
+		}
 	}
 
 	auto accelerator = xacc::getAccelerator();
@@ -163,10 +165,12 @@ VQETaskResult execute(PauliOperator& op, py::kwargs kwargs) {
 
 	// Get the user-specified Accelerator,
 	// or TNQVM if none specified
-	xacc::setAccelerator("vqe-dummy");
-	// Set the default Accelerator to TNQVM
-	if (xacc::hasAccelerator("tnqvm")) {
-		xacc::setAccelerator("tnqvm");
+	if (!xacc::optionExists("accelerator")) {
+		xacc::setAccelerator("vqe-dummy");
+		// Set the default Accelerator to TNQVM
+		if (xacc::hasAccelerator("tnqvm")) {
+			xacc::setAccelerator("tnqvm");
+		}
 	}
 
 	auto accelerator = xacc::getAccelerator();
@@ -295,10 +299,12 @@ VQETaskResult execute(py::object& fermionOperator, py::kwargs kwargs) {
 
 	// Get the user-specified Accelerator,
 	// or TNQVM if none specified
-	xacc::setAccelerator("vqe-dummy");
-	// Set the default Accelerator to TNQVM
-	if (xacc::hasAccelerator("tnqvm")) {
-		xacc::setAccelerator("tnqvm");
+	if (!xacc::optionExists("accelerator")) {
+		xacc::setAccelerator("vqe-dummy");
+		// Set the default Accelerator to TNQVM
+		if (xacc::hasAccelerator("tnqvm")) {
+			xacc::setAccelerator("tnqvm");
+		}
 	}
 
 	auto accelerator = xacc::getAccelerator();

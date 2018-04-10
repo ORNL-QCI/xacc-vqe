@@ -9,6 +9,7 @@ PauliOperator BravyiKitaevIRTransformation::transform(FermionKernel& kernel) {
 	result.clear();
 
 	int nQubits = std::stoi(xacc::getOption("n-qubits"));
+	fermionKernel = std::make_shared<FermionKernel>(kernel);
 
 	FenwickTree tree(nQubits);
 

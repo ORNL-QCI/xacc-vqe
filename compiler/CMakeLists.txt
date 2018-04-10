@@ -33,6 +33,7 @@ set (PACKAGE_DESCIPTION "XACC Variational Quantum Eigensolver Fermion Compiler S
 
 set (LIBRARY_NAME xacc-vqe-fermion-compiler)
 file (GLOB SRC *.cpp)
+file (GLOB HEADERS *.hpp)
 
 # Set up dependencies to resources to track changes
 usFunctionGetResourceSource(TARGET ${LIBRARY_NAME} OUT SRC)

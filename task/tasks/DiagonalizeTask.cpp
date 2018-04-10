@@ -53,6 +53,10 @@ double EigenDiagonalizeBackend::diagonalize(
 		return s.str();
 	};
 
+	auto fermionTransformation =
+			xacc::optionExists("fermion-transformation") ?
+					xacc::getOption("fermion-transformation") : "";
+
 	Eigen::VectorXd eigenvalues;
 	if (xacc::optionExists("n-electrons")) {
 		int nElectrons = std::stoi(xacc::getOption("n-electrons"));
@@ -65,14 +69,60 @@ double EigenDiagonalizeBackend::diagonalize(
 		for (int i = 0; i < nElectrons; i++)
 			initBitString += "1";
 
-//		std::cout << "Initial bit string = " << initBitString << "\n";
-
+		// Create occupation basis bit strings
 		std::vector<std::string> bitStrings;
 		do {
-//			std::cout << initBitString << "\n";
 			bitStrings.push_back(initBitString);
 		} while (std::next_permutation(initBitString.begin(),
 				initBitString.end()));
+
+		// Transform bit strings from occupation basis
+		// to bravyi kitaev basis if needed
+		if (fermionTransformation == "bk") {
+
+			// Build up BK transformation matrix
+			Eigen::MatrixXi B(1,1); B(0,0) = 1;
+			while (true) {
+
+				Eigen::MatrixXi oldB = B;
+				Eigen::MatrixXi ones = Eigen::MatrixXi::Ones(1,oldB.cols());
+				B.resize(oldB.rows()*2, oldB.cols()*2);
+				B.setZero();
+				B.block(0,0,oldB.rows(), oldB.cols()) = oldB;
+				B.block(oldB.rows(), oldB.cols(), oldB.rows(), oldB.cols()) = oldB;
+				B.block(B.rows()-1, 0, ones.rows(), ones.cols()) = ones;
+
+				if (B.rows() == nQubits) {
+					break;
+				} else if (B.rows() > nQubits) {
+					Eigen::MatrixXi subB = B.block(0,0, nQubits, nQubits);
+					B = subB;
+					break;
+				}
+			}
+
+			std::cout << "BKT=\n" << B << "\n";
+
+			std::vector<std::string> newBitStrings;
+			for (auto& bs : bitStrings) {
+				Eigen::VectorXi x(nQubits);
+				for (int i = 0; i < bs.length(); i++) {
+					x(i) = bs[i] == '1' ? 1 : 0;
+				}
+
+				Eigen::VectorXi y = B * x;
+				for (int i = 0; i < y.size(); i++) y(i) %= 2;
+
+				std::string newbitstring = "";
+				for (int i = 0; i < y.size(); i++) {
+					newbitstring += y(i) == 0 ? '0' : '1';
+				}
+				newBitStrings.push_back(newbitstring);
+			}
+
+			bitStrings.clear();
+			bitStrings = newBitStrings;
+		}
 
 		std::map<std::string, std::uint64_t> bitsToIdx;
 		std::map<std::uint64_t, std::string> idxToBits;

@@ -14,6 +14,8 @@
 
 #include "IRProvider.hpp"
 
+#include "unsupported/Eigen/CXX11/Tensor"
+
 namespace xacc {
 namespace vqe {
 
@@ -321,6 +323,47 @@ public:
 
 	std::shared_ptr<Accelerator> getAccelerator() {
 		return accelerator;
+	}
+
+	Eigen::Tensor<std::complex<double>, 2> hpq() {
+		if (xacc::getOption("compiler") == "fermion") {
+
+			std::shared_ptr<FermionToSpinTransformation> transform;
+			if (xacc::optionExists("fermion-transformation")) {
+				auto transformStr = xacc::getOption("fermion-transformation");
+				transform = ServiceRegistry::instance()->getService<
+						FermionToSpinTransformation>(transformStr);
+			} else {
+				transform = ServiceRegistry::instance()->getService<
+						FermionToSpinTransformation>("jw");
+			}
+
+			return transform->hpq();
+		} else {
+			xacc::error(
+					"Cannot get fermion coefficients if you did not use Fermion Compiler.");
+			return Eigen::Tensor<std::complex<double>, 2>(1, 1);
+		}
+	}
+
+	Eigen::Tensor<std::complex<double>, 4> hpqrs() {
+		if (xacc::getOption("compiler") == "fermion") {
+			std::shared_ptr<FermionToSpinTransformation> transform;
+			if (xacc::optionExists("fermion-transformation")) {
+				auto transformStr = xacc::getOption("fermion-transformation");
+				transform = ServiceRegistry::instance()->getService<
+						FermionToSpinTransformation>(transformStr);
+			} else {
+				transform = ServiceRegistry::instance()->getService<
+						FermionToSpinTransformation>("jw");
+			}
+
+			return transform->hpqrs();
+		} else {
+			xacc::error(
+					"Cannot get fermion coefficients if you did not use Fermion Compiler.");
+			return Eigen::Tensor<std::complex<double>,4>(1,1,1,1);
+		}
 	}
 
 	virtual ~VQEProgram() {
