@@ -66,7 +66,8 @@ public:
 	 *
 	 * @return
 	 */
-	virtual std::shared_ptr<xacc::IR> compile(const std::string& src) {}
+	virtual std::shared_ptr<xacc::IR> compile(const std::string& src) {
+	}
 
 	/**
 	 * Return the command line options for this compiler
@@ -79,7 +80,9 @@ public:
 		desc->add_options()("fermion-transformation,T", value<std::string>(),
 				"Provide the name of Creation/Annihilation to Spin Transformation. Default is Jordan-Wigner.")(
 				"fermion-list-transformations",
-				"List all available fermion-to-spin transformations.");
+				"List all available fermion-to-spin transformations.")
+				("no-fermion-transformation", "Skip JW/BK transformation step.")
+				("fermion-compiler-silent","Turn off print statements.");
 		return desc;
 	}
 

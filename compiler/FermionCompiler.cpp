@@ -73,7 +73,7 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 	std::vector<std::string> fermionStrVec(firstCodeLine, lastCodeLine);
 
 	fermionKernel = std::make_shared<FermionKernel>("fName");
-
+	nQubits = 0;
 	for (auto termStr : fermionStrVec) {
 		boost::trim(termStr);
 		if (!termStr.empty() && (std::string::npos != termStr.find_first_of("0123456789"))) {
@@ -107,36 +107,47 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 	auto fermionir = std::make_shared<FermionIR>();
 	fermionir->addKernel(fermionKernel);
 
-	// Now we have a Function IR instance that contains information
-	// about the fermion representation of the Hamiltonian
-	// we are compiling. We need to transform it to a spin
-	// hamiltonian.
-	std::shared_ptr<IRTransformation> transform;
-	if (xacc::optionExists("fermion-transformation")) {
-		auto transformStr = xacc::getOption("fermion-transformation");
-		transform = serviceRegistry->getService<IRTransformation>(
-				transformStr);
-	} else {
-		transform = serviceRegistry->getService<IRTransformation>(
-				"jw");
-	}
+	if (!xacc::optionExists("no-fermion-transformation")) {
+		// Now we have a Function IR instance that contains information
+		// about the fermion representation of the Hamiltonian
+		// we are compiling. We need to transform it to a spin
+		// hamiltonian.
+		std::shared_ptr<IRTransformation> transform;
+		if (xacc::optionExists("fermion-transformation")) {
+			auto transformStr = xacc::getOption("fermion-transformation");
+			transform = serviceRegistry->getService<IRTransformation>(
+					transformStr);
+		} else {
+			transform = serviceRegistry->getService<IRTransformation>("jw");
+		}
 
-	// Create the Spin Hamiltonian
-	if (world->rank() == 0) xacc::info("Mapping Fermion to Spin with " + transform->name());
-	auto transformedIR = transform->transform(fermionir);
-	if (world->rank() == 0) xacc::info("Done mapping Fermion to Spin.");
+		// Create the Spin Hamiltonian
+		if (world->rank() == 0 && !xacc::optionExists("fermion-compiler-silent"))
+			xacc::info("Mapping Fermion to Spin with " + transform->name());
+		auto transformedIR = transform->transform(fermionir);
+		if (world->rank() == 0 && !xacc::optionExists("fermion-compiler-silent"))
+			xacc::info("Done mapping Fermion to Spin.");
 
-	// Prepend State Preparation if requested.
-	if (xacc::optionExists("state-preparation")) {
-		auto statePrepIRTransformStr = xacc::getOption("state-preparation");
-		auto statePrepIRTransform = serviceRegistry->getService<
-				IRTransformation>(statePrepIRTransformStr);
-		if (world->rank() == 0) xacc::info("Generating State Preparation Circuit with " + statePrepIRTransform->name());
-		auto ir = statePrepIRTransform->transform(transformedIR);
-		if (world->rank() == 0) xacc::info("Done generating State Preparation Circuit with " + statePrepIRTransform->name());
-		return ir;
+		// Prepend State Preparation if requested.
+		if (xacc::optionExists("state-preparation")) {
+			auto statePrepIRTransformStr = xacc::getOption("state-preparation");
+			auto statePrepIRTransform = serviceRegistry->getService<
+					IRTransformation>(statePrepIRTransformStr);
+			if (world->rank() == 0 && !xacc::optionExists("fermion-compiler-silent"))
+				xacc::info(
+						"Generating State Preparation Circuit with "
+								+ statePrepIRTransform->name());
+			auto ir = statePrepIRTransform->transform(transformedIR);
+			if (world->rank() == 0 && !xacc::optionExists("fermion-compiler-silent"))
+				xacc::info(
+						"Done generating State Preparation Circuit with "
+								+ statePrepIRTransform->name());
+			return ir;
+		} else {
+			return transformedIR;
+		}
 	} else {
-		return transformedIR;
+		return fermionir;
 	}
 
 }
