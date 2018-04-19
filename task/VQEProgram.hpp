@@ -158,9 +158,9 @@ public:
 
 			addPreprocessor("fcidump-preprocessor");
 
-//			if (xacc::optionExists("correct-readout-errors")) {
+			if (xacc::optionExists("correct-readout-errors")) {
 				addIRPreprocessor("readout-error-preprocessor");
-//			}
+			}
 
 			// Start compilation
 			Program::build();
@@ -177,8 +177,15 @@ public:
 							FermionToSpinTransformation>("jw");
 				}
 				pauli = transform->getResult();
-			}
 
+				// Rerun the build and get reference to the
+				// generated fermionkernel
+				xacc::setOption("no-fermion-transformation","");
+				auto c = getCompiler("fermion");
+				auto ir = c->compile(src, accelerator);
+				fermionKernel = std::dynamic_pointer_cast<FermionKernel>(ir->getKernels()[0]);
+				xacc::unsetOption("no-fermion-transformation");
+			}
 
 			nQubits = std::stoi(xacc::getOption("n-qubits"));
 
@@ -317,6 +324,8 @@ public:
 		return nQubits;
 	}
 
+	void setNQubits(const int n) {nQubits = n;}
+
 	const std::string getStatePrepType() {
 		return statePrepType;
 	}
@@ -325,45 +334,26 @@ public:
 		return accelerator;
 	}
 
-	Eigen::Tensor<std::complex<double>, 2> hpq() {
-		if (xacc::getOption("compiler") == "fermion") {
-
-			std::shared_ptr<FermionToSpinTransformation> transform;
-			if (xacc::optionExists("fermion-transformation")) {
-				auto transformStr = xacc::getOption("fermion-transformation");
-				transform = ServiceRegistry::instance()->getService<
-						FermionToSpinTransformation>(transformStr);
-			} else {
-				transform = ServiceRegistry::instance()->getService<
-						FermionToSpinTransformation>("jw");
-			}
-
-			return transform->hpq();
-		} else {
-			xacc::error(
-					"Cannot get fermion coefficients if you did not use Fermion Compiler.");
-			return Eigen::Tensor<std::complex<double>, 2>(1, 1);
+	const double h_nuclear() {
+		if (!fermionKernel) {
+			xacc::error("Cannot get E_nuc if you did not compile with FermionCompiler");
 		}
+		return fermionKernel->E_nuc();
+	}
+
+	Eigen::Tensor<std::complex<double>, 2> hpq() {
+		if (!fermionKernel) {
+			xacc::error("Cannot get h_pq if you did not compile with FermionCompiler");
+		}
+		return fermionKernel->hpq(nQubits);
 	}
 
 	Eigen::Tensor<std::complex<double>, 4> hpqrs() {
-		if (xacc::getOption("compiler") == "fermion") {
-			std::shared_ptr<FermionToSpinTransformation> transform;
-			if (xacc::optionExists("fermion-transformation")) {
-				auto transformStr = xacc::getOption("fermion-transformation");
-				transform = ServiceRegistry::instance()->getService<
-						FermionToSpinTransformation>(transformStr);
-			} else {
-				transform = ServiceRegistry::instance()->getService<
-						FermionToSpinTransformation>("jw");
-			}
-
-			return transform->hpqrs();
-		} else {
-			xacc::error(
-					"Cannot get fermion coefficients if you did not use Fermion Compiler.");
-			return Eigen::Tensor<std::complex<double>,4>(1,1,1,1);
+		if (!fermionKernel) {
+			xacc::error("Cannot get h_pqrs if you did not compile with FermionCompiler");
 		}
+		return fermionKernel->hpqrs(
+				nQubits);
 	}
 
 	virtual ~VQEProgram() {
@@ -378,6 +368,8 @@ protected:
 	std::string statePrepSource = "";
 
 	std::shared_ptr<Communicator> comm;
+
+	std::shared_ptr<FermionKernel> fermionKernel;
 
 	/**
 	 * Reference to the state preparation circuit

@@ -34,6 +34,7 @@
 #include "Function.hpp"
 #include "FermionInstruction.hpp"
 #include "XACC.hpp"
+#include "unsupported/Eigen/CXX11/Tensor"
 
 namespace xacc {
 namespace vqe {
@@ -162,6 +163,85 @@ public:
 	 */
 	virtual const std::vector<int> bits() {
 		return std::vector<int> { };
+	}
+
+	const double E_nuc() {
+		auto instructions = getInstructions();
+		auto instVec = std::vector<InstPtr>(instructions.begin(), instructions.end());
+
+		double e = 0.0;
+		// Loop over all Fermionic terms...
+		for (int z = 0; z < instructions.size(); ++z) {
+
+			auto f = instVec[z];
+
+			// Get the creation or annihilation sites
+			auto termSites = f->bits();
+			auto params = f->getParameters();
+			auto coeff = boost::get<std::complex<double>>(params[f->nParameters() - 2]);
+
+			if (termSites.empty()) {
+				e = std::real(coeff);
+			}
+		}
+		return e;
+	}
+
+	Eigen::Tensor<std::complex<double>, 2> hpq(const int nQubits) {
+		Eigen::Tensor<std::complex<double>, 2> hpq(nQubits, nQubits);
+		hpq.setZero();
+
+		auto instructions = getInstructions();
+		auto instVec = std::vector<InstPtr>(instructions.begin(), instructions.end());
+
+		// Loop over all Fermionic terms...
+		for (int z = 0; z < instructions.size(); ++z) {
+
+			auto f = instVec[z];
+
+			// Get the creation or annihilation sites
+			auto termSites = f->bits();
+			auto params = f->getParameters();
+			auto coeff = boost::get<std::complex<double>>(params[f->nParameters() - 2]);
+
+			if (termSites.size() == 2) {
+				int p = termSites[0];
+				int q = termSites[1];
+				hpq(p,q) = coeff;
+			}
+		}
+
+		return hpq;
+	}
+
+	Eigen::Tensor<std::complex<double>, 4> hpqrs(const int nQubits) {
+
+		Eigen::Tensor<std::complex<double>, 4> hpqrs(nQubits, nQubits, nQubits, nQubits);
+		hpqrs.setZero();
+
+		auto instructions = getInstructions();
+		auto instVec = std::vector<InstPtr>(instructions.begin(), instructions.end());
+
+		// Loop over all Fermionic terms...
+		for (int z = 0; z < instructions.size(); ++z) {
+
+			auto f = instVec[z];
+
+			// Get the creation or annihilation sites
+			auto termSites = f->bits();
+			auto params = f->getParameters();
+			auto coeff = boost::get<std::complex<double>>(params[f->nParameters() - 2]);
+
+			if (termSites.size() == 4) {
+				int p = termSites[0];
+				int q = termSites[1];
+				int r = termSites[2];
+				int s = termSites[3];
+				hpqrs(p,q,r,s) = coeff;
+			}
+		}
+
+		return hpqrs;
 	}
 
 	/**

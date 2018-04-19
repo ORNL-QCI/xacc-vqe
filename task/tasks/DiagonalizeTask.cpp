@@ -72,6 +72,7 @@ double EigenDiagonalizeBackend::diagonalize(
 		// Create occupation basis bit strings
 		std::vector<std::string> bitStrings;
 		do {
+			std::cout << initBitString << "\n";
 			bitStrings.push_back(initBitString);
 		} while (std::next_permutation(initBitString.begin(),
 				initBitString.end()));
@@ -88,20 +89,44 @@ double EigenDiagonalizeBackend::diagonalize(
 				Eigen::MatrixXi ones = Eigen::MatrixXi::Ones(1,oldB.cols());
 				B.resize(oldB.rows()*2, oldB.cols()*2);
 				B.setZero();
+
+				// Set 2nd quadrant
 				B.block(0,0,oldB.rows(), oldB.cols()) = oldB;
+
+				// Set 4th quadrant
 				B.block(oldB.rows(), oldB.cols(), oldB.rows(), oldB.cols()) = oldB;
-				B.block(B.rows()-1, 0, ones.rows(), ones.cols()) = ones;
+
+				// Set the ones in the first quadrant
+				B.block(0, B.cols()-oldB.cols(), ones.rows(), ones.cols()) = ones;
 
 				if (B.rows() == nQubits) {
 					break;
 				} else if (B.rows() > nQubits) {
-					Eigen::MatrixXi subB = B.block(0,0, nQubits, nQubits);
+					std::cout << "Getting Subblock:\n" << B << "\n\n";
+					Eigen::MatrixXi subB = B.block(B.rows()-nQubits, B.cols()-nQubits, nQubits, nQubits);
+//					subB.block(nQubits-1, 0, 1, nQubits) = Eigen::MatrixXi::Ones(1,nQubits);
 					B = subB;
 					break;
 				}
 			}
 
-			std::cout << "BKT=\n" << B << "\n";
+			std::cout << "SeeleyBK=\n" << B << "\n\n";
+
+			int end = nQubits-1;
+			for (int start = 0; ; start++) {
+				B.row(start).swap(B.row(end));
+				end--;
+				if (start == end) break;
+			}
+
+			end = nQubits -1;
+			for (int start = 0; ; start++) {
+				B.col(start).swap(B.col(end));
+				end--;
+				if (start == end) break;
+			}
+
+			std::cout << "TranterBK:\n" << B << "\n";
 
 			std::vector<std::string> newBitStrings;
 			for (auto& bs : bitStrings) {

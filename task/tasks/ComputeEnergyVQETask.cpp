@@ -164,6 +164,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 
 				// If not an identity kernel...
 				if (kernel.getIRFunction()->nInstructions() > 0) {
+
 					// Insert the state preparation circuit IR
 					// at location 0 in this Kernels IR instructions.
 					kernel.getIRFunction()->insertInstruction(0,
