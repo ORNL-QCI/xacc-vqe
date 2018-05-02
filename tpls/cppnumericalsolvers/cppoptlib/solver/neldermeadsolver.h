@@ -119,7 +119,7 @@ class NelderMeadSolver : public ISolver<ProblemType, 0> {
       //////////////////////////
 
       // midpoint of the simplex opposite the worst point
-      TVector x_bar = TVector::Zero(DIM);
+      typename Superclass::TVector x_bar = Superclass::TVector::Zero(DIM);
       for (int i = 0; i < int(DIM); ++i) {
         x_bar += x0.col(index[i]);
       }

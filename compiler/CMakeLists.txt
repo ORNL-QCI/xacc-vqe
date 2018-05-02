@@ -68,6 +68,15 @@ usFunctionEmbedResources(TARGET ${LIBRARY_NAME}
 
 target_link_libraries(${LIBRARY_NAME} ${XACC_LIBRARIES} xacc-vqe-ir)
 
+if(APPLE)
+   set_target_properties(${LIBRARY_NAME} PROPERTIES INSTALL_RPATH "@loader_path/../lib:@loader_path")
+   set_target_properties(${LIBRARY_NAME} PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
+else()
+   set_target_properties(${LIBRARY_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/../lib:$ORIGIN")
+   set_target_properties(${LIBRARY_NAME} PROPERTIES LINK_FLAGS "-shared")
+endif()
+
+
 install(TARGETS ${LIBRARY_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/plugins)
 install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/vqe)
 
