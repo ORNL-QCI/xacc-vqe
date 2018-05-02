@@ -15,7 +15,7 @@ set_target_properties(pyxaccvqe PROPERTIES PREFIX "")
 # do not mess with the ordering of libraries here!
 target_link_libraries(pyxaccvqe xacc-vqe-tasks ${XACC_LIBRARIES})
 if(APPLE)
-   set_target_properties(pyxaccvqe PROPERTIES INSTALL_RPATH "@loader_path/lib:@loader_path/plugins")
+   set_target_properties(pyxaccvqe PROPERTIES INSTALL_RPATH "@loader_path/lib;@loader_path/plugins")
    set_target_properties(pyxaccvqe PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
 else()
    set_target_properties(pyxaccvqe PROPERTIES INSTALL_RPATH "$ORIGIN/lib:$ORIGIN/plugins")
