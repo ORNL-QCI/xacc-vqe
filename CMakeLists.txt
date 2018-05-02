@@ -9,11 +9,14 @@ if(APPLE)
   set(CMAKE_MACOSX_RPATH 1)
 endif()
 
-if (NOT XACC_DIR)
-   set(XACC_DIR "$ENV{HOME}/.xacc")
-endif()
 find_package(XACC REQUIRED)
-set(CMAKE_INSTALL_RPATH "${XACC_ROOT}/lib;/usr/local/lib64;$ENV{HOME}/.xacc/plugins/misc;$ENV{HOME}/.xacc/plugins/ir")
+
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    message(STATUS "HELLO WORLD SETTING ROOT ${XACC_ROOT}")
+    set (CMAKE_INSTALL_PREFIX "${XACC_ROOT}" CACHE PATH "default install path" FORCE )
+endif()
+
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib;${CMAKE_INSTALL_PREFIX}/plugins")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 set(CppMicroServicesConfig_DIR "${XACC_ROOT}/share/cppmicroservices3/cmake")
@@ -25,18 +28,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/tpls/backward-cp
 include(tests)
 include(CppMicroServicesConfig)
 
-find_package(OpenMP)
-if (OPENMP_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-endif()
-
-find_package(Boost COMPONENTS filesystem program_options system REQUIRED)
-
-find_package(XACC REQUIRED)
-
-include_directories(${PYTHON_INCLUDE_DIR})
-include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${XACC_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/tpls/cppnumericalsolvers/cppoptlib)
 include_directories(${CMAKE_SOURCE_DIR}/tpls/exprtk)
@@ -57,12 +48,16 @@ add_subdirectory(ir)
 add_subdirectory(transformations)
 add_subdirectory(compiler)
 add_subdirectory(task)
-add_subdirectory(python)
+
+if(PYTHON_INCLUDE_DIR)
+   include_directories(${PYTHON_INCLUDE_DIR})
+   add_subdirectory(python)
+endif()
 
 add_executable(xacc-vqe xacc-vqe.cpp tpls/backward-cpp/backward.cpp)
-target_link_libraries(xacc-vqe ${Boost_LIBRARIES} xacc-vqe-ir xacc-vqe-tasks ${XACC_LIBRARIES} pthread) # petsc)
-install(TARGETS xacc-vqe DESTINATION $ENV{HOME}/.xacc/bin)
+target_link_libraries(xacc-vqe xacc-vqe-ir xacc-vqe-tasks ${XACC_LIBRARIES} pthread) # petsc)
+install(TARGETS xacc-vqe DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 
 configure_file("${CMAKE_SOURCE_DIR}/cmake/xaccvqe-config.cmake.in" "${CMAKE_BINARY_DIR}/xaccvqe-config.cmake" @ONLY)
-install(FILES "${CMAKE_BINARY_DIR}/xaccvqe-config.cmake" DESTINATION $ENV{HOME}/.xacc)
-INSTALL( DIRECTORY "${CMAKE_SOURCE_DIR}/tpls/cppnumericalsolvers/cppoptlib" DESTINATION $ENV{HOME}/.xacc/include )
+install(FILES "${CMAKE_BINARY_DIR}/xaccvqe-config.cmake" DESTINATION ${CMAKE_INSTALL_PREFIX})
+INSTALL( DIRECTORY "${CMAKE_SOURCE_DIR}/tpls/cppnumericalsolvers/cppoptlib" DESTINATION ${CMAKE_INSTALL_PREFIX}/include )

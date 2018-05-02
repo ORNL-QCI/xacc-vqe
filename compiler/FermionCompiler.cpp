@@ -47,12 +47,11 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 	// Set the Kernel Source code
 	kernelSource = src;
 
-	auto serviceRegistry = xacc::ServiceRegistry::instance();
 	std::shared_ptr<MPIProvider> provider;
-	if (serviceRegistry->hasService<MPIProvider>("boost-mpi")) {
-		provider = serviceRegistry->getService<MPIProvider>("boost-mpi");
+	if (xacc::hasService<MPIProvider>("boost-mpi")) {
+		provider = xacc::getService<MPIProvider>("boost-mpi");
 	} else {
-		provider = serviceRegistry->getService<MPIProvider>("no-mpi");
+		provider = xacc::getService<MPIProvider>("no-mpi");
 	}
 
 	provider->initialize();
@@ -115,10 +114,10 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 		std::shared_ptr<IRTransformation> transform;
 		if (xacc::optionExists("fermion-transformation")) {
 			auto transformStr = xacc::getOption("fermion-transformation");
-			transform = serviceRegistry->getService<IRTransformation>(
+			transform = xacc::getService<IRTransformation>(
 					transformStr);
 		} else {
-			transform = serviceRegistry->getService<IRTransformation>("jw");
+			transform = xacc::getService<IRTransformation>("jw");
 		}
 
 		// Create the Spin Hamiltonian

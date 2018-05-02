@@ -1,5 +1,4 @@
 #include "XACC.hpp"
-#include "ServiceRegistry.hpp"
 #include "VQEProgram.hpp"
 #include "VQETask.hpp"
 #include "VQEParameterGenerator.hpp"
@@ -43,18 +42,17 @@ int main(int argc, char** argv) {
 	xacc::Initialize(new_argv);
 
 	// Get the correct MPI Provider
-	auto serviceRegistry = xacc::ServiceRegistry::instance();
 	std::shared_ptr<MPIProvider> provider;
 	std::shared_ptr<Communicator> world;
-	if (serviceRegistry->hasService<MPIProvider>("boost-mpi")) {
-		provider = serviceRegistry->getService<MPIProvider>("boost-mpi");
+	if (xacc::hasService<MPIProvider>("boost-mpi")) {
+		provider = xacc::getService<MPIProvider>("boost-mpi");
 		provider->initialize(argc,argv);
 		world = provider->getCommunicator();
 		int rank = world->rank();
 		xacc::setGlobalLoggerPredicate( [&]() { return rank == 0;});
 		xacc::info("Using Boost MPI for distributed computations.");
 	} else {
-		provider = serviceRegistry->getService<MPIProvider>("no-mpi");
+		provider = xacc::getService<MPIProvider>("no-mpi");
 		provider->initialize(argc,argv);
 		world = provider->getCommunicator();
 		xacc::info("XACC-VQE Built without MPI Support.");
@@ -71,7 +69,7 @@ int main(int argc, char** argv) {
 
 	if (xacc::optionExists("vqe-list-tasks")) {
 		xacc::info("");
-		auto allTasks = xacc::ServiceRegistry::instance()->getServices<VQETask>();
+		auto allTasks = xacc::getServices<VQETask>();
 		for (auto a : allTasks) {
 			xacc::info("VQE Task: " + a->name());
 		}
@@ -114,7 +112,7 @@ int main(int argc, char** argv) {
 	program->build();
 
 	auto parameters = VQEParameterGenerator::generateParameters(program->getNParameters(), world);
-	auto vqeTask = serviceRegistry->getService<VQETask>(task);
+	auto vqeTask = xacc::getService<VQETask>(task);
 	vqeTask->setVQEProgram(program);
 
 	VQETaskResult result = vqeTask->execute(parameters);

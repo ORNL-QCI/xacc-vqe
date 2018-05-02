@@ -33,7 +33,6 @@
 
 #include "Compiler.hpp"
 #include "Utils.hpp"
-#include "ServiceRegistry.hpp"
 #include "FermionToSpinTransformation.hpp"
 #include "FermionIR.hpp"
 #include "unsupported/Eigen/CXX11/Tensor"
@@ -88,7 +87,7 @@ public:
 
 	virtual bool handleOptions(variables_map& args) {
 		if (args.count("fermion-list-transformations")) {
-			auto ids = ServiceRegistry::instance()->getRegisteredIds<
+			auto ids = xacc::getRegisteredIds<
 					IRTransformation>();
 			for (auto i : ids) {
 				xacc::info("Registered Fermion To Spin Transformation: " + i);

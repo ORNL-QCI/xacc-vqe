@@ -78,11 +78,10 @@ BOOST_AUTO_TEST_CASE(checkSimple) {
 
 	xacc::Initialize();
 	std::shared_ptr<MPIProvider> provider;
-	auto serviceRegistry = xacc::ServiceRegistry::instance();
-	if (serviceRegistry->hasService<MPIProvider>("boost-mpi")) {
-		provider = serviceRegistry->getService<MPIProvider>("boost-mpi");
+	if (xacc::hasService<MPIProvider>("boost-mpi")) {
+		provider = xacc::getService<MPIProvider>("boost-mpi");
 	} else {
-		provider = serviceRegistry->getService<MPIProvider>("no-mpi");
+		provider = xacc::getService<MPIProvider>("no-mpi");
 	}
 
 	provider->initialize(argc,argv);

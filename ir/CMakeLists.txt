@@ -68,15 +68,15 @@ usFunctionEmbedResources(TARGET ${IR_LIBRARY_NAME}
     manifest.json
   )
 
-target_link_libraries(${IR_LIBRARY_NAME} ${Boost_LIBRARIES} ${XACC_LIBRARIES})
+target_link_libraries(${IR_LIBRARY_NAME} ${XACC_LIBRARIES})
 
-install(TARGETS ${IR_LIBRARY_NAME} DESTINATION $ENV{HOME}/.xacc/plugins/ir)
-install(FILES ${HEADERS} DESTINATION $ENV{HOME}/.xacc/include/vqe)
+install(TARGETS ${IR_LIBRARY_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/plugins)
+install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/vqe)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/algorithms/uccsd)
 include_directories(${CMAKE_SOURCE_DIR}/vqe/transformation/jw)
 
 # Gather tests
 file (GLOB test_files tests/*.cpp)
-add_tests("${test_files}" "${CMAKE_CURRENT_SOURCE_DIR}" "${Boost_LIBRARIES};xacc-vqe-ir;pthread;dl")
+add_tests("${test_files}" "${CMAKE_CURRENT_SOURCE_DIR}" "${XACC_LIBRARIES};xacc-vqe-ir;pthread;dl")
 

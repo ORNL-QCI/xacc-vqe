@@ -10,11 +10,9 @@ namespace vqe {
 VQETaskResult VQEMinimizeTask::execute(
 		Eigen::VectorXd parameters) {
 
-	auto serviceReg = ServiceRegistry::instance();
-
 	std::shared_ptr<VQEBackend> backend;
 	if (xacc::optionExists("vqe-backend")) {
-		backend = serviceReg->getService<VQEBackend>(xacc::getOption("vqe-backend"));
+		backend = xacc::getService<VQEBackend>(xacc::getOption("vqe-backend"));
 	} else {
 		backend = std::make_shared<CppOptVQEBackend>();
 	}

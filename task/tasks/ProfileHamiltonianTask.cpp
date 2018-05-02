@@ -26,10 +26,10 @@ VQETaskResult ProfileHamiltonianTask::execute(
 		std::shared_ptr<IRTransformation> transform;
 		if (xacc::optionExists("fermion-transformation")) {
 			auto transformStr = xacc::getOption("fermion-transformation");
-			transform = ServiceRegistry::instance()->getService<IRTransformation>(
+			transform = xacc::getService<IRTransformation>(
 					transformStr);
 		} else {
-			transform = ServiceRegistry::instance()->getService<IRTransformation>(
+			transform = xacc::getService<IRTransformation>(
 					"jw");
 		}
 

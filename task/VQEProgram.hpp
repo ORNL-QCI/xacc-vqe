@@ -170,10 +170,10 @@ public:
 				if (xacc::optionExists("fermion-transformation")) {
 					auto transformStr = xacc::getOption(
 							"fermion-transformation");
-					transform = ServiceRegistry::instance()->getService<
+					transform = xacc::getService<
 							FermionToSpinTransformation>(transformStr);
 				} else {
-					transform = ServiceRegistry::instance()->getService<
+					transform = xacc::getService<
 							FermionToSpinTransformation>("jw");
 				}
 				pauli = transform->getResult();
@@ -438,7 +438,7 @@ protected:
 				statePrepType = xacc::getOption("state-preparation");
 			}
 
-			auto statePrepGenerator = ServiceRegistry::instance()->getService<
+			auto statePrepGenerator = xacc::getService<
 					IRGenerator>(statePrepType);
 			return statePrepGenerator->generate(
 					std::make_shared<AcceleratorBuffer>("", nQubits));

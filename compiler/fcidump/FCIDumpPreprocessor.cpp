@@ -48,12 +48,11 @@ const std::string FCIDumpPreprocessor::process(const std::string& source,
 
 	if (boost::contains(source, "FCI") && boost::contains(source, "NELEC")) {
 
-		auto serviceRegistry = xacc::ServiceRegistry::instance();
 		std::shared_ptr<MPIProvider> provider;
-		if (serviceRegistry->hasService<MPIProvider>("boost-mpi")) {
-			provider = serviceRegistry->getService<MPIProvider>("boost-mpi");
+		if (xacc::hasService<MPIProvider>("boost-mpi")) {
+			provider = xacc::getService<MPIProvider>("boost-mpi");
 		} else {
-			provider = serviceRegistry->getService<MPIProvider>("no-mpi");
+			provider = xacc::getService<MPIProvider>("no-mpi");
 		}
 
 		provider->initialize();

@@ -18,10 +18,10 @@ VQETaskResult DiagonalizeTask::execute(
 	std::shared_ptr<DiagonalizeBackend> backend;
 	if (xacc::optionExists("diagonalize-backend")) {
 		auto str = xacc::getOption("diagonalize-backend");
-		backend = ServiceRegistry::instance()->getService<
+		backend = xacc::getService<
 				DiagonalizeBackend>(str);
 	} else {
-		backend = ServiceRegistry::instance()->getService<
+		backend = xacc::getService<
 				DiagonalizeBackend>("diagonalize-eigen");
 	}
 

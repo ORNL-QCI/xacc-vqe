@@ -1,7 +1,6 @@
 #include "UCCSD.hpp"
 #include "GateFunction.hpp"
 #include "FermionToSpinTransformation.hpp"
-#include "ServiceRegistry.hpp"
 #include "CommutingSetGenerator.hpp"
 #include <boost/math/constants/constants.hpp>
 
@@ -137,10 +136,10 @@ std::shared_ptr<Function> UCCSD::generate(
 	std::shared_ptr<FermionToSpinTransformation> transform;
 	if (xacc::optionExists("fermion-transformation")) {
 		auto transformStr = xacc::getOption("fermion-transformation");
-		transform = ServiceRegistry::instance()->getService<FermionToSpinTransformation>(
+		transform = xacc::getService<FermionToSpinTransformation>(
 				transformStr);
 	} else {
-		transform = ServiceRegistry::instance()->getService<FermionToSpinTransformation>(
+		transform = xacc::getService<FermionToSpinTransformation>(
 				"jw");
 	}
 

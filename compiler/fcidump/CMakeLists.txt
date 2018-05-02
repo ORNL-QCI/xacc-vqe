@@ -77,10 +77,10 @@ usFunctionEmbedResources(TARGET ${LIBRARY_NAME}
     manifest.json
   )
 
-target_link_libraries(${LIBRARY_NAME} ${Boost_LIBRARIES} ${XACC_LIBRARIES} ${SYMENGINE_LIBRARIES} xacc-vqe-ir chemps2)
+target_link_libraries(${LIBRARY_NAME} ${XACC_LIBRARIES} xacc-vqe-ir chemps2)
 
-install(TARGETS ${LIBRARY_NAME} DESTINATION $ENV{HOME}/.xacc/plugins/preprocessors)
+install(TARGETS ${LIBRARY_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/plugins)
 
 # Gather tests
 file (GLOB test_files tests/*.cpp)
-add_tests("${test_files}" "${CMAKE_CURRENT_SOURCE_DIR}" "${Boost_LIBRARIES};pthread;dl;xacc-vqe-ir;xacc-vqe-fermion-compiler;xacc-vqe-fcidump;chemps2")
+add_tests("${test_files}" "${CMAKE_CURRENT_SOURCE_DIR}" "${XACC_LIBRARIES};pthread;dl;xacc-vqe-ir;xacc-vqe-fermion-compiler;xacc-vqe-fcidump;chemps2")

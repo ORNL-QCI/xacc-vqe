@@ -39,13 +39,12 @@ PauliOperator compile(const std::string& fermiSrc) {
 	}
 
 	std::shared_ptr<MPIProvider> provider;
-	auto serviceRegistry = xacc::ServiceRegistry::instance();
-	if (serviceRegistry->hasService<MPIProvider>("boost-mpi")) {
-		provider = serviceRegistry->getService<MPIProvider>("boost-mpi");
+	if (xacc::hasService<MPIProvider>("boost-mpi")) {
+		provider = xacc::getService<MPIProvider>("boost-mpi");
 		auto mpi4py = pybind11::module::import("mpi4py.MPI");
 		auto comm = mpi4py.attr("COMM_WORLD");
 	} else {
-		provider = serviceRegistry->getService<MPIProvider>("no-mpi");
+		provider = xacc::getService<MPIProvider>("no-mpi");
 	}
 
 	provider->initialize();
@@ -80,13 +79,12 @@ PauliOperator compile(py::object fermionOperator, py::kwargs kwargs) {
 	}
 
 	std::shared_ptr<MPIProvider> provider;
-	auto serviceRegistry = xacc::ServiceRegistry::instance();
-	if (serviceRegistry->hasService<MPIProvider>("boost-mpi")) {
-		provider = serviceRegistry->getService<MPIProvider>("boost-mpi");
+	if (xacc::hasService<MPIProvider>("boost-mpi")) {
+		provider = xacc::getService<MPIProvider>("boost-mpi");
 		auto mpi4py = pybind11::module::import("mpi4py.MPI");
 		auto comm = mpi4py.attr("COMM_WORLD");
 	} else {
-		provider = serviceRegistry->getService<MPIProvider>("no-mpi");
+		provider = xacc::getService<MPIProvider>("no-mpi");
 	}
 
 	provider->initialize();
@@ -145,18 +143,17 @@ VQETaskResult execute(PauliOperator& op, py::kwargs kwargs) {
 				"Auto-running xacc::Initialize().");
 	}
 
-	auto serviceRegistry = xacc::ServiceRegistry::instance();
 	std::shared_ptr<MPIProvider> provider;
 	if (kwargs.contains("mpi-provider")) {
-		provider = serviceRegistry->getService<MPIProvider>(
+		provider = xacc::getService<MPIProvider>(
 				kwargs["mpi-provider"].cast<std::string>());
 	} else {
-		if (serviceRegistry->hasService<MPIProvider>("boost-mpi")) {
-			provider = serviceRegistry->getService<MPIProvider>("boost-mpi");
+		if (xacc::hasService<MPIProvider>("boost-mpi")) {
+			provider = xacc::getService<MPIProvider>("boost-mpi");
 			auto mpi4py = pybind11::module::import("mpi4py.MPI");
 			auto comm = mpi4py.attr("COMM_WORLD");
 		} else {
-			provider = serviceRegistry->getService<MPIProvider>("no-mpi");
+			provider = xacc::getService<MPIProvider>("no-mpi");
 		}
 	}
 
@@ -244,7 +241,7 @@ VQETaskResult execute(PauliOperator& op, py::kwargs kwargs) {
 	program->build();
 
 	auto parameters = VQEParameterGenerator::generateParameters(program->getNParameters(), world);
-	auto vqeTask = xacc::ServiceRegistry::instance()->getService<VQETask>(task);
+	auto vqeTask = xacc::getService<VQETask>(task);
 	vqeTask->setVQEProgram(program);
 	auto result = vqeTask->execute(parameters);
 //	xacc::clearOptions();
@@ -268,13 +265,12 @@ VQETaskResult execute(py::object& fermionOperator, py::kwargs kwargs) {
 	}
 
 	std::shared_ptr<MPIProvider> provider;
-	auto serviceRegistry = xacc::ServiceRegistry::instance();
-	if (serviceRegistry->hasService<MPIProvider>("boost-mpi")) {
-		provider = serviceRegistry->getService<MPIProvider>("boost-mpi");
+	if (xacc::hasService<MPIProvider>("boost-mpi")) {
+		provider = xacc::getService<MPIProvider>("boost-mpi");
 		auto mpi4py = pybind11::module::import("mpi4py.MPI");
 		auto comm = mpi4py.attr("COMM_WORLD");
 	} else {
-		provider = serviceRegistry->getService<MPIProvider>("no-mpi");
+		provider = xacc::getService<MPIProvider>("no-mpi");
 	}
 
 	provider->initialize();
@@ -371,7 +367,7 @@ VQETaskResult execute(py::object& fermionOperator, py::kwargs kwargs) {
 
 	auto parameters = VQEParameterGenerator::generateParameters(
 			program->getNParameters(), world);
-	auto vqeTask = xacc::ServiceRegistry::instance()->getService<VQETask>(task);
+	auto vqeTask = xacc::getService<VQETask>(task);
 	vqeTask->setVQEProgram(program);
 
 	auto result = vqeTask->execute(parameters);
