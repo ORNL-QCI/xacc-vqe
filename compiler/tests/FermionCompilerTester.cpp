@@ -28,10 +28,7 @@
  *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
-#define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE FermionCompilerTester
-
-#include <boost/test/included/unit_test.hpp>
+#include <gtest/gtest.h>
 #include "FermionCompiler.hpp"
 #include "XACC.hpp"
 
@@ -56,8 +53,8 @@ public:
 
 	virtual std::vector<std::shared_ptr<xacc::IRTransformation>> getIRTransformations() {
 
+		return std::vector<std::shared_ptr<xacc::IRTransformation>>{};
 	}
-	;
 
 	virtual std::shared_ptr<xacc::AcceleratorBuffer> createBuffer(
 			const std::string& varId) {
@@ -92,6 +89,7 @@ public:
 
 	virtual std::vector<std::shared_ptr<xacc::AcceleratorBuffer>> execute(std::shared_ptr<xacc::AcceleratorBuffer> buffer,
 			const std::vector<std::shared_ptr<xacc::Function>> function) {
+		return std::vector<std::shared_ptr<xacc::AcceleratorBuffer>> {};
 	}
 
 	virtual const std::string name() const {
@@ -120,7 +118,7 @@ public:
 	}
 };
 
-BOOST_AUTO_TEST_CASE(checkSimpleCompile) {
+TEST(FermionCompilerTester,checkSimpleCompile) {
 
 	xacc::Initialize();
 	auto compiler = std::make_shared<FermionCompiler>();
@@ -137,7 +135,7 @@ BOOST_AUTO_TEST_CASE(checkSimpleCompile) {
 
 	auto ir = compiler->compile(simpleFermionHamiltonian, acc);
 
-	BOOST_VERIFY(ir->getKernels().size() == 2);
+	EXPECT_TRUE(ir->getKernels().size() == 2);
 
 	const std::string code = R"code(__qpu__ H2_sto-3g_singlet_H2_Molecule0_71056() {
 	0.286177854957 1 1 0 1 0 0 1 0
@@ -174,4 +172,8 @@ BOOST_AUTO_TEST_CASE(checkSimpleCompile) {
 
 	ir = compiler->compile(code, acc);
 	xacc::Finalize();
+}
+int main(int argc, char** argv) {
+   ::testing::InitGoogleTest(&argc, argv);
+   return RUN_ALL_TESTS();
 }

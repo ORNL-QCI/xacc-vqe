@@ -28,17 +28,14 @@
  *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
-#define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE UCCSDTester
-
-#include <boost/test/included/unit_test.hpp>
+#include <gtest/gtest.h>
 #include "UCCSD.hpp"
 
 using namespace xacc::vqe;
 
 using namespace boost;
 
-BOOST_AUTO_TEST_CASE(checkUCCSD) {
+TEST(UCCSDTester,checkUCCSD) {
 
 	xacc::Initialize();
 
@@ -54,3 +51,8 @@ BOOST_AUTO_TEST_CASE(checkUCCSD) {
 	xacc::Finalize();
 }
 
+
+int main(int argc, char** argv) {
+   ::testing::InitGoogleTest(&argc, argv);
+   return RUN_ALL_TESTS();
+}

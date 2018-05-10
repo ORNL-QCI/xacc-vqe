@@ -1,4 +1,3 @@
-
 /***********************************************************************************
  * Copyright (c) 2016, UT-Battelle
  * All rights reserved.
@@ -29,25 +28,22 @@
  *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
-#define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE FermionInstructionTester
-
-#include <boost/test/included/unit_test.hpp>
+#include <gtest/gtest.h>
 #include "FermionInstruction.hpp"
 
 using namespace xacc::vqe;
 
-BOOST_AUTO_TEST_CASE(checkConstruction) {
+TEST(FermionInstructionTester,checkConstruction) {
 
 	// make a4dag a3dag a9 a1
 	FermionInstruction inst(std::vector<std::pair<int, int>> { { 4, 1 },
 			{ 3, 1 }, { 9, 0 }, { 1, 0 } });
 
-	BOOST_VERIFY(inst.bits().size() == 4);
-	BOOST_VERIFY(inst.getParameters().size() == 6);
+	EXPECT_TRUE(inst.bits().size() == 4);
+	EXPECT_TRUE(inst.getParameters().size() == 6);
 
-	BOOST_VERIFY((inst.bits() == std::vector<int> {4, 3, 9, 1}));
-	BOOST_VERIFY((
+	EXPECT_TRUE((inst.bits() == std::vector<int> {4, 3, 9, 1}));
+	EXPECT_TRUE((
 			inst.getParameters() == std::vector<xacc::InstructionParameter> {
 				xacc::InstructionParameter(1), xacc::InstructionParameter(1),
 						xacc::InstructionParameter(0),
@@ -56,5 +52,10 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 						xacc::InstructionParameter(std::string(""))}));
 
 	std::cout << "HEY:\n" << inst.toString("") << "\n";
+}
+
+int main(int argc, char** argv) {
+   ::testing::InitGoogleTest(&argc, argv);
+   return RUN_ALL_TESTS();
 }
 

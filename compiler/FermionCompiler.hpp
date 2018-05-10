@@ -66,6 +66,7 @@ public:
 	 * @return
 	 */
 	virtual std::shared_ptr<xacc::IR> compile(const std::string& src) {
+		return compile(src,nullptr);
 	}
 
 	/**
@@ -93,7 +94,6 @@ public:
 				xacc::info("Registered Fermion To Spin Transformation: " + i);
 			}
 			return true;
-			return true;
 		}
 		return false;
 	}
@@ -107,6 +107,7 @@ public:
 	virtual const std::string translate(const std::string& bufferVariable,
 			std::shared_ptr<Function> function) {
 		xacc::error("FermionCompiler::translate - Method not implemented");
+		return "";
 	};
 
 	virtual const std::string name() const {

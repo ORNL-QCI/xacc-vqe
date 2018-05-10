@@ -1,4 +1,3 @@
-
 /***********************************************************************************
  * Copyright (c) 2016, UT-Battelle
  * All rights reserved.
@@ -29,10 +28,7 @@
  *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
-#define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE BravyiKitaevIRTransformationTester
-
-#include <boost/test/included/unit_test.hpp>
+#include <gtest/gtest.h>
 #include "BravyiKitaevIRTransformation.hpp"
 #include "XACC.hpp"
 
@@ -89,7 +85,7 @@ std::shared_ptr<FermionKernel> compileKernel(const std::string src) {
 	return fermionKernel;
 }
 
-BOOST_AUTO_TEST_CASE(checkBKTransform) {
+TEST(BravyiKitaevIRTransformationTester,checkBKTransform) {
 
 	xacc::setOption("n-qubits", "3");
 	auto Instruction = std::make_shared<FermionInstruction>(
@@ -110,11 +106,11 @@ BOOST_AUTO_TEST_CASE(checkBKTransform) {
 	PauliOperator expected({{0,"Y"}, {1,"Y"}}, -1.585);
 	expected += PauliOperator({{0,"X"}, {1,"X"}, {2,"Z"}}, -1.585);
 
-	BOOST_VERIFY(expected == result);
+	EXPECT_TRUE(expected == result);
 
 }
 
-BOOST_AUTO_TEST_CASE(checkH2Transform) {
+TEST(BravyiKitaevIRTransformationTester,checkH2Transform) {
 
 	const std::string code =
 			R"code(__qpu__ kernel() {
@@ -173,8 +169,15 @@ BOOST_AUTO_TEST_CASE(checkH2Transform) {
 	expected += PauliOperator({{0,"Y"}, {1,"Z"}, {2,"Y"}}, 0.0453219);
 	expected += PauliOperator({{0,"Y"}, {1,"Z"}, {2,"Y"}, {3,"Z"}}, 0.0453219);
 
-	BOOST_VERIFY(expected == result);
+	EXPECT_TRUE(expected == result);
 
 
 }
 
+int main(int argc, char** argv) {
+   xacc::Initialize(argc,argv);
+   ::testing::InitGoogleTest(&argc, argv);
+   auto ret = RUN_ALL_TESTS();
+   xacc::Finalize();
+   return ret;
+}

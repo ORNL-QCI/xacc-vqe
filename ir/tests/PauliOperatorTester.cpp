@@ -28,10 +28,7 @@
  *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
-#define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE PauliOperatorTester
-
-#include <boost/test/included/unit_test.hpp>
+#include <gtest/gtest.h>
 #include "PauliOperator.hpp"
 #include <boost/algorithm/string.hpp>
 #include "XACC.hpp"
@@ -39,7 +36,7 @@
 
 using namespace xacc::vqe;
 
-BOOST_AUTO_TEST_CASE(checkEasy) {
+TEST(PauliOperatorTester,checkEasy) {
 
 //	CURRENT: (0.25,0) X1 Z2 X3 + (0,0.25) X1 Z2 Y3 + (0.25,0) Y1 Z2 Y3 + (0,-0.25) Y1 Z2 X3
 //	SUM: (0,-0.5) Z0 Y1 + (0.5,0) Z0 X1
@@ -59,7 +56,7 @@ BOOST_AUTO_TEST_CASE(checkEasy) {
 
 	std::cout << "CURRENTMULT: " << op.toString() << "\n";
 }
-BOOST_AUTO_TEST_CASE(checkConstruction) {
+TEST(PauliOperatorTester,checkConstruction) {
 
 	PauliOperator inst({ { 4, "X" },
 			{ 3, "Z" }, { 9, "Y" }, { 1, "Z" } });
@@ -74,8 +71,8 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 	PauliOperator expected({{3,"Z"}, {4,"X"}});
 	expected += PauliOperator({{1,"Z"}, {3,"Z"},{4,"X"}, {9,"Y"}});
 	std::cout << "EXPECTED: " << expected.toString() << "\n";
-	BOOST_VERIFY(expected == sumInst);
-	BOOST_VERIFY(sumInst == sumInst);
+	EXPECT_TRUE(expected == sumInst);
+	EXPECT_TRUE(sumInst == sumInst);
 
 	PauliOperator i3({ { 3, "X" } });
 	auto testPauliProducts = i2 * i3;
@@ -86,25 +83,25 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 //	expected.addTerm({{3,"Y"},{4,"X"}}, std::complex<double>(0,1));
 
 	std::cout << "NEWEXPECTED: " << expected.toString() << "\n";
-	BOOST_VERIFY(expected == testPauliProducts);
+	EXPECT_TRUE(expected == testPauliProducts);
 
 	PauliOperator testEqual({ { 4, "X" },
 			{ 3, "Z" } }, std::complex<double>(33.3,0.0));
-	BOOST_VERIFY(i2 == testEqual);
-	BOOST_VERIFY(i2 != inst);
+	EXPECT_TRUE(i2 == testEqual);
+	EXPECT_TRUE(i2 != inst);
 
 	// Term * scalar multiple
 	auto multScalar = testPauliProducts * 3.3;
-	BOOST_VERIFY("(0,3.3) Y3 X4" == multScalar.toString());
-	BOOST_VERIFY(PauliOperator( { {3,"Y"}, {4,"X"}}, std::complex<double>(0,3.3)) == multScalar);
+	EXPECT_TRUE("(0,3.3) Y3 X4" == multScalar.toString());
+	EXPECT_TRUE(PauliOperator( { {3,"Y"}, {4,"X"}}, std::complex<double>(0,3.3)) == multScalar);
 
 	testPauliProducts*=3.3;
-	BOOST_VERIFY(testPauliProducts == multScalar);
+	EXPECT_TRUE(testPauliProducts == multScalar);
 
 	// Plus with same terms
 	sumInst = inst + 2.2 * inst;
 	std::cout << inst.toString() << ", " << (2.2*inst).toString() << ", " << sumInst.toString() << "\n";
-	BOOST_VERIFY(PauliOperator( { {1,"Z"}, {3,"Z"}, {4,"X"}, {9,"Y"}}, std::complex<double>(3.2,0)) == sumInst);
+	EXPECT_TRUE(PauliOperator( { {1,"Z"}, {3,"Z"}, {4,"X"}, {9,"Y"}}, std::complex<double>(3.2,0)) == sumInst);
 
 
 	PauliOperator i4( { { 0, "Z" } });
@@ -121,7 +118,7 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 	std::cout << i4.toString() << ", " << i6.toString() << "\nSTARTING:\n";
 	auto newMultByComp = i4 * i6;
 	std::cout << "ENDED:\nHI: " << newMultByComp.toString() << "\n";
-	BOOST_VERIFY(expected == newMultByComp);
+	EXPECT_TRUE(expected == newMultByComp);
 
 	std::cout << "MADE IT HERE\n";
 	// Z1 * X1 + i * Z1 * Y1 = i * Y1 + i * (-i * X1)
@@ -130,29 +127,29 @@ BOOST_AUTO_TEST_CASE(checkConstruction) {
 	expected += PauliOperator({{1,"X"}}) + PauliOperator({{1,"Y"}},std::complex<double>(0,1) );
 //	expected.addTerm({{1,"X"}}).addTerm({{1,"Y"}}, std::complex<double>(0,1));
 
-	BOOST_VERIFY(expected == newMultByComp);
+	EXPECT_TRUE(expected == newMultByComp);
 
 }
 
-BOOST_AUTO_TEST_CASE(checkVariableCoefficient) {
+TEST(PauliOperatorTester,checkVariableCoefficient) {
 	// make a4dag a3dag a9 a1
 	PauliOperator inst({ { 4, "X" },
 			{ 3, "Z" }, }, "theta");
 	auto three = 3*inst;
 	auto sum = ((inst+inst) + three);
 	std::cout << "SUMSTR: " << sum.toString() << "\n";
-	BOOST_VERIFY(sum.toString() == "(5,0) theta Z3 X4");
+	EXPECT_TRUE(sum.toString() == "(5,0) theta Z3 X4");
 
 	PauliOperator i2({ { 4, "X" },
 			{ 3, "Z" } }, "theta2");
 
-	BOOST_VERIFY(i2 != inst);
+	EXPECT_TRUE(i2 != inst);
 	auto sumInst = inst + i2;
 	std::cout << "SUMSTR: " << sumInst.toString() << "\n";
-	BOOST_VERIFY("(1,0) theta2 Z3 X4 + (1,0) theta Z3 X4" == sumInst.toString());
+	EXPECT_TRUE("(1,0) theta2 Z3 X4 + (1,0) theta Z3 X4" == sumInst.toString());
 }
 
-BOOST_AUTO_TEST_CASE(checkBinaryVector) {
+TEST(PauliOperatorTester,checkBinaryVector) {
 //	SpinInstruction inst( { { 4, "X" },
 //				{ 3, "Z" }, { 9, "Y" }, { 1, "Z" } });
 //
@@ -160,7 +157,7 @@ BOOST_AUTO_TEST_CASE(checkBinaryVector) {
 //
 //	auto bv = inst.toBinaryVector(10);
 //
-//	BOOST_VERIFY(bv.size() == 20);
+//	EXPECT_TRUE(bv.size() == 20);
 //
 //	std::vector<int> expected(20);
 //	expected[4] = 1;
@@ -169,26 +166,26 @@ BOOST_AUTO_TEST_CASE(checkBinaryVector) {
 //	expected[13] = 1;
 //	expected[11] = 1;
 //
-//	BOOST_VERIFY(expected == bv);
+//	EXPECT_TRUE(expected == bv);
 //
 //	SpinInstruction i;
 //	std::vector<int> zeros(20);
-//	BOOST_VERIFY(zeros == i.toBinaryVector(10));
+//	EXPECT_TRUE(zeros == i.toBinaryVector(10));
 //
 //	i.fromBinaryVector(expected, std::complex<double>(1.0,0.0));
 //
-//	BOOST_VERIFY(inst.toString() == i.toString());
+//	EXPECT_TRUE(inst.toString() == i.toString());
 }
 
-BOOST_AUTO_TEST_CASE(checkAction) {
+TEST(PauliOperatorTester,checkAction) {
 
 	PauliOperator inst({ { 0, "X" },
 					{ 1, "Z" }, { 2, "Y" }, { 3, "Z" } }, std::complex<double>(2.2,0));
 
 	auto result = inst.computeActionOnKet("0110");
 
-	BOOST_VERIFY(result[0].first == "1100");
-	BOOST_VERIFY(result[0].second == std::complex<double>(0,2.2));
+	EXPECT_TRUE(result[0].first == "1100");
+	EXPECT_TRUE(result[0].second == std::complex<double>(0,2.2));
 
 	std::cout << "HELLO:\n" << result[0].first << ", " << result[0].second << "\n";
 
@@ -199,12 +196,12 @@ BOOST_AUTO_TEST_CASE(checkAction) {
 
 	std::cout << "HELLO:\n" << result2[0].first << ", " << result2[0].second << "\n";
 
-	BOOST_VERIFY(result2[0].first == "1101");
-	BOOST_VERIFY(result2[0].second == std::complex<double>(-2.2,0));
+	EXPECT_TRUE(result2[0].first == "1101");
+	EXPECT_TRUE(result2[0].second == std::complex<double>(-2.2,0));
 
 }
 
-BOOST_AUTO_TEST_CASE(checkComplexTerms) {
+TEST(PauliOperatorTester,checkComplexTerms) {
 //	SpinInstruction inst({{1,"X"}, {3,"Y"}, {8,"Z"}}, std::complex<double>(0.5,0.0)),
 //			inst2({{1,"Z"}, {3,"X"}, {8,"Z"}}, std::complex<double>(1.2,0.0)),
 //			inst3({{1,"Z"}, {3,"Y"}, {9,"Z"}}, std::complex<double>(0.0,1.4)),
@@ -223,12 +220,12 @@ BOOST_AUTO_TEST_CASE(checkComplexTerms) {
 //	t.simplify();
 //	std::cout << "TSimp: " << t.toString("") << "\n";
 //
-//	BOOST_VERIFY(t == res);
+//	EXPECT_TRUE(t == res);
 
 }
 
 
-BOOST_AUTO_TEST_CASE(checkHelpMe) {
+TEST(PauliOperatorTester,checkHelpMe) {
 
 	PauliOperator sum1({ { 0, "X" } },
 				std::complex<double>(.5, 0));
@@ -256,7 +253,7 @@ BOOST_AUTO_TEST_CASE(checkHelpMe) {
 	std::cout << (std::complex<double>(1,0) * std::complex<double>(0,1)) << "\n";
 }
 
-BOOST_AUTO_TEST_CASE(checkIdentity) {
+TEST(PauliOperatorTester,checkIdentity) {
 	PauliOperator i1(
 			std::complex<double>(3.3, 0));
 	PauliOperator i2(
@@ -267,11 +264,11 @@ BOOST_AUTO_TEST_CASE(checkIdentity) {
 	compInst = compInst + i2;
 
 	std::cout << "HI: " << compInst.toString() << "\n";
-	BOOST_VERIFY("(8.6,0)" == compInst.toString());
-	BOOST_VERIFY(PauliOperator(std::complex<double>(8.6,0)) == compInst);
+	EXPECT_TRUE("(8.6,0)" == compInst.toString());
+	EXPECT_TRUE(PauliOperator(std::complex<double>(8.6,0)) == compInst);
 }
 
-BOOST_AUTO_TEST_CASE(checkComposition) {
+TEST(PauliOperatorTester,checkComposition) {
 	PauliOperator i1({ { 0, "Z" } });
 	PauliOperator i2({ { 1, "X" } });
 	PauliOperator i3({ { 1, "Y" } }, std::complex<double>(0,1));
@@ -286,45 +283,45 @@ BOOST_AUTO_TEST_CASE(checkComposition) {
 	compInst2 += i2;
 
 	std::complex<double> i(0,1);
-	BOOST_VERIFY(compInst == compInst);
-	BOOST_VERIFY(compInst != compInst2);
-	BOOST_VERIFY(compInst2 == i2);
-	BOOST_VERIFY(compInst2 != i1);
+	EXPECT_TRUE(compInst == compInst);
+	EXPECT_TRUE(compInst != compInst2);
+	EXPECT_TRUE(compInst2 == i2);
+	EXPECT_TRUE(compInst2 != i1);
 
 	auto multBySpinInst = compInst * i4;
 	PauliOperator expected({{1,"X"}}, -1);
 	expected += PauliOperator({{1,"Y"}}, -i);
-	BOOST_VERIFY(expected == multBySpinInst);
+	EXPECT_TRUE(expected == multBySpinInst);
 
 	multBySpinInst = compInst * i1;
 	std::cout << "HOWDY: " << multBySpinInst.toString() << "\n";
 	expected.clear();
 	expected += PauliOperator({{0,"Z"}, {1,"Y"}}, i);
 	expected += PauliOperator({{0,"Z"}, {1,"X"}});
-	BOOST_VERIFY(expected == multBySpinInst);
+	EXPECT_TRUE(expected == multBySpinInst);
 
 	auto multByComposite = compInst * compInst;
 	std::cout << "ZERO: " << multByComposite.toString() << "\n";
-	BOOST_VERIFY(PauliOperator() == multByComposite);
+	EXPECT_TRUE(PauliOperator() == multByComposite);
 
 	auto t = compInst3 * compInst3;
 	expected.clear();
 	expected += PauliOperator({{0,"Z"}, {1,"X"}}, 2);
 	expected += PauliOperator(2);
-	BOOST_VERIFY(expected
+	EXPECT_TRUE(expected
 					== t);
 
 	auto test = compInst * 4.4;
 	expected.clear();
 	expected += PauliOperator({{1,"X"}}, 4.4);
 	expected += PauliOperator({{1,"Y"}}, 4.4*i);
-	BOOST_VERIFY(expected == test);
+	EXPECT_TRUE(expected == test);
 
-	BOOST_VERIFY(expected == (4.4 * compInst));
+	EXPECT_TRUE(expected == (4.4 * compInst));
 
 	test = compInst * std::complex<double>(4.4, 0);
-	BOOST_VERIFY(expected == test);
-	BOOST_VERIFY(expected
+	EXPECT_TRUE(expected == test);
+	EXPECT_TRUE(expected
 					== (std::complex<double>(4.4, 0) * compInst));
 
 	// Test Addition now
@@ -335,15 +332,15 @@ BOOST_AUTO_TEST_CASE(checkComposition) {
 	expected += PauliOperator({{1,"X"}}, 2);
 	expected += PauliOperator({{1,"Y"}}, i);
 
-	BOOST_VERIFY(expected == added);
+	EXPECT_TRUE(expected == added);
 }
 
-BOOST_AUTO_TEST_CASE(checkMatrixElements) {
+TEST(PauliOperatorTester,checkMatrixElements) {
 	PauliOperator op({{0, "X"}, {1, "Y"}, {2, "Z"}});
 	auto elements = op.getSparseMatrixElements();
 }
 
-BOOST_AUTO_TEST_CASE(checkFromXACCIR) {
+TEST(PauliOperatorTester,checkFromXACCIR) {
 
 	using namespace xacc;
 
@@ -403,3 +400,7 @@ BOOST_AUTO_TEST_CASE(checkFromXACCIR) {
 	xacc::Finalize();
 }
 
+int main(int argc, char** argv) {
+   ::testing::InitGoogleTest(&argc, argv);
+   return RUN_ALL_TESTS();
+}

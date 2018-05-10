@@ -1,4 +1,3 @@
-
 /***********************************************************************************
  * Copyright (c) 2017, UT-Battelle
  * All rights reserved.
@@ -29,20 +28,17 @@
  *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
-#define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE ComputeEnergyVQETaskTester
-
-#include <boost/test/included/unit_test.hpp>
+#include <gtest/gtest.h>
 #include "ComputeEnergyVQETask.hpp"
 #include "ServiceRegistry.hpp"
 #include "MPIProvider.hpp"
 
 using namespace xacc::vqe;
 
-BOOST_AUTO_TEST_CASE(checkSimple) {
+TEST(ComputeEnergyVQETaskTester,checkSimple) {
 
-	auto argc = boost::unit_test::framework::master_test_suite().argc;
-	auto argv = boost::unit_test::framework::master_test_suite().argv;
+	auto argc = xacc::getArgc();
+	auto argv = xacc::getArgv();
 
 	const std::string src = R"src(__qpu__ kernel() {
    0.7137758743754461
@@ -76,7 +72,6 @@ BOOST_AUTO_TEST_CASE(checkSimple) {
    -0.4759344611440753 3 1 3 0
 })src";
 
-	xacc::Initialize();
 	std::shared_ptr<MPIProvider> provider;
 	if (xacc::hasService<MPIProvider>("boost-mpi")) {
 		provider = xacc::getService<MPIProvider>("boost-mpi");
@@ -89,7 +84,6 @@ BOOST_AUTO_TEST_CASE(checkSimple) {
 	xacc::setOption("n-qubits", "4");
 	xacc::setOption("n-electrons", "2");
 	xacc::setOption("vqe-task", "compute-energy");
-	// FIXME ADD xacc::hasAccelerator()...
 
 	if (xacc::hasAccelerator("tnqvm")) {
 		// Get the user-specified Accelerator,
@@ -108,9 +102,15 @@ BOOST_AUTO_TEST_CASE(checkSimple) {
 
 		VQETaskResult result = task.execute(parameters);
 
-		BOOST_VERIFY(std::fabs(result.results[0].second + 1.13727042207) < 1e-4);
+		EXPECT_NEAR(result.results[0].second, -1.13727042207, 1e-4);
 	}
 
-	xacc::Finalize();
 }
 
+int main(int argc, char** argv) {
+   xacc::Initialize(argc,argv);
+   ::testing::InitGoogleTest(&argc, argv);
+   auto ret = RUN_ALL_TESTS();
+   xacc::Finalize();
+   return ret;
+}

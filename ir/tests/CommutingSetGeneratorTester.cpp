@@ -1,4 +1,3 @@
-
 /***********************************************************************************
  * Copyright (c) 2016, UT-Battelle
  * All rights reserved.
@@ -29,15 +28,12 @@
  *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
-#define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE CommutingSetGeneratorTester
-
-#include <boost/test/included/unit_test.hpp>
+#include <gtest/gtest.h>
 #include "CommutingSetGenerator.hpp"
 
 using namespace xacc::vqe;
 
-BOOST_AUTO_TEST_CASE(checkCommutingSets) {
+TEST(CommutingSetGeneratorTester,checkCommutingSets) {
 
 	PauliOperator inst1(std::map<int, std::string> { { 0, "Y" },
 			{ 1, "Z" }, { 2, "X" } });
@@ -75,21 +71,26 @@ BOOST_AUTO_TEST_CASE(checkCommutingSets) {
 	auto sets = gen.getCommutingSet(composite, 4);
 
 	std::cout << "SIZE: " << sets.size() << "\n";
-//	BOOST_VERIFY(sets.size() == 2);
-//	BOOST_VERIFY(sets[0][0] == 0);
-//	BOOST_VERIFY(sets[0][1] == 2);
-//	BOOST_VERIFY(sets[0][2] == 7);
-//	BOOST_VERIFY(sets[0][3] == 9);
-//	BOOST_VERIFY(sets[0][4] == 10);
-//	BOOST_VERIFY(sets[0][5] == 11);
+//	EXPECT_TRUE(sets.size() == 2);
+//	EXPECT_TRUE(sets[0][0] == 0);
+//	EXPECT_TRUE(sets[0][1] == 2);
+//	EXPECT_TRUE(sets[0][2] == 7);
+//	EXPECT_TRUE(sets[0][3] == 9);
+//	EXPECT_TRUE(sets[0][4] == 10);
+//	EXPECT_TRUE(sets[0][5] == 11);
 //
-//	BOOST_VERIFY(sets[1][0] == 1);
-//	BOOST_VERIFY(sets[1][1] == 3);
-//	BOOST_VERIFY(sets[1][2] == 4);
-//	BOOST_VERIFY(sets[1][3] == 5);
-//	BOOST_VERIFY(sets[1][4] == 6);
-//	BOOST_VERIFY(sets[1][5] == 8);
+//	EXPECT_TRUE(sets[1][0] == 1);
+//	EXPECT_TRUE(sets[1][1] == 3);
+//	EXPECT_TRUE(sets[1][2] == 4);
+//	EXPECT_TRUE(sets[1][3] == 5);
+//	EXPECT_TRUE(sets[1][4] == 6);
+//	EXPECT_TRUE(sets[1][5] == 8);
 
 
 }
 
+
+int main(int argc, char** argv) {
+   ::testing::InitGoogleTest(&argc, argv);
+   return RUN_ALL_TESTS();
+}

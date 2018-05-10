@@ -42,18 +42,21 @@ public:
 			const std::vector<std::shared_ptr<Function>> functions) {
 		xacc::error("Error - you have tried to execute the VQEDummyAccelerator. "
 						"Please use a real Accelerator.");
+		return std::vector<std::shared_ptr<AcceleratorBuffer>>{};
 	}
 	virtual std::shared_ptr<AcceleratorBuffer> createBuffer(
 				const std::string& varId) {
 		xacc::error("Error - you have tried to create an AcceleratorBuffer "
 				"with the VQEDummyAccelerator. "
 						"Please use a real Accelerator.");
+		return std::make_shared<AcceleratorBuffer>("",1);
 	}
 	virtual std::shared_ptr<AcceleratorBuffer> createBuffer(
 			const std::string& varId, const int size) {
 		xacc::error("Error - you have tried to create an AcceleratorBuffer "
 				"with the VQEDummyAccelerator. "
 						"Please use a real Accelerator.");
+		return std::make_shared<AcceleratorBuffer>("",1);
 	}
 	virtual bool isValidBufferSize(const int NBits) {
 		return false;

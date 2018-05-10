@@ -86,12 +86,16 @@ public:
 	}
 
 	virtual std::shared_ptr<Function> getKernel(const std::string& name) {
+		std::shared_ptr<Function> func;
 		for (auto f : kernels) {
 			if (f->name() == name) {
-				return f;
+				func = f;
 			}
 		}
-		xacc::error("Invalid kernel name.");
+		if (!func) {
+			xacc::error("Invalid kernel name.");
+		}
+		return func;
 	}
 
 	virtual const int maxBit() {

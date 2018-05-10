@@ -26,13 +26,6 @@ set_target_properties(${LIBRARY_NAME} PROPERTIES
   US_BUNDLE_NAME ${_bundle_name}
   )
 
-if(BUILD_SHARED_LIBS)
-  set_target_properties(${LIBRARY_NAME} PROPERTIES
-    CXX_VISIBILITY_PRESET hidden
-    VISIBILITY_INLINES_HIDDEN 1
-    )
-endif()
-
 # Embed meta-data from a manifest.json file
 usFunctionEmbedResources(TARGET ${LIBRARY_NAME}
   WORKING_DIRECTORY
@@ -55,6 +48,7 @@ install(TARGETS ${LIBRARY_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/plugins)
 install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/vqe)
 
 # Gather tests
-file (GLOB test_files tests/*.cpp)
-add_tests("${test_files}" "${CMAKE_CURRENT_SOURCE_DIR}" "${XACC_LIBRARIES};pthread;dl;xacc-vqe-ir;xacc-vqe-irtransformations")
+if(VQE_BUILD_TESTS)
+	add_subdirectory(tests)
+endif()
 

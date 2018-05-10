@@ -1,0 +1,2 @@
+add_xacc_test(FermionCompiler)
+target_link_libraries(FermionCompilerTester xacc-vqe-fermion-compiler)

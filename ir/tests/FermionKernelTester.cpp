@@ -29,15 +29,12 @@
  *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
-#define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE FermionKernelTester
-
-#include <boost/test/included/unit_test.hpp>
+#include <gtest/gtest.h>
 #include "FermionKernel.hpp"
 
 using namespace xacc::vqe;
 
-BOOST_AUTO_TEST_CASE(checkFermionKernelConstruction) {
+TEST(FermionKernelTester,checkFermionKernelConstruction) {
 
 	auto Instruction = std::make_shared<FermionInstruction>(
 			std::vector<std::pair<int, int>> { { 4, 1 }, { 3, 1 }, { 9, 0 }, {
@@ -54,13 +51,17 @@ BOOST_AUTO_TEST_CASE(checkFermionKernelConstruction) {
 	kernel.addInstruction(Instruction2);
 	kernel.addInstruction(Instruction3);
 
-	BOOST_VERIFY(kernel.nInstructions() == 3);
-	BOOST_VERIFY(kernel.name() == "foo");
-	BOOST_VERIFY(kernel.getInstruction(0) == Instruction);
-	BOOST_VERIFY(kernel.getInstruction(1) == Instruction2);
-	BOOST_VERIFY(kernel.getInstruction(2) == Instruction3);
+	EXPECT_TRUE(kernel.nInstructions() == 3);
+	EXPECT_TRUE(kernel.name() == "foo");
+	EXPECT_TRUE(kernel.getInstruction(0) == Instruction);
+	EXPECT_TRUE(kernel.getInstruction(1) == Instruction2);
+	EXPECT_TRUE(kernel.getInstruction(2) == Instruction3);
 
 	std::cout << kernel.toString("") << "\n";
 
 }
 
+int main(int argc, char** argv) {
+   ::testing::InitGoogleTest(&argc, argv);
+   return RUN_ALL_TESTS();
+}

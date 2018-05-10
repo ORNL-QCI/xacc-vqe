@@ -1,0 +1,5 @@
+add_xacc_test(FTree)
+add_xacc_test(JordanWignerIRTransformation)
+target_link_libraries(JordanWignerIRTransformationTester xacc-vqe-irtransformations)
+add_xacc_test(BravyiKitaevIRTransformation)
+target_link_libraries(BravyiKitaevIRTransformationTester xacc-vqe-irtransformations)

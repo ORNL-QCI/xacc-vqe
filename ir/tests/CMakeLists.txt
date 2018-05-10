@@ -1,0 +1,8 @@
+add_xacc_test(PauliOperator)
+target_link_libraries(PauliOperatorTester xacc-vqe-ir xacc-vqe-tasks)
+add_xacc_test(UCCSD)
+target_link_libraries(UCCSDTester xacc-vqe-ir xacc-vqe-tasks)
+add_xacc_test(FermionInstruction)
+add_xacc_test(FermionKernel)
+add_xacc_test(CommutingSetGenerator)
+target_link_libraries(CommutingSetGeneratorTester xacc-vqe-ir xacc-vqe-tasks)

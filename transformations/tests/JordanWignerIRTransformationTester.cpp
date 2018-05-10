@@ -28,10 +28,7 @@
  *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
-#define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE JordanWignerIRTransformationTester
-
-#include <boost/test/included/unit_test.hpp>
+#include <gtest/gtest.h>
 #include "JordanWignerIRTransformation.hpp"
 #include "XACC.hpp"
 #include "EfficientJW.cpp"
@@ -90,7 +87,7 @@ std::shared_ptr<FermionKernel> compileKernel(const std::string src) {
 	return fermionKernel;
 }
 
-BOOST_AUTO_TEST_CASE(checkEasyTransform) {
+TEST(JordanWignerTransformationTester,checkEasyTransform) {
 
 	const std::string code =
 			R"code(__qpu__ kernel() {
@@ -127,7 +124,7 @@ BOOST_AUTO_TEST_CASE(checkEasyTransform) {
 	std::cout << "Transformed Fermion to Spin:\nBEGIN\n" << resultsStr << "\nEND\n\n";
 }
 
-BOOST_AUTO_TEST_CASE(checkH2Transform) {
+TEST(JordanWignerTransformationTester,checkH2Transform) {
 
 	const std::string code =
 			R"code(__qpu__ kernel() {
@@ -191,10 +188,10 @@ BOOST_AUTO_TEST_CASE(checkH2Transform) {
 	boost::replace_all(resultsStr, "+", "+\n");
 	std::cout << "EXPECTED Fermion to Spin:\nBEGIN\n" << resultsStr << "\nEND\n\n";
 
-	BOOST_VERIFY(expected == result);
+	EXPECT_TRUE(expected == result);
 }
 
-BOOST_AUTO_TEST_CASE(checkJWTransform) {
+TEST(JordanWignerTransformationTester,checkJWTransform) {
 
 
 	auto Instruction = std::make_shared<FermionInstruction>(
@@ -214,11 +211,11 @@ BOOST_AUTO_TEST_CASE(checkJWTransform) {
 	expected += PauliOperator({{0,"Y"}, {1,"Z"}, {2,"Y"}}, 1.585);
 
 	std::cout << "TRANSFORMED: " << newIr.toString() << "\n";
-	BOOST_VERIFY(expected == newIr);
+	EXPECT_TRUE(expected == newIr);
 
 }
 
-BOOST_AUTO_TEST_CASE(checkEfficientJW) {
+TEST(JordanWignerTransformationTester,checkEfficientJW) {
 	const std::string k = R"k(__qpu__ kernel() {
    0.7137758743754461
    -1.252477303982147 0 1 0 0
@@ -263,3 +260,10 @@ BOOST_AUTO_TEST_CASE(checkEfficientJW) {
 
 }
 
+int main(int argc, char** argv) {
+   xacc::Initialize(argc,argv);
+   ::testing::InitGoogleTest(&argc, argv);
+   auto ret = RUN_ALL_TESTS();
+   xacc::Finalize();
+   return ret;
+}

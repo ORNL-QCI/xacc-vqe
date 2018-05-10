@@ -84,11 +84,13 @@ public:
 	 * @return instruction
 	 */
 	virtual InstPtr getInstruction(const int idx) {
+		InstPtr ptr;
 		if (instructions.size() > idx) {
-			return *std::next(instructions.begin(), idx);
+			ptr = *std::next(instructions.begin(), idx);
 		} else {
 			xacc::error("Invalid instruction index.");
 		}
+		return ptr;
 	}
 
 	virtual void mapBits(std::vector<int> bitMap) {
@@ -267,6 +269,7 @@ public:
 
 	virtual InstructionParameter getParameter(const int idx) const{
 		xacc::error("FermionKernel does not contain runtime parameters.");
+		return InstructionParameter(0);
 	}
 
 	/**
@@ -291,6 +294,7 @@ public:
 
 	virtual std::vector<InstructionParameter> getParameters() {
 		xacc::error("FermionKernel does not contain runtime parameters.");
+		return std::vector<InstructionParameter>{};
 	}
 
 	virtual void addParameter(InstructionParameter instParam) {
@@ -324,6 +328,7 @@ public:
 	 */
 	virtual std::shared_ptr<Function> operator()(const Eigen::VectorXd& params) {
 		xacc::error("FermionKernel does not contain runtime parameters.");
+		return std::make_shared<FermionKernel>("");
 	}
 
 

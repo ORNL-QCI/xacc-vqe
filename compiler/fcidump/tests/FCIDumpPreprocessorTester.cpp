@@ -53,9 +53,8 @@ public:
 	}
 
 	virtual std::vector<std::shared_ptr<xacc::IRTransformation>> getIRTransformations() {
-
+		return std::vector<std::shared_ptr<xacc::IRTransformation>>{};
 	}
-	;
 
 	virtual std::shared_ptr<xacc::AcceleratorBuffer> createBuffer(
 			const std::string& varId) {
@@ -91,6 +90,7 @@ public:
 	virtual std::vector<std::shared_ptr<xacc::AcceleratorBuffer>> execute(
 			std::shared_ptr<xacc::AcceleratorBuffer> buffer,
 			const std::vector<std::shared_ptr<xacc::Function>> function) {
+		return std::vector<std::shared_ptr<xacc::AcceleratorBuffer>>{};
 	}
 
 	virtual const std::string name() const {
@@ -123,7 +123,8 @@ class FakeCompiler: public xacc::Compiler {
 public:
 	virtual std::shared_ptr<xacc::IR> compile(const std::string& src,
 			std::shared_ptr<xacc::Accelerator> acc) {
-
+		std::shared_ptr<xacc::IR> ir;
+		return ir;
 	}
 
 	/**
@@ -134,7 +135,7 @@ public:
 	 * @return
 	 */
 	virtual std::shared_ptr<xacc::IR> compile(const std::string& src) {
-
+		return compile(src,nullptr);
 	}
 
 	/**
@@ -148,6 +149,7 @@ public:
 	virtual const std::string translate(const std::string& bufferVariable,
 			std::shared_ptr<xacc::Function> function) {
 
+		return "";
 	}
 
 	virtual const std::string name() const {
