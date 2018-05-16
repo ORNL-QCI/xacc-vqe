@@ -1,4 +1,4 @@
-project(xacc-vqe CXX Fortran)
+project(xacc-vqe CXX)
 cmake_minimum_required(VERSION 2.8)
 set(CMAKE_DISABLE_IN_SOURCE_BUILDS ON)
 set(CMAKE_DISABLE_SOURCE_CHANGES ON)
