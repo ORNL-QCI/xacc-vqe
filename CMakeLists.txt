@@ -9,7 +9,6 @@ if(APPLE)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti -fexceptions")
 endif()
 option(VQE_BUILD_TESTS "Build test programs" OFF)
-option(SKIP_FCIDUMP "Don't build FCIDump Preprocessor even if we have CheMPS2" OFF)
 
 if(APPLE)
   set(CMAKE_MACOSX_RPATH 1)

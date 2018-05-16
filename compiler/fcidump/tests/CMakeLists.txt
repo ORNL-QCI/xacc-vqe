@@ -1,2 +1,0 @@
-add_xacc_test(FCIDumpPreprocessor)
-target_link_libraries(FCIDumpPreprocessorTester xacc-vqe-fcidump)
