@@ -27,5 +27,15 @@ install(TARGETS pyxaccvqe DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 file (GLOB PYTESTS tests/*.py)
 
+include(FindPythonInterp)
+if (PYTHONINTERP_FOUND)
+	message(STATUS "FOUND ${PYTHON_EXECUTABLE}")
+	foreach (PYTEST ${PYTESTS})
+		get_filename_component(TESTNAME ${PYTEST} NAME_WE) # [CACHE])
+		message(STATUS "TEST ${PYTEST}; ${TESTNAME}")
+		add_test(NAME ${TESTNAME} COMMAND ${PYTHON_EXECUTABLE} ${PYTEST})
+		set_tests_properties ( ${TESTNAME} PROPERTIES ENVIRONMENT "PYTHONPATH=${CMAKE_INSTALL_PREFIX}")
+	endforeach()
+#	add_test(NAME sample_test COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/sample_test.py WORKING_DIRECTORY ${EXECUTABLE_OUTPUT_PATH} )
 
-
+endif()
