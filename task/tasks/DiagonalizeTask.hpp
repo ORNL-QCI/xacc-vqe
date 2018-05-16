@@ -45,7 +45,8 @@ public:
 		auto desc = std::make_shared<options_description>(
 				"Diagonalize Options");
 		desc->add_options()("diagonalize-backend", value<std::string>(),
-							"The backend to use to compute the Hamiltonian eigenspectrum");
+							"The backend to use to compute the Hamiltonian eigenspectrum")
+			("diag-number-symmetry","Reduce the dimensionality of the problem by considering Hamiltonian subspace spanned by NELEC occupations.");
 		return desc;
 	}
 

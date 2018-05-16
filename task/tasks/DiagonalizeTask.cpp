@@ -27,6 +27,7 @@ VQETaskResult DiagonalizeTask::execute(
 
 	auto energy = backend->diagonalize(program);
 
+	std::cout << "HELLO WORLD ENERGY " << energy << "\n";
 	VQETaskResult result;
 	result.angles = parameters;
 	result.energy = energy;
@@ -39,26 +40,14 @@ double EigenDiagonalizeBackend::diagonalize(
 		std::shared_ptr<VQEProgram> prog) {
 	std::complex<double> gsReal;
 	auto hamiltonian = prog->getPauliOperator();
-//	auto nTerms = inst.nTerms();
 	auto nQubits = prog->getNQubits();
-
-	std::size_t dim = 1;
-	std::size_t two = 2;
-	for (int i = 0; i < nQubits; i++)
-		dim *= two;
-
-	auto getBitStrForIdx = [&](std::uint64_t i) {
-		std::stringstream s;
-		for (int k = nQubits - 1; k >= 0; k--) s << ((i >> k) & 1);
-		return s.str();
-	};
-
 	auto fermionTransformation =
 			xacc::optionExists("fermion-transformation") ?
 					xacc::getOption("fermion-transformation") : "";
 
 	Eigen::VectorXd eigenvalues;
-	if (xacc::optionExists("n-electrons")) {
+	if (xacc::optionExists("diag-number-symmetry") && 
+			xacc::optionExists("n-electrons")) {
 		int nElectrons = std::stoi(xacc::getOption("n-electrons"));
 
 		// Generate all n-qubit bitstrings with n-electron
@@ -187,7 +176,18 @@ double EigenDiagonalizeBackend::diagonalize(
 
 		eigenvalues = es.eigenvalues();
 	} else {
+		std::size_t dim = 1;
+		std::size_t two = 2;
+		for (int i = 0; i < nQubits; i++)
+			dim *= two;
+		
+		auto getBitStrForIdx = [&](std::uint64_t i) {
+			std::stringstream s;
+			for (int k = nQubits - 1; k >= 0; k--) s << ((i >> k) & 1);
+			return s.str();
+		};
 		Eigen::MatrixXcd A(dim, dim);
+		A.setZero();
 		for (std::uint64_t myRow = 0; myRow < dim; myRow++) {
 			auto rowBitStr = getBitStrForIdx(myRow);
 			auto results = hamiltonian.computeActionOnBra(rowBitStr);
@@ -196,11 +196,11 @@ double EigenDiagonalizeBackend::diagonalize(
 				A(myRow, k) += result.second;
 			}
 		}
-		Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> es(A);
 
+		Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> es(A);
 		eigenvalues = es.eigenvalues();
 	}
-	std::cout << "Spectrum: " << eigenvalues.transpose() << "\n";
+
 	gsReal = eigenvalues(0);
 	std::stringstream ss;
 	ss << std::setprecision(12) << gsReal;

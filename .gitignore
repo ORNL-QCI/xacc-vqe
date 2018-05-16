@@ -33,3 +33,4 @@
 /.settings/
 **/.ptp*
 **/fire/*
+compile_commands.json

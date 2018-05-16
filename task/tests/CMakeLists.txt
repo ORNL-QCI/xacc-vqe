@@ -1,2 +1,4 @@
 add_xacc_test(ComputeEnergyVQETask)
 target_link_libraries(ComputeEnergyVQETaskTester xacc-vqe-tasks xacc xacc-quantum-gate)
+add_xacc_test(DiagonalizeTask)
+target_link_libraries(DiagonalizeTaskTester xacc-vqe-tasks xacc xacc-quantum-gate)
