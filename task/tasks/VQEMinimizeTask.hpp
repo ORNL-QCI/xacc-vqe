@@ -44,7 +44,6 @@ public:
 		result.energy = currentEnergy;
 		result.nQpuCalls = computeTask->totalQpuCalls;
 		result.vqeIterations = computeTask->vqeIteration;
-		result.execTime = computeTask->execTime;
 		return result;
 	}
 

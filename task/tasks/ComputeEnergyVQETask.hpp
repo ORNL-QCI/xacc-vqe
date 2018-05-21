@@ -34,7 +34,7 @@ public:
 	 * @return description The description of this object.
 	 */
 	virtual const std::string description() const {
-		return "";
+		return "This VQETask computes the energy at the given set of parameters.";
 	}
 
 	/**
@@ -44,8 +44,8 @@ public:
 	virtual std::shared_ptr<options_description> getOptions() {
 		auto desc = std::make_shared<options_description>(
 				"Compute Energy VQE Task Options");
-		desc->add_options()("vqe-compute-energies-multi-exec",
-				"Instead of OpenMP/MPI execution, use XACC multi-execution kernel list.")
+		desc->add_options()("vqe-use-mpi",
+				"Use MPI distributed execution.")
 				("vqe-persist-data", value<std::string>(), "Base file name for buffer data.");
 		return desc;
 	}
@@ -64,7 +64,6 @@ public:
 
 	int vqeIteration = 0;
 	int totalQpuCalls = 0;
-	double execTime = 0.0;
 
 };
 }
