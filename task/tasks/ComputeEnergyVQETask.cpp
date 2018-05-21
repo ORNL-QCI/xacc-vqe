@@ -29,20 +29,21 @@ VQETaskResult ComputeEnergyVQETask::execute(
 	auto isReadoutErrorKernel = [](const std::string& tag) -> bool 
 		{ return boost::contains(tag,"readout-error");};
 
+	auto getCoeff = [](Kernel<>& k) ->double {
+		return std::real(boost::get<std::complex<double>>(k.getIRFunction()->getParameter(0)));
+	};
+
 	// Separate our kernels into Identity kernels and 
 	// non trivial kernels to be executed
-	KernelList<> identityKernels, kernels(qpu);
-	std::map<std::string, double> nameToCoeff;
-	std::map<std::string, std::string> nameToTag;
+	KernelList<> kernels(qpu);
+
+	double idSum = 0.0;
 	for (auto& k : program->getVQEKernels()) {
 		if (k.getIRFunction()->nInstructions() > 0) {
 			k.getIRFunction()->insertInstruction(0,evaluatedStatePrep);
 			kernels.push_back(k);
-			nameToTag.insert({k.getName(), k.getIRFunction()->getTag()});
-			double coeff = std::real(boost::get<std::complex<double>>(k.getIRFunction()->getParameter(0)));
-			nameToCoeff.insert({k.getName(), coeff});
 		} else {
-			identityKernels.push_back(k);
+			idSum += getCoeff(k);
 		}
 	}
 
@@ -55,13 +56,15 @@ VQETaskResult ComputeEnergyVQETask::execute(
 		for (int i = myStart; i < myEnd; i++) {
 			kernels[i](buf);
 			totalQpuCalls++;
-			if(!isReadoutErrorKernel(kernels[i].getIRFunction()->getTag()))
-				sum += nameToCoeff[kernels[i].getName()] * buf->getExpectationValueZ();
+			if(!isReadoutErrorKernel(kernels[i].getIRFunction()->getTag())) {
+				sum += getCoeff(kernels[i]) 
+					* buf->getExpectationValueZ();
+			}
 			buf->resetBuffer();
 		}
 
 		if (rank == 0) 
-			for (auto& idK : identityKernels) sum += std::real(boost::get<std::complex<double>>(idK.getIRFunction()->getParameter(0)));
+			sum += idSum;
 
 		double result = 0.0;
 		int ncalls = 0;
@@ -75,15 +78,14 @@ VQETaskResult ComputeEnergyVQETask::execute(
 		totalQpuCalls += qpu->isRemote() ? 1 : kernels.size();
 
 		// Compute the energy
-		int i = 0;
-		for(auto& kv : nameToCoeff) {
-			std::cout << "Computing " << kv.first << ", " << kv.second << ", " << results[i]->getExpectationValueZ() << "\n";
-			if(!isReadoutErrorKernel(nameToTag[kv.first])) {
-				sum += results[i]->getExpectationValueZ() * kv.second;
-				++i;
+		for(int i = 0; i < results.size(); ++i) {
+			auto k = kernels[i];
+			if(!isReadoutErrorKernel(k.getIRFunction()->getTag())) {
+				sum += results[i]->getExpectationValueZ() * 
+					getCoeff(k);
 			}
 		}
-		for(auto& idK : identityKernels) sum += std::real(boost::get<std::complex<double>>(idK.getIRFunction()->getParameter(0)));
+		sum += idSum;
 		for(auto& k : kernels) k.getIRFunction()->removeInstruction(0);	
 	}
 
