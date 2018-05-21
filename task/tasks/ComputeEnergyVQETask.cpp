@@ -43,7 +43,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 			k.getIRFunction()->insertInstruction(0,evaluatedStatePrep);
 			kernels.push_back(k);
 		} else {
-			idSum += getCoeff(k);
+			if (rank == 0) sum += getCoeff(k);
 		}
 	}
 
@@ -62,9 +62,6 @@ VQETaskResult ComputeEnergyVQETask::execute(
 			}
 			buf->resetBuffer();
 		}
-
-		if (rank == 0) 
-			sum += idSum;
 
 		double result = 0.0;
 		int ncalls = 0;
@@ -85,7 +82,6 @@ VQETaskResult ComputeEnergyVQETask::execute(
 					getCoeff(k);
 			}
 		}
-		sum += idSum;
 		for(auto& k : kernels) k.getIRFunction()->removeInstruction(0);	
 	}
 
