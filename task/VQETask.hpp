@@ -9,14 +9,55 @@ namespace xacc {
 namespace vqe {
 
 class VQETaskResult {
+
+protected:
+
+	std::string _fileName;
+
+	std::ofstream _output;
+
 public:
-	std::vector<std::pair<Eigen::VectorXd, double>> results;
-	std::map<std::string, std::vector<double>> data;
+	VQETaskResult() {}
+
+	VQETaskResult(const std::string& fileName) : 
+		_output(fileName, std::ofstream::app), 
+		_fileName(fileName) {}
+
+	void persist() {
+		if(!_fileName.empty() && _output.is_open()) {
+			std::stringstream ss;
+			// check if its been written to already
+			if (std::ifstream(_fileName).peek() == std::ifstream::traits_type::eof()) {
+				// write header
+				for (int i = 0; i < angles.size(); i++) ss << "t" << i << ",";
+				for (auto& kv : readoutErrorProbabilities) ss << kv.first << ",";
+				for (auto& kv : expVals) ss << kv.first << ",";
+				ss << "E\n";
+			}
+
+			// write angles
+			for (int i = 0; i < angles.size(); i++) ss << angles(i) << ",";
+			// write probabilities
+			// write exp vals
+			for (auto& kv : expVals) ss << kv.second << ",";
+			// write energy
+			ss << energy << "\n";
+
+			_output.flush();
+		}
+	}
+
+	std::map<std::string, double> expVals;
+
 	double energy = 0.0;
+
 	Eigen::VectorXd angles;
+
 	int nQpuCalls = 0;
+
 	int vqeIterations = 0;
-	double execTime = 0.0;
+
+	std::map<std::string, double> readoutErrorProbabilities;
 };
 
 class VQETask : public xacc::Identifiable, public OptionsProvider {

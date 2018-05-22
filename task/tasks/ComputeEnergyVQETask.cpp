@@ -10,10 +10,10 @@ VQETaskResult ComputeEnergyVQETask::execute(
 
 	// Local Declarations
 	auto comm = program->getCommunicator();
-	VQETaskResult taskResult;
 	double sum = 0.0, localExpectationValue = 0.0;
 	int rank = comm->rank(), nlocalqpucalls = 0;
 	int nRanks = comm->size();
+	std::map<std::string, double> expVals;
 	bool multiExec = false;
 	bool persist = xacc::optionExists("vqe-persist-data");
 
@@ -77,10 +77,12 @@ VQETaskResult ComputeEnergyVQETask::execute(
 		// Compute the energy
 		for(int i = 0; i < results.size(); ++i) {
 			auto k = kernels[i];
+			auto exp = results[i]->getExpectationValueZ();
 			if(!isReadoutErrorKernel(k.getIRFunction()->getTag())) {
-				sum += results[i]->getExpectationValueZ() * 
+				sum += exp * 
 					getCoeff(k);
 			}
+			expVals.insert({k.getName(), exp});
 		}
 		for(auto& k : kernels) k.getIRFunction()->removeInstruction(0);	
 	}
@@ -92,32 +94,23 @@ VQETaskResult ComputeEnergyVQETask::execute(
 	}
 
 	vqeIteration++;
-	taskResult.results.push_back({parameters, sum});
-	taskResult.energy = sum;
-	taskResult.angles = parameters;
-	taskResult.nQpuCalls = totalQpuCalls;
 
-//	std::stringstream outputString;
-//	if (persist) {
-//		if (!boost::filesystem::exists(xacc::getOption("vqe-persist-data"))) {
-//			for (int i = 0; i < program->getNParameters(); i++) {
-//				outputString << "theta" << i << ", ";
-//			}
-//
-//			for (int i = 0; i < kernelNames.size(); i++) {
-//				outputString << (i == 0 ? "" : ", ") << kernelNames[i];
-//			}
-//
-//			outputString << ", E\n";
-//		}
-//		for (int i = 0; i < parameters.rows(); i++) {
-//			outputString << parameters(i) << ", ";
-//		}
-//	}
-
-//	double maxExecTime = 0.0;
-
-	return taskResult;
+	if (persist) {
+		VQETaskResult taskResult(xacc::getOption("vqe-persist-data"));
+		taskResult.energy = sum;
+		taskResult.angles = parameters;
+		taskResult.nQpuCalls = totalQpuCalls;
+		taskResult.expVals = expVals;
+		taskResult.persist();
+		return taskResult;
+	} else {
+		VQETaskResult taskResult;
+		taskResult.energy = sum;
+		taskResult.angles = parameters;
+		taskResult.nQpuCalls = totalQpuCalls;
+		taskResult.expVals = expVals;
+		return taskResult;
+	}
 }
 
 

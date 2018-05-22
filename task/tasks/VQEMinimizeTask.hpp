@@ -48,8 +48,7 @@ public:
 	}
 
 	double value(const Eigen::VectorXd& x) {
-		auto r = computeTask->execute(x);
-		currentEnergy = r.results[0].second;
+		currentEnergy = computeTask->execute(x).energy;
 		return currentEnergy;
 	}
 

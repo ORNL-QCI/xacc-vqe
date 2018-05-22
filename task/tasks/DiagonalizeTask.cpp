@@ -27,12 +27,9 @@ VQETaskResult DiagonalizeTask::execute(
 
 	auto energy = backend->diagonalize(program);
 
-	std::cout << "HELLO WORLD ENERGY " << energy << "\n";
 	VQETaskResult result;
 	result.angles = parameters;
 	result.energy = energy;
-
-	result.results.push_back({parameters, energy});
 	return result;
 }
 
