@@ -82,7 +82,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 				sum += exp * 
 					getCoeff(k);
 			}
-			expVals.insert({k.getName(), exp});
+			if(k.getIRFunction()->getTag() != "readout-error") expVals.insert({k.getName(), exp});
 		}
 		for(auto& k : kernels) k.getIRFunction()->removeInstruction(0);	
 	}
