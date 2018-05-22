@@ -103,7 +103,7 @@ TEST(ComputeEnergyVQETaskTester,checkSimple) {
 		for (int i = 0; i < 10; i++) {
 		   VQETaskResult result = task.execute(parameters);
 
-		   EXPECT_NEAR(result.results[0].second, -1.13727042207, 1e-4);
+		   EXPECT_NEAR(result.energy, -1.13727042207, 1e-4);
 		}
 	}
 

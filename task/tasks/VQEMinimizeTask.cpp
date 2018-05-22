@@ -21,7 +21,7 @@ VQETaskResult VQEMinimizeTask::execute(
 	auto result = backend->minimize(parameters);
 
 	std::stringstream ss;
-	ss << result.nQpuCalls << " total QPU calls over " << result.vqeIterations << " VQE iterations, execution time of " << result.execTime << " s.";
+	ss << result.nQpuCalls << " total QPU calls over " << result.vqeIterations << " VQE iterations.";
 	xacc::info("");
 	xacc::info(ss.str());
 	return result;

@@ -14,17 +14,16 @@ protected:
 
 	std::string _fileName;
 
-	std::ofstream _output;
+	//std::ofstream _output;
 
 public:
 	VQETaskResult() {}
 
 	VQETaskResult(const std::string& fileName) : 
-		_output(fileName, std::ofstream::app), 
 		_fileName(fileName) {}
 
 	void persist() {
-		if(!_fileName.empty() && _output.is_open()) {
+		if(!_fileName.empty()) { // && _output.is_open()) {
 			std::stringstream ss;
 			// check if its been written to already
 			if (std::ifstream(_fileName).peek() == std::ifstream::traits_type::eof()) {
@@ -43,7 +42,9 @@ public:
 			// write energy
 			ss << energy << "\n";
 
-			_output.flush();
+			std::ofstream _output(_fileName, std::ofstream::app);
+			_output << ss.str();
+			_output.close();
 		}
 	}
 

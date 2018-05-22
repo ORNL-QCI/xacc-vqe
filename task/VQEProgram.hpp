@@ -162,6 +162,7 @@ public:
 			addPreprocessor("fcidump-preprocessor");
 
 			if (xacc::optionExists("correct-readout-errors")) {
+				std::cout << "ADDING READOUT ERROR\n";
 				addIRPreprocessor("readout-error-preprocessor");
 			}
 

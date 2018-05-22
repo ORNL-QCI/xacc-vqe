@@ -117,12 +117,12 @@ int main(int argc, char** argv) {
 
 	VQETaskResult result = vqeTask->execute(parameters);
 
-	std::string msg = "Energy = ";
-	for (auto r : result.results) {
-		std::stringstream ss;
-		ss << std::setprecision(12) << r.second << " at (" << r.first.transpose() << ")";
-		if (world->rank() == 0) xacc::info(msg + ss.str());
-	}
+	//std::string msg = "Energy = ";
+	//for (auto r : result.results) {
+	//	std::stringstream ss;
+	//	ss << std::setprecision(12) << r.second << " at (" << r.first.transpose() << ")";
+	//	if (world->rank() == 0) xacc::info(msg + ss.str());
+	//}
 
 	xacc::Finalize();
 }
