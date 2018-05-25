@@ -10,13 +10,13 @@ VQETaskResult ComputeEnergyVQETask::execute(
 
 	// Local Declarations
 	auto comm = program->getCommunicator();
-	double sum = 0.0, localExpectationValue = 0.0;
+	double sum = 0.0;
 	int rank = comm->rank(), nlocalqpucalls = 0;
 	int nRanks = comm->size();
 	std::map<std::string, double> expVals;
-	bool multiExec = false;
 	bool persist = xacc::optionExists("vqe-persist-data");
 
+	// Get info about the problem
 	auto statePrep = program->getStatePreparationCircuit();
 	auto nQubits = program->getNQubits();
 	auto qpu = program->getAccelerator();
@@ -26,23 +26,23 @@ VQETaskResult ComputeEnergyVQETask::execute(
 	auto evaluatedStatePrep = StatePreparationEvaluator::evaluateCircuit(
 			statePrep, program->getNParameters(), parameters);
 
+	// Utility functions for readability
 	auto isReadoutErrorKernel = [](const std::string& tag) -> bool 
 		{ return boost::contains(tag,"readout-error");};
-
 	auto getCoeff = [](Kernel<>& k) ->double {
 		return std::real(boost::get<std::complex<double>>(k.getIRFunction()->getParameter(0)));
 	};
 
-	// Separate our kernels into Identity kernels and 
-	// non trivial kernels to be executed
+	// Create an empty KernelList to be filled 
+	// with non-trivial kernels
 	KernelList<> kernels(qpu);
-
-	double idSum = 0.0;
 	for (auto& k : program->getVQEKernels()) {
 		if (k.getIRFunction()->nInstructions() > 0) {
+			// If not identity, add the state prep to the circuit
 			k.getIRFunction()->insertInstruction(0,evaluatedStatePrep);
 			kernels.push_back(k);
 		} else {
+			// if it is identity, add its coeff to the energy sum
 			if (rank == 0) sum += getCoeff(k);
 		}
 	}
@@ -50,6 +50,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 	// Allocate some qubits
 	auto buf = qpu->createBuffer("tmp",nQubits);
 
+	// We can do this in parallel or serially
 	if (xacc::optionExists("vqe-use-mpi")) {
 		int myStart = (rank) * kernels.size() / nRanks;
 		int myEnd = (rank + 1) * kernels.size() / nRanks;
@@ -70,7 +71,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 		totalQpuCalls = ncalls;
 		sum = result;
 	} else {
-		// Execute!
+		// Execute all nontrivial kernels!
 		auto results = kernels.execute(buf);
 		totalQpuCalls += qpu->isRemote() ? 1 : kernels.size();
 
@@ -84,6 +85,8 @@ VQETaskResult ComputeEnergyVQETask::execute(
 			}
 			if(k.getIRFunction()->getTag() != "readout-error") expVals.insert({k.getName(), exp});
 		}
+		// Clean up by removing the state prep
+		// from the measurement kernels
 		for(auto& k : kernels) k.getIRFunction()->removeInstruction(0);	
 	}
 
@@ -95,6 +98,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 
 	vqeIteration++;
 
+	// See if the user requested data persisitence
 	if (persist) {
 		VQETaskResult taskResult(xacc::getOption("vqe-persist-data"));
 		taskResult.energy = sum;
@@ -112,7 +116,6 @@ VQETaskResult ComputeEnergyVQETask::execute(
 		return taskResult;
 	}
 }
-
 
 }
 }
