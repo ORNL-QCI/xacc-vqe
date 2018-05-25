@@ -37,6 +37,7 @@ public:
 			// write angles
 			for (int i = 0; i < angles.size(); i++) ss << angles(i) << ",";
 			// write probabilities
+			for (auto& kv : readoutErrorProbabilities) ss << kv.second << ",";
 			// write exp vals
 			for (auto& kv : expVals) ss << kv.second << ",";
 			// write energy

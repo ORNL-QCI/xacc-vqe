@@ -13,7 +13,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 	double sum = 0.0;
 	int rank = comm->rank(), nlocalqpucalls = 0;
 	int nRanks = comm->size();
-	std::map<std::string, double> expVals;
+	std::map<std::string, double> expVals, readoutProbs;
 	bool persist = xacc::optionExists("vqe-persist-data");
 
 	// Get info about the problem
@@ -36,10 +36,13 @@ VQETaskResult ComputeEnergyVQETask::execute(
 	// Create an empty KernelList to be filled 
 	// with non-trivial kernels
 	KernelList<> kernels(qpu);
+	//kernels.setBufferPostprocessors(program->getBufferPostprocessors());
 	for (auto& k : program->getVQEKernels()) {
-		if (k.getIRFunction()->nInstructions() > 0) {
+		if (k.getIRFunction()->nInstructions() > 0) { 
 			// If not identity, add the state prep to the circuit
-			k.getIRFunction()->insertInstruction(0,evaluatedStatePrep);
+			if (k.getIRFunction()->getTag() != "readout-error") {
+				k.getIRFunction()->insertInstruction(0,evaluatedStatePrep);
+			}
 			kernels.push_back(k);
 		} else {
 			// if it is identity, add its coeff to the energy sum
@@ -83,8 +86,22 @@ VQETaskResult ComputeEnergyVQETask::execute(
 				sum += exp * 
 					getCoeff(k);
 			}
-			if(k.getIRFunction()->getTag() != "readout-error") expVals.insert({k.getName(), exp});
+			if(k.getIRFunction()->getTag() != "readout-error") {
+				expVals.insert({k.getName(), exp});
+			} else if (xacc::optionExists("correct-readout-errors")) {
+				auto name = k.getName(); // Qubit_{0,1}
+				std::vector<std::string> split;
+				boost::split(split, name, boost::is_any_of("_"));
+				auto qbit = std::stoi(split[0]);
+				auto zero_one = std::stoi(split[1]);
+				std::string bitstr = "";
+				for (int i = 0; i < nQubits; i++) bitstr += "0";
+				if (zero_one == 0) bitstr[nQubits - qbit - 1] = '1';
+				auto prob = results[i]->computeMeasurementProbability(bitstr);
+				readoutProbs.insert({"p_"+name, std::isnan(prob) ? 0.0 : prob});
+			}
 		}
+
 		// Clean up by removing the state prep
 		// from the measurement kernels
 		for(auto& k : kernels) k.getIRFunction()->removeInstruction(0);	
@@ -105,6 +122,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 		taskResult.angles = parameters;
 		taskResult.nQpuCalls = totalQpuCalls;
 		taskResult.expVals = expVals;
+		taskResult.readoutErrorProbabilities = readoutProbs;
 		taskResult.persist();
 		return taskResult;
 	} else {
@@ -113,6 +131,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 		taskResult.angles = parameters;
 		taskResult.nQpuCalls = totalQpuCalls;
 		taskResult.expVals = expVals;
+		taskResult.readoutErrorProbabilities = readoutProbs;
 		return taskResult;
 	}
 }
