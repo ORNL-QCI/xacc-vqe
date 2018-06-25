@@ -16,7 +16,8 @@ $ make install
 ```
 or with Python support
 ```bash
-$ cmake .. -DXACC_DIR=$(python -m pyxacc -L)
+$ export PY_INC_DIR=$(python -c "import sysconfig; print(sysconfig.get_paths()['platinclude'])")
+$ cmake .. -DXACC_DIR=$(python -m pyxacc -L) -DPYTHON_INCLUDE_DIR=$PY_INC_DIR
 $ make install
 ```
 
