@@ -29,12 +29,12 @@
  *
  **********************************************************************************/
 #include <gtest/gtest.h>
-#include "ComputeEnergyVQETask.hpp"
+#include "VQEMinimizeTask.hpp"
 #include "MPIProvider.hpp"
 #include <iostream>
 using namespace xacc::vqe;
 
-TEST(ComputeEnergyVQETaskTester,checkSimple) {
+TEST(VQEMinimizeTaskTester,checkSimple) {
 
 	auto argc = xacc::getArgc();
 	auto argv = xacc::getArgv();
@@ -71,6 +71,166 @@ TEST(ComputeEnergyVQETaskTester,checkSimple) {
    -0.4759344611440753 3 1 3 0
 })src";
 
+     const std::string expectedQasm = R"expectedQasm(X q0
+X q1
+Rx(1.5708) q3
+H q2
+H q1
+H q0
+CNOT q0,q1
+CNOT q1,q2
+CNOT q2,q3
+Rz(-0.5 * theta1) q3
+CNOT q2,q3
+CNOT q1,q2
+CNOT q0,q1
+Rx(10.9956) q3
+H q2
+H q1
+H q0
+H q3
+Rx(1.5708) q2
+H q1
+H q0
+CNOT q0,q1
+CNOT q1,q2
+CNOT q2,q3
+Rz(-0.5 * theta1) q3
+CNOT q2,q3
+CNOT q1,q2
+CNOT q0,q1
+H q3
+Rx(10.9956) q2
+H q1
+H q0
+Rx(1.5708) q3
+Rx(1.5708) q2
+Rx(1.5708) q1
+H q0
+CNOT q0,q1
+CNOT q1,q2
+CNOT q2,q3
+Rz(-0.5 * theta1) q3
+CNOT q2,q3
+CNOT q1,q2
+CNOT q0,q1
+Rx(10.9956) q3
+Rx(10.9956) q2
+Rx(10.9956) q1
+H q0
+Rx(1.5708) q3
+H q2
+Rx(1.5708) q1
+Rx(1.5708) q0
+CNOT q0,q1
+CNOT q1,q2
+CNOT q2,q3
+Rz(0.5 * theta1) q3
+CNOT q2,q3
+CNOT q1,q2
+CNOT q0,q1
+Rx(10.9956) q3
+H q2
+Rx(10.9956) q1
+Rx(10.9956) q0
+H q3
+H q2
+Rx(1.5708) q1
+H q0
+CNOT q0,q1
+CNOT q1,q2
+CNOT q2,q3
+Rz(0.5 * theta1) q3
+CNOT q2,q3
+CNOT q1,q2
+CNOT q0,q1
+H q3
+H q2
+Rx(10.9956) q1
+H q0
+H q3
+H q2
+H q1
+Rx(1.5708) q0
+CNOT q0,q1
+CNOT q1,q2
+CNOT q2,q3
+Rz(0.5 * theta1) q3
+CNOT q2,q3
+CNOT q1,q2
+CNOT q0,q1
+H q3
+H q2
+H q1
+Rx(10.9956) q0
+H q3
+Rx(1.5708) q2
+Rx(1.5708) q1
+Rx(1.5708) q0
+CNOT q0,q1
+CNOT q1,q2
+CNOT q2,q3
+Rz(0.5 * theta1) q3
+CNOT q2,q3
+CNOT q1,q2
+CNOT q0,q1
+H q3
+Rx(10.9956) q2
+Rx(10.9956) q1
+Rx(10.9956) q0
+Rx(1.5708) q3
+Rx(1.5708) q2
+H q1
+Rx(1.5708) q0
+CNOT q0,q1
+CNOT q1,q2
+CNOT q2,q3
+Rz(-0.5 * theta1) q3
+CNOT q2,q3
+CNOT q1,q2
+CNOT q0,q1
+Rx(10.9956) q3
+Rx(10.9956) q2
+H q1
+Rx(10.9956) q0
+Rx(1.5708) q3
+H q1
+CNOT q1,q2
+CNOT q2,q3
+Rz(-1 * theta0) q3
+CNOT q2,q3
+CNOT q1,q2
+Rx(10.9956) q3
+H q1
+Rx(1.5708) q2
+H q0
+CNOT q0,q1
+CNOT q1,q2
+Rz(-1 * theta0) q2
+CNOT q1,q2
+CNOT q0,q1
+Rx(10.9956) q2
+H q0
+H q3
+Rx(1.5708) q1
+CNOT q1,q2
+CNOT q2,q3
+Rz(1 * theta0) q3
+CNOT q2,q3
+CNOT q1,q2
+H q3
+Rx(10.9956) q1
+H q2
+Rx(1.5708) q0
+CNOT q0,q1
+CNOT q1,q2
+Rz(1 * theta0) q2
+CNOT q1,q2
+CNOT q0,q1
+H q2
+Rx(10.9956) q0
+)expectedQasm";
+
 	std::shared_ptr<MPIProvider> provider;
 	if (xacc::hasService<MPIProvider>("boost-mpi")) {
 		provider = xacc::getService<MPIProvider>("boost-mpi");
@@ -89,19 +249,18 @@ TEST(ComputeEnergyVQETaskTester,checkSimple) {
 		// or TNQVM if none specified
 		auto accelerator = xacc::getAccelerator("tnqvm");
 
-		ComputeEnergyVQETask task;
-
 		auto program = std::make_shared<VQEProgram>(accelerator, src, world);
-
 		program->build();
 
 		Eigen::VectorXd parameters(2);
 		parameters << 0.000641023496104, 4.76879126994;
-		task.setVQEProgram(program);
+
+		VQEMinimizeTask task(program);
 
 		VQETaskResult result = task.execute(parameters);
-		std::cout << "HELLO WORLD: " << result.ansatzQASM << "\n";
+		std::cout << result.ansatzQASM << "\n";
 		EXPECT_NEAR(result.energy, -1.13727042207, 1e-4);
+		EXPECT_EQ(result.ansatzQASM, expectedQasm);
 	}
 
 }
