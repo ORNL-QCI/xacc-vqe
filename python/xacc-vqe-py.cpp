@@ -385,7 +385,8 @@ PYBIND11_MODULE(pyxaccvqe, m) {
 	    .def_readonly("angles", &VQETaskResult::angles)
 	    .def_readonly("nQpuCalls", &VQETaskResult::nQpuCalls)
 	    .def_readonly("vqeIterations", &VQETaskResult::vqeIterations)
-	    .def_readonly("energy", &VQETaskResult::energy);
+	    .def_readonly("energy", &VQETaskResult::energy)
+	    .def_readonly("ansatzQASM", &VQETaskResult::ansatzQASM);
 
 	py::class_<Term>(m,"Term").def("coeff", &Term::coeff);
 	py::class_<PauliOperator>(m,"PauliOperator")
