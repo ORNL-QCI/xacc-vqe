@@ -18,8 +18,9 @@ VQETaskResult VQEMinimizeTask::execute(
 	}
 
 	backend->setProgram(program);
+	auto f = program->getStatePreparationCircuit();
 	auto result = backend->minimize(parameters);
-
+	result.ansatzQASM = f->toString("q");
 	std::stringstream ss;
 	ss << result.nQpuCalls << " total QPU calls over " << result.vqeIterations << " VQE iterations.";
 	xacc::info("");

@@ -19,7 +19,7 @@ protected:
 public:
 	VQETaskResult() {}
 
-	VQETaskResult(const std::string& fileName) : 
+	VQETaskResult(const std::string& fileName) :
 		_fileName(fileName) {}
 
 	void persist() {
@@ -56,6 +56,8 @@ public:
 	Eigen::VectorXd angles;
 
 	int nQpuCalls = 0;
+
+	std::string ansatzQASM = "";
 
 	int vqeIterations = 0;
 
