@@ -6,9 +6,10 @@ set(CMAKE_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 
 if(APPLE)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti -fexceptions")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti -fexceptions -Wno-invalid-partial-specialization")
 endif()
 option(VQE_BUILD_TESTS "Build test programs" OFF)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-invalid-partial-specialization")
 
 if(APPLE)
   set(CMAKE_MACOSX_RPATH 1)

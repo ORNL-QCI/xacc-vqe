@@ -14,20 +14,33 @@ std::shared_ptr<Function> UCCSD::generate(
 		std::shared_ptr<AcceleratorBuffer> buffer,
 		std::vector<InstructionParameter> parameters) {
 
+    xacc::info("Running UCCSD Generator.");
 	auto runtimeOptions = RuntimeOptions::instance();
+    
+    int nQubits = 0;
+    int nElectrons = 0;
+    if (parameters.empty()) {
+    	if (!runtimeOptions->exists("n-electrons")) {
+	    	xacc::error("To use this UCCSD State Prep IRGenerator, you "
+		    		"must specify the number of electrons.");
+	    }
 
-	if (!runtimeOptions->exists("n-electrons")) {
-		xacc::error("To use this UCCSD State Prep IRGenerator, you "
-				"must specify the number of electrons.");
-	}
+	    if (!runtimeOptions->exists("n-qubits")) {
+		    xacc::error("To use this UCCSD State Prep IRGenerator, you "
+			    	"must specify the number of qubits.");
+	    }
 
-	if (!runtimeOptions->exists("n-qubits")) {
-		xacc::error("To use this UCCSD State Prep IRGenerator, you "
-				"must specify the number of qubits.");
-	}
+	    auto nQubits = std::stoi(xacc::getOption("n-qubits"));
+	    auto nElectrons = std::stoi(xacc::getOption("n-electrons"));
 
-	auto nQubits = std::stoi((*runtimeOptions)["n-qubits"]);
-	auto nElectrons = std::stoi((*runtimeOptions)["n-electrons"]);
+    } else if (parameters.size() == 2) {
+        nElectrons = boost::get<int>(parameters[0]);
+        nQubits = boost::get<int>(parameters[1]);
+    } else {
+        xacc::error("Invalid input parameters for UCCSD generator.");
+    }
+    
+    xacc::info("UCCSD Generator (nqubits,nelectrons) = " + std::to_string(nQubits)+", " + std::to_string(nElectrons) +".");
 
 	// Compute the number of parameters
 	auto _nOccupied = (int) std::ceil(nElectrons / 2.0);
@@ -125,7 +138,7 @@ std::shared_ptr<Function> UCCSD::generate(
 		}
 	}
 
-//	std::cout << "KERNEL: \n" << kernel->toString("") << "\n";
+	std::cout << "KERNEL: \n" << kernel->toString("") << "\n";
 	// Create the FermionIR to pass to our transformation.
 	auto fermionir = std::make_shared<FermionIR>();
 	fermionir->addKernel(kernel);
