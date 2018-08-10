@@ -15,23 +15,22 @@ std::shared_ptr<Function> UCCSD::generate(
 		std::vector<InstructionParameter> parameters) {
 
     xacc::info("Running UCCSD Generator.");
-	auto runtimeOptions = RuntimeOptions::instance();
     
     int nQubits = 0;
     int nElectrons = 0;
     if (parameters.empty()) {
-    	if (!runtimeOptions->exists("n-electrons")) {
+    	if (!xacc::optionExists("n-electrons")) {
 	    	xacc::error("To use this UCCSD State Prep IRGenerator, you "
 		    		"must specify the number of electrons.");
 	    }
 
-	    if (!runtimeOptions->exists("n-qubits")) {
+	    if (!xacc::optionExists("n-qubits")) {
 		    xacc::error("To use this UCCSD State Prep IRGenerator, you "
 			    	"must specify the number of qubits.");
 	    }
 
-	    auto nQubits = std::stoi(xacc::getOption("n-qubits"));
-	    auto nElectrons = std::stoi(xacc::getOption("n-electrons"));
+	    nQubits = std::stoi(xacc::getOption("n-qubits"));
+	    nElectrons = std::stoi(xacc::getOption("n-electrons"));
 
     } else if (parameters.size() == 2) {
         nElectrons = boost::get<int>(parameters[0]);
@@ -49,18 +48,6 @@ std::shared_ptr<Function> UCCSD::generate(
 	auto nDouble = std::pow(nSingle, 2);
 	auto _nParameters = nSingle + nDouble;
 
-	auto singletIndex = [=](int i, int j) -> int {
-		return i * _nOccupied + j;
-	};
-
-	auto doubletIndex = [=](int i, int j, int k, int l) -> int {
-		return
-		(i * _nOccupied * _nVirtual * _nOccupied +
-				j * _nVirtual * _nOccupied +
-				k * _nOccupied +
-				l);
-	};
-
 	std::vector<xacc::InstructionParameter> variables;
 	std::vector<std::string> params;
 	for (int i = 0; i < _nParameters; i++) {
@@ -68,76 +55,111 @@ std::shared_ptr<Function> UCCSD::generate(
 		variables.push_back(InstructionParameter("theta" + std::to_string(i)));
 	}
 
+    auto slice = [](const std::vector<std::string>& v, int start=0, int end=-1) {
+        int oldlen = v.size();
+        int newlen;
+        if (end == -1 or end >= oldlen){
+            newlen = oldlen-start;
+        } else {
+            newlen = end-start;
+        }
+        std::vector<std::string> nv(newlen);
+        for (int i=0; i<newlen; i++) {
+            nv[i] = v[start+i];
+        }
+        return nv;
+    };
+    auto singleParams = slice(params, 0, nSingle);
+    auto doubleParams1 = slice(params, nSingle, 2*nSingle);
+    auto doubleParams2 = slice(params, 2*nSingle);
+    std::vector<std::function<int(int)>> fs{[](int i) {return 2*i;}, [](int i) {return 2*i+1;}};
+    
+    using OpType = std::vector<std::pair<int,int>>;
 	auto kernel = std::make_shared<FermionKernel>("fermiUCCSD");
-	xacc::info("Constructing UCCSD Fermion Operator.");
-	for (int i = 0; i < _nVirtual; i++) {
-		for (int j = 0; j < _nOccupied; j++) {
-			for (int l = 0; l < 2; l++) {
-				std::vector<std::pair<int, int>> operators { { 2
-						* (i + _nOccupied) + l, 1 }, { 2 * j + l, 0 } };
-				auto fermiInstruction1 = std::make_shared<FermionInstruction>(
-						operators, params[singletIndex(i, j)]);
-				kernel->addInstruction(fermiInstruction1);
+    int count = 0;
+    for (int i = 0; i < _nVirtual; i++) {
+        for (int j = 0; j < _nOccupied; j++) {
+            auto vs = _nOccupied+i;
+            auto os = j;
+            for (int s = 0; s < 2; s++) {
+                auto ti = fs[s];
+                auto oi = fs[1-s];
+                auto vt = ti(vs);
+                auto vo = oi(vs);
+                auto ot = ti(os);
+                auto oo = oi(os);
+                
+                OpType op1{{vt,1},{ot,0}}, op2{{ot,1},{vt,0}};
+                auto i1 = std::make_shared<FermionInstruction>(op1, singleParams[count]);
+                auto i2 = std::make_shared<FermionInstruction>(op2, singleParams[count], std::complex<double>(-1.,0.));
+                kernel->addInstruction(i1);
+                kernel->addInstruction(i2);
+                
+                OpType op3{{vt,1},{ot,0}, {vo,1},{oo,0}}, op4{{oo,1}, {vo,0}, {ot,1},{vt,0}};
+                auto i3 = std::make_shared<FermionInstruction>(op3, doubleParams1[count]);
+                auto i4 = std::make_shared<FermionInstruction>(op4, doubleParams1[count], std::complex<double>(-1.,0.));
 
-				std::vector<std::pair<int, int>> operators2 { { 2 * j + l, 1 },
-						{ 2 * (i + _nOccupied) + l, 0 } };
-				auto fermiInstruction2 = std::make_shared<FermionInstruction>(
-						operators2, params[singletIndex(i, j)]);
+                kernel->addInstruction(i3);
+                kernel->addInstruction(i4);
 
+            }
+            count++;
+        }
+    }
 
-				auto nP = fermiInstruction2->nParameters();
-				InstructionParameter p(-1.0*std::complex<double>(1,0));
-				fermiInstruction2->setParameter(nP-2,p);
-
-				kernel->addInstruction(fermiInstruction2);
-
-			}
+    count = 0;
+    // routine for converting amplitudes for use by UCCSD
+	std::vector< std::tuple<int, int> > tupleVec;
+	for (int i = 0; i < _nVirtual; i++){
+		for (int j = 0; j < _nOccupied; j++){
+			tupleVec.push_back(std::make_tuple(i, j));
 		}
 	}
-
-	for (int i = 0; i < _nVirtual; i++) {
-		for (int j = 0; j < _nOccupied; j++) {
-			for (int l = 0; l < 2; l++) {
-				for (int i2 = 0; i2 < _nVirtual; i2++) {
-					for (int j2 = 0; j2 < _nOccupied; j2++) {
-						for (int l2 = 0; l2 < 2; l2++) {
-							std::vector<std::pair<int, int>> operators1 { { 2
-									* (i + _nOccupied) + l, 1 },
-									{ 2 * j + l, 0 }, { 2 * (i2 + _nOccupied)
-											+ l2, 1 }, { 2 * j2 + l2, 0 } };
-
-							std::vector<std::pair<int, int>> operators2 { { 2
-									* j2 + l2, 1 }, { 2 * (i2 + _nOccupied)
-									+ l2, 0 }, { 2 * j + l, 1 }, { 2
-									* (i + _nOccupied) + l, 0 } };
-
-							auto doubletIdx1 = nSingle
-									+ doubletIndex(i, j, i2, j2);
-							auto doubletIdx2 = nSingle
-									+ doubletIndex(i, j, i2, j2);
-
-							auto fermiInstruction1 = std::make_shared<
-									FermionInstruction>(operators1,
-									params[doubletIdx1]);
-
-							kernel->addInstruction(fermiInstruction1);
-
-							auto fermiInstruction2 = std::make_shared<
-									FermionInstruction>(operators2,
-									params[doubletIdx2]);
-
-							auto nP = fermiInstruction2->nParameters();
-							InstructionParameter p(-1.0*std::complex<double>(1,0));
-							fermiInstruction2->setParameter(nP-2,p);
-							kernel->addInstruction(fermiInstruction2);
-
-						}
-					}
-				}
+	// Combination lambda used to determine indices
+	auto Combination = [=](std::vector< std::tuple<int, int> > t){
+	std::vector< std::tuple<int, int, int, int> > comboVec;
+		for (int i = 0; i < t.size(); i++){
+			for (int j = i+1; j < t.size(); j++){
+				const std::tuple<int, int, int, int> newTuple = std::tuple_cat(t[i], t[j]);
+				comboVec.push_back(newTuple);
 			}
 		}
-	}
+		return comboVec;
+	};
 
+	auto combineVec = Combination(tupleVec);
+    for (auto i : combineVec) {
+        auto p = std::get<0>(i);
+        auto q = std::get<1>(i);
+        auto r = std::get<2>(i);
+        auto s = std::get<3>(i);
+
+        auto vs1 = _nOccupied + p;
+        auto os1 = q;
+        auto vs2 = _nOccupied + r;
+        auto os2 = s;
+
+        for (int sa = 0; sa < 2; sa++) {
+            for (int sb = 0; sb < 2; sb++) {
+                auto ia = fs[sa];
+                auto ib = fs[sb];
+
+                auto v1a = ia(vs1);
+                auto o1a = ia(os1);
+                auto v2b = ib(vs2);
+                auto o2b = ib(os2);
+                
+                OpType op5{{v1a,1},{o1a,0},{v2b,1},{o2b,0}}, op6{{o2b,1},{o1a,0},{v2b,1},{o2b,0}};
+                auto i5 = std::make_shared<FermionInstruction>(op5, doubleParams2[count]);
+                auto i6 = std::make_shared<FermionInstruction>(op6, doubleParams2[count], std::complex<double>(-1.,0.));
+
+                kernel->addInstruction(i5);
+                kernel->addInstruction(i6);
+            }
+        }
+        count++;
+    }
+    
 	std::cout << "KERNEL: \n" << kernel->toString("") << "\n";
 	// Create the FermionIR to pass to our transformation.
 	auto fermionir = std::make_shared<FermionIR>();

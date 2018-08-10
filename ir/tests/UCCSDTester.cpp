@@ -30,7 +30,9 @@
  **********************************************************************************/
 #include <gtest/gtest.h>
 #include "UCCSD.hpp"
+#include "Instruction.hpp"
 
+using namespace xacc;
 using namespace xacc::vqe;
 
 using namespace boost;
@@ -39,13 +41,9 @@ TEST(UCCSDTester,checkUCCSD) {
 
 	xacc::Initialize();
 
-	auto options = xacc::RuntimeOptions::instance();
-	options->insert(std::make_pair("n-qubits", "4"));
-	options->insert(std::make_pair("n-electrons", "2"));
-
 	UCCSD statePrepGen;
 	auto buffer = std::make_shared<xacc::AcceleratorBuffer>("",4);
-	auto f = statePrepGen.generate(buffer);
+	auto f = statePrepGen.generate(buffer, {InstructionParameter(2), InstructionParameter(4)});
 
 	std::cout << f->toString("qreg") << "\n";
 	xacc::Finalize();

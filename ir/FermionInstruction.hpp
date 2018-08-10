@@ -92,6 +92,17 @@ public:
 		parameters.push_back(InstructionParameter(var));
 	}
 
+	FermionInstruction(std::vector<std::pair<int, int>> operators,
+			std::string var, std::complex<double> coeff) :
+			terms(operators) {
+		for (auto p : operators) {
+			sites.push_back(p.first);
+			parameters.push_back(InstructionParameter(p.second));
+		}
+		parameters.push_back(InstructionParameter(coeff));
+		parameters.push_back(InstructionParameter(var));
+	}
+
 	/**
 	 * Return the name of this Instruction
 	 *
