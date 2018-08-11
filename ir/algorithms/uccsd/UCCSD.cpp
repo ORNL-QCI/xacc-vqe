@@ -9,6 +9,19 @@ using namespace xacc::quantum;
 namespace xacc {
 namespace vqe {
 
+std::shared_ptr<Function> UCCSD::generate(
+			std::map<std::string, InstructionParameter> parameters) {
+
+    if (!parameters.count("n-electrons")) {
+        xacc::error("Invalid mapping of parameters for UCCSD generator, missing n-electrons key.");
+    }
+
+    if (!parameters.count("n-qubits")) {
+        xacc::error("Invalid mapping of parameters for UCCSD generator, missing n-qubits key.");
+    }
+
+    return generate(nullptr, std::vector<InstructionParameter>{parameters["n-electrons"], parameters["n-qubits"]});
+}
 
 std::shared_ptr<Function> UCCSD::generate(
 		std::shared_ptr<AcceleratorBuffer> buffer,

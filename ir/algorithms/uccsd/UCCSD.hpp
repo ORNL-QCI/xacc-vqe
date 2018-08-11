@@ -61,6 +61,10 @@ public:
 			std::vector<InstructionParameter> parameters = std::vector<
 					InstructionParameter> { });
 
+	virtual std::shared_ptr<Function> generate(
+			std::map<std::string, InstructionParameter> parameters = std::map<
+					std::string, InstructionParameter> { });
+
 
 	virtual const std::string name() const {
 		return "uccsd";
