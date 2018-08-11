@@ -12,15 +12,44 @@ namespace vqe {
 std::shared_ptr<Function> UCCSD::generate(
 			std::map<std::string, InstructionParameter> parameters) {
 
-    if (!parameters.count("n-electrons")) {
+    if (!parameters.count("n-electrons") && !parameters.count("n_electrons")) {
         xacc::error("Invalid mapping of parameters for UCCSD generator, missing n-electrons key.");
     }
 
-    if (!parameters.count("n-qubits")) {
+    if (!parameters.count("n-qubits") && !parameters.count("n_qubits")) {
         xacc::error("Invalid mapping of parameters for UCCSD generator, missing n-qubits key.");
     }
 
-    return generate(nullptr, std::vector<InstructionParameter>{parameters["n-electrons"], parameters["n-qubits"]});
+    bool hasUnderscore = false;
+
+    if (parameters.count("n_electrons")) {
+        hasUnderscore = true;
+        if (!parameters.count("n_qubits")) xacc::error("UCCSD Generator missing n_qubits key.");
+    }
+
+    if (parameters.count("n_qubits")) {
+        hasUnderscore = true;
+        if (!parameters.count("n_electrons")) xacc::error("UCCSD Generator missing n_electrons key.");
+    }
+
+    std::vector<InstructionParameter> params;
+    if (hasUnderscore) {
+        params.push_back(parameters["n_electrons"]);
+        params.push_back(parameters["n_qubits"]);
+    } else {
+        params.push_back(parameters["n-electrons"]);
+        params.push_back(parameters["n-qubits"]);
+    }
+
+    if (parameters.size() > 2) {
+        for (auto& kv : parameters) {
+            if (!boost::contains(kv.first, "electrons") && !boost::contains(kv.first, "qubits")) {
+                params.push_back(kv.second);
+            }
+        }
+    }
+    
+    return generate(nullptr, params);
 }
 
 std::shared_ptr<Function> UCCSD::generate(
@@ -28,7 +57,8 @@ std::shared_ptr<Function> UCCSD::generate(
 		std::vector<InstructionParameter> parameters) {
 
     xacc::info("Running UCCSD Generator.");
-    
+    std::vector<xacc::InstructionParameter> variables;
+
     int nQubits = 0;
     int nElectrons = 0;
     if (parameters.empty()) {
@@ -45,12 +75,18 @@ std::shared_ptr<Function> UCCSD::generate(
 	    nQubits = std::stoi(xacc::getOption("n-qubits"));
 	    nElectrons = std::stoi(xacc::getOption("n-electrons"));
 
-    } else if (parameters.size() == 2) {
+    } else {
+        if (parameters.size() < 2) xacc::error("Invalid input parameters for UCCSD generator.");
+
         nElectrons = boost::get<int>(parameters[0]);
         nQubits = boost::get<int>(parameters[1]);
-    } else {
-        xacc::error("Invalid input parameters for UCCSD generator.");
-    }
+
+        if (parameters.size() > 2) {
+            for (int i = 2; i < parameters.size(); i++) {
+                variables.push_back(parameters[i]);
+            }
+        }
+    } 
     
     xacc::info("UCCSD Generator (nqubits,nelectrons) = " + std::to_string(nQubits)+", " + std::to_string(nElectrons) +".");
 
@@ -61,12 +97,18 @@ std::shared_ptr<Function> UCCSD::generate(
 	auto nDouble = std::pow(nSingle, 2);
 	auto _nParameters = nSingle + nDouble;
 
-	std::vector<xacc::InstructionParameter> variables;
 	std::vector<std::string> params;
-	for (int i = 0; i < _nParameters; i++) {
-		params.push_back("theta" + std::to_string(i));
-		variables.push_back(InstructionParameter("theta" + std::to_string(i)));
-	}
+
+    if (variables.empty()) {
+	    for (int i = 0; i < _nParameters; i++) {
+            params.push_back("theta" + std::to_string(i));
+		    variables.push_back(InstructionParameter("theta" + std::to_string(i)));
+        }
+	} else {
+        for (int i = 0; i < _nParameters; i++) {
+		    params.push_back(boost::get<std::string>(variables[i]));
+	    }
+    }
 
     auto slice = [](const std::vector<std::string>& v, int start=0, int end=-1) {
         int oldlen = v.size();
@@ -173,7 +215,7 @@ std::shared_ptr<Function> UCCSD::generate(
         count++;
     }
     
-	std::cout << "KERNEL: \n" << kernel->toString("") << "\n";
+	// std::cout << "KERNEL: \n" << kernel->toString("") << "\n";
 	// Create the FermionIR to pass to our transformation.
 	auto fermionir = std::make_shared<FermionIR>();
 	fermionir->addKernel(kernel);
