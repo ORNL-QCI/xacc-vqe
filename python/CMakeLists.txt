@@ -10,20 +10,20 @@ if(APPLE)
    set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
 endif(APPLE)
 
-add_library(pyxaccvqe SHARED xacc-vqe-py.cpp)
-set_target_properties(pyxaccvqe PROPERTIES PREFIX "")
+add_library(_pyxaccvqe SHARED xacc-vqe-py.cpp)
+set_target_properties(_pyxaccvqe PROPERTIES PREFIX "")
 # do not mess with the ordering of libraries here!
-target_link_libraries(pyxaccvqe xacc-vqe-tasks ${XACC_LIBRARIES})
+target_link_libraries(_pyxaccvqe xacc-vqe-tasks ${XACC_LIBRARIES})
 if(APPLE)
-   set_target_properties(pyxaccvqe PROPERTIES INSTALL_RPATH "@loader_path/lib;@loader_path/plugins")
-   set_target_properties(pyxaccvqe PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
+   set_target_properties(_pyxaccvqe PROPERTIES INSTALL_RPATH "@loader_path/lib;@loader_path/plugins")
+   set_target_properties(_pyxaccvqe PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
 else()
-   set_target_properties(pyxaccvqe PROPERTIES INSTALL_RPATH "$ORIGIN/lib:$ORIGIN/plugins")
-   set_target_properties(pyxaccvqe PROPERTIES LINK_FLAGS "-shared")
+   set_target_properties(_pyxaccvqe PROPERTIES INSTALL_RPATH "$ORIGIN/lib:$ORIGIN/plugins")
+   set_target_properties(_pyxaccvqe PROPERTIES LINK_FLAGS "-shared")
 endif()
 
-install(TARGETS pyxaccvqe DESTINATION ${CMAKE_INSTALL_PREFIX})
-
+install(TARGETS _pyxaccvqe DESTINATION ${CMAKE_INSTALL_PREFIX})
+install(FILES pyxaccvqe.py DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 file (GLOB PYTESTS tests/*.py)
 
@@ -36,6 +36,4 @@ if (PYTHONINTERP_FOUND)
 		add_test(NAME ${TESTNAME} COMMAND ${PYTHON_EXECUTABLE} ${PYTEST})
 		set_tests_properties ( ${TESTNAME} PROPERTIES ENVIRONMENT "PYTHONPATH=${CMAKE_INSTALL_PREFIX}")
 	endforeach()
-#	add_test(NAME sample_test COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/sample_test.py WORKING_DIRECTORY ${EXECUTABLE_OUTPUT_PATH} )
-
 endif()

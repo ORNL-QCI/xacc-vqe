@@ -376,7 +376,7 @@ VQETaskResult execute(py::object& fermionOperator, py::kwargs kwargs) {
 	return result;
 }
 
-PYBIND11_MODULE(pyxaccvqe, m) {
+PYBIND11_MODULE(_pyxaccvqe, m) {
 	m.doc() = "Python bindings for XACC VQE.";
 
 	py::add_ostream_redirect(m, "ostream_redirect");
