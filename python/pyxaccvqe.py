@@ -43,10 +43,17 @@ class qpu(xacc.qpu):
                           import random
                           pi = 3.141592653
                           ars = [random.uniform(-pi,pi) for _ in range(compiledKernel.getIRFunction().nParameters())]
-                      opt_result = minimize(energy, ars, method=optimizer, options={'disp':True})
+                      optargs = {'method':optimizer, 'options':{'disp':True}}
+                      if 'opt_params' in self.kwargs:
+                          for k,v in self.kwargs['opt_params'].items():
+                              optargs[k] = v
+                      opt_result = minimize(energy, ars, **optargs)
                       return VQETaskResult(opt_result.fun, opt_result.x)
                   else:
                       xacc.setOption('vqe-backend', optimizer)
+                      if 'opt_params' in self.kwargs:
+                          for k,v in self.kwargs['opt_params'].items():
+                              xacc.setOption(k,str(v))
                       
               return execute(obs, **execParams)
           return wrapped_f
