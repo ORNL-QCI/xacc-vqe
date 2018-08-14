@@ -20,16 +20,35 @@ class qpu(xacc.qpu):
               ir = compiler.compile(src, qpu)
               program = xacc.Program(qpu, ir)
               compiledKernel = program.getKernels()[0]
+              getParams = lambda params: ','.join(map(str, params)) 
+
+              execParams = {'ansatz':compiledKernel.getIRFunction(), 'task':'vqe'}
               obs = self.kwargs['observable']
               ars = list(args)
               if len(ars) > 0:
-                 arStr = str(ars[0])
-                 for i in ars[1:]:
-                    arStr += ','+str(i)
-                 return execute(obs, **{'ansatz':compiledKernel.getIRFunction(), 'vqe-params':arStr, 'task':'vqe'})
-              else:
-                 return execute(obs, **{'ansatz':compiledKernel.getIRFunction(), 'task':'vqe'})
+                 arStr = getParams(ars)
+                 execParams['vqe-params'] = arStr
 
+              if 'optimizer' in self.kwargs:
+                  optimizer = self.kwargs['optimizer']
+                  if 'scipy-' in optimizer:
+                      optimizer = optimizer.replace('scipy-','')
+                      from scipy.optimize import minimize
+                      execParams['task'] = 'compute-energy'
+                      def energy(params):
+                          pStr = getParams(params)
+                          execParams['vqe-params'] = pStr
+                          return execute(obs, **execParams).energy
+                      if len(ars) == 0:
+                          import random
+                          pi = 3.141592653
+                          ars = [random.uniform(-pi,pi) for _ in range(compiledKernel.getIRFunction().nParameters())]
+                      opt_result = minimize(energy, ars, method=optimizer, options={'disp':True})
+                      return VQETaskResult(opt_result.fun, opt_result.x)
+                  else:
+                      xacc.setOption('vqe-backend', optimizer)
+                      
+              return execute(obs, **execParams)
           return wrapped_f
 
 def main(argv=None):

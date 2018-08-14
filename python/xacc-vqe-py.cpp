@@ -382,6 +382,7 @@ PYBIND11_MODULE(_pyxaccvqe, m) {
 	py::add_ostream_redirect(m, "ostream_redirect");
 
 	py::class_<VQETaskResult>(m, "VQETaskResult")
+        .def(py::init<double, Eigen::VectorXd>())
 	    .def_readonly("angles", &VQETaskResult::angles)
 	    .def_readonly("nQpuCalls", &VQETaskResult::nQpuCalls)
 	    .def_readonly("vqeIterations", &VQETaskResult::vqeIterations)

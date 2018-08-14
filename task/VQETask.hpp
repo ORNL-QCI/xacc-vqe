@@ -18,7 +18,8 @@ protected:
 
 public:
 	VQETaskResult() {}
-
+    VQETaskResult(double e, Eigen::VectorXd a) :energy(e), angles(a) {}
+    
 	VQETaskResult(const std::string& fileName) :
 		_fileName(fileName) {}
 
