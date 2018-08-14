@@ -3,6 +3,20 @@ import pyxacc as xacc
 import os, platform, sys, sysconfig
 import argparse, inspect
 
+def QubitOperator2XACC(qubit_op):
+    """
+    Map openfermion qubit operator to an XACC PauliOperator
+    """
+    xaccOp = PauliOperator()
+    for k, v in qubit_op.terms.items():
+        terms = dict(k)
+        if terms:
+            xaccOp += PauliOperator(terms, v)
+        else:
+            xaccOp += PauliOperator(v)
+    return(xaccOp)
+
+
 class qpu(xacc.qpu):
    class vqe(object):
        def __init__(self, *args, **kwargs):

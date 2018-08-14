@@ -94,7 +94,7 @@ std::shared_ptr<Function> UCCSD::generate(
 	auto _nOccupied = (int) std::ceil(nElectrons / 2.0);
 	auto _nVirtual = nQubits / 2 - _nOccupied;
 	auto nSingle = _nOccupied * _nVirtual;
-	auto nDouble = std::pow(nSingle, 2);
+	auto nDouble = nSingle * (nSingle+1) / 2; 
 	auto _nParameters = nSingle + nDouble;
 
 	std::vector<std::string> params;
@@ -110,6 +110,7 @@ std::shared_ptr<Function> UCCSD::generate(
 	    }
     }
 
+    std::cout << "WE MADE IT HERE\n";
     auto slice = [](const std::vector<std::string>& v, int start=0, int end=-1) {
         int oldlen = v.size();
         int newlen;
