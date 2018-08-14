@@ -110,7 +110,6 @@ std::shared_ptr<Function> UCCSD::generate(
 	    }
     }
 
-    std::cout << "WE MADE IT HERE\n";
     auto slice = [](const std::vector<std::string>& v, int start=0, int end=-1) {
         int oldlen = v.size();
         int newlen;
