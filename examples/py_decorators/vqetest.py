@@ -11,7 +11,7 @@ ham = PauliOperator(5.906709445) + \
     PauliOperator({0:'Z'}, .21829) + \
     PauliOperator({1:'Z'}, -6.125)
 
-@qpu.vqe(accelerator='tnqvm', observable=ham, optimizer='scipy.neldermead')
+@qpu.vqe(accelerator='tnqvm', observable=ham, optimizer='scipy-nelder-mead', opt_params={'tol':1e-2})
 def foo(initialTheta):
    X(0)
    Ry(initialTheta, 1)
@@ -32,4 +32,5 @@ def foo(theta):
 
 expVals = [foo(t).getExpectationValueZ() for t in np.linspace(-np.pi,np.pi,10)]
 print (expVals)
+
 xacc.Finalize()
