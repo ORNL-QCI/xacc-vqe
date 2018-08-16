@@ -34,6 +34,7 @@ std::shared_ptr<Function> UCCSD::generate(
 
     std::vector<InstructionParameter> params;
     if (hasUnderscore) {
+        xacc::setOption("n-electrons",boost::lexical_cast<std::string>(parameters["n_electrons"]));
         params.push_back(parameters["n_electrons"]);
         params.push_back(parameters["n_qubits"]);
     } else {
