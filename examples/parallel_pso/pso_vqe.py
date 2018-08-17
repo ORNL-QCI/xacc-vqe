@@ -1,5 +1,5 @@
-import pyxaccvqe as vqe
-import pyxacc as xacc
+import xaccvqe as vqe
+import xacc
 import numpy as np
 from stochopy import Evolutionary
 from mpi4py import MPI

@@ -1,6 +1,6 @@
-import pyxaccvqe as vqe
-from pyxaccvqe import qpu, PauliOperator
-import pyxacc as xacc
+import xaccvqe as vqe
+from xaccvqe import qpu, PauliOperator
+import xacc
 import numpy as np
 
 xacc.Initialize()

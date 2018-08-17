@@ -23,7 +23,7 @@ else()
 endif()
 
 install(TARGETS _pyxaccvqe DESTINATION ${CMAKE_INSTALL_PREFIX})
-install(FILES pyxaccvqe.py DESTINATION ${CMAKE_INSTALL_PREFIX})
+install(FILES xaccvqe.py DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 file (GLOB PYTESTS tests/*.py)
 

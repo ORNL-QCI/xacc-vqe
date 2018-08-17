@@ -1,4 +1,4 @@
-import pyxacc as xacc
+import xacc
 import numpy as np
 
 xacc.Initialize() 
