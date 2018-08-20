@@ -5,7 +5,7 @@ set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 
-if (FROM_SETUP_PY)
+if (FROM_SETUP_PY AND NOT APPLE)
    message(STATUS "Running build from setup.py, linking to static libstdc++")
    set (CMAKE_SHARED_LINKER_FLAGS "-static-libstdc++" CACHE INTERNAL "" FORCE)
 endif()
