@@ -1,5 +1,5 @@
 from _pyxaccvqe import *
-import pyxacc as xacc
+import xacc
 import os, platform, sys, sysconfig
 import argparse, inspect
 
