@@ -152,8 +152,8 @@ std::shared_ptr<Function> UCCSD::generate(
                 kernel->addInstruction(i2);
                 
                 OpType op3{{vt,1},{ot,0}, {vo,1},{oo,0}}, op4{{oo,1}, {vo,0}, {ot,1},{vt,0}};
-                auto i3 = std::make_shared<FermionInstruction>(op3, doubleParams1[count]);
-                auto i4 = std::make_shared<FermionInstruction>(op4, doubleParams1[count], std::complex<double>(-1.,0.));
+                auto i3 = std::make_shared<FermionInstruction>(op3, doubleParams1[count], std::complex<double>(-1.,0.));
+                auto i4 = std::make_shared<FermionInstruction>(op4, doubleParams1[count]);
 
                 kernel->addInstruction(i3);
                 kernel->addInstruction(i4);
@@ -206,8 +206,8 @@ std::shared_ptr<Function> UCCSD::generate(
                 auto o2b = ib(os2);
                 
                 OpType op5{{v1a,1},{o1a,0},{v2b,1},{o2b,0}}, op6{{o2b,1},{o1a,0},{v2b,1},{o2b,0}};
-                auto i5 = std::make_shared<FermionInstruction>(op5, doubleParams2[count]);
-                auto i6 = std::make_shared<FermionInstruction>(op6, doubleParams2[count], std::complex<double>(-1.,0.));
+                auto i5 = std::make_shared<FermionInstruction>(op5, doubleParams2[count], std::complex<double>(-1.,0.));
+                auto i6 = std::make_shared<FermionInstruction>(op6, doubleParams2[count]);
 
                 kernel->addInstruction(i5);
                 kernel->addInstruction(i6);

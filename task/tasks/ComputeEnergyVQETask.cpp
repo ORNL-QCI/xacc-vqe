@@ -33,6 +33,25 @@ VQETaskResult ComputeEnergyVQETask::execute(
 		return std::real(boost::get<std::complex<double>>(k.getIRFunction()->getParameter(0)));
 	};
 
+    if (qpu->name() == "tnqvm" && !xacc::optionExists("vqe-use-mpi")) {
+        xacc::setOption("run-and-measure","");
+        std::vector<std::shared_ptr<Function>> ks;
+        ks.push_back(evaluatedStatePrep);
+        for (auto& k : program->getVQEKernels()) ks.push_back(k.getIRFunction());
+        auto buffer = qpu->createBuffer("q", nQubits);
+        auto tmpBuffers = qpu->execute(buffer, ks);
+        ks.erase(ks.begin());
+        int count = 0;
+        for (auto& b : tmpBuffers) {
+            auto kernel = ks[count];
+            auto t = std::real(
+					boost::get<std::complex<double>>(
+							kernel->getParameter(0)));
+            sum += t * b->getExpectationValueZ();
+            count++;
+        }
+        xacc::setOption("tnqvm-reset-visitor", "true");
+    } else {
 	// Create an empty KernelList to be filled 
 	// with non-trivial kernels
 	KernelList<> kernels(qpu);
@@ -106,6 +125,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 		// from the measurement kernels
 		for(auto& k : kernels) k.getIRFunction()->removeInstruction(0);	
 	}
+    }
 
 	std::stringstream ss;
 	ss << std::setprecision(10) << sum << " at (" << parameters.transpose() << ")";
