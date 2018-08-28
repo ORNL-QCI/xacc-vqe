@@ -96,11 +96,10 @@ TEST(ComputeEnergyVQETaskTester,checkSimple) {
 		program->build();
 
 		Eigen::VectorXd parameters(2);
-		parameters << 0.000641023496104, 4.76879126994;
+		parameters << 0, -.0571583356234;
 		task.setVQEProgram(program);
 
 		VQETaskResult result = task.execute(parameters);
-		std::cout << "HELLO WORLD: " << result.ansatzQASM << "\n";
 		EXPECT_NEAR(result.energy, -1.13727042207, 1e-4);
 	}
 

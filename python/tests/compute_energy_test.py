@@ -1,6 +1,6 @@
-import pyxaccvqe as vqe
-import pyxacc as xacc
-from pyxaccvqe import PauliOperator
+import xaccvqe as vqe
+import xacc
+from xaccvqe import PauliOperator
 import unittest
 
 class ComputeEnergyTest(unittest.TestCase):
@@ -38,8 +38,11 @@ class ComputeEnergyTest(unittest.TestCase):
 }"""
         op = vqe.compile(src)
         self.assertAlmostEqual(vqe.execute(op, **{'task':'compute-energy', \
-        				'vqe-params':'1.570454775,-0.8417632833', \
+        				'vqe-params':'0,-.0571583356234', \
         				'n-electrons':2}).energy, -1.13727, places=5)		
 				
 if __name__ == '__main__':
-    unittest.main()
+    xacc.Initialize(['--itensor-svd-cutoff','1e-16'])
+    if xacc.hasAccelerator('tnqvm'):
+       unittest.main() 
+    xacc.Finalize()

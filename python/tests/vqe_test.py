@@ -1,6 +1,6 @@
-import pyxaccvqe as vqe
-import pyxacc as xacc
-from pyxaccvqe import PauliOperator
+import xaccvqe as vqe
+import xacc
+from xaccvqe import PauliOperator
 import unittest
 
 class VQETest(unittest.TestCase):
@@ -42,4 +42,7 @@ class VQETest(unittest.TestCase):
 		
 				
 if __name__ == '__main__':
-    unittest.main()
+    xacc.Initialize(['--itensor-svd-cutoff','1e-16'])
+    if xacc.hasAccelerator('tnqvm'):
+       unittest.main() 
+    xacc.Finalize()

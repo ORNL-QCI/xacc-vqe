@@ -1,6 +1,6 @@
-import pyxaccvqe as vqe
-import pyxacc as xacc
-from pyxaccvqe import PauliOperator
+import xaccvqe as vqe
+import xacc
+from xaccvqe import PauliOperator
 import unittest
 
 class CompileTest(unittest.TestCase):
