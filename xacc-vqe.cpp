@@ -3,6 +3,7 @@
 #include "VQETask.hpp"
 #include "VQEParameterGenerator.hpp"
 #include "MPIProvider.hpp"
+#include <boost/filesystem.hpp>
 
 int main(int argc, char** argv) {
 
@@ -96,11 +97,19 @@ int main(int argc, char** argv) {
 	auto task = xacc::getOption("vqe-task");
 
 	// Read in the Hamiltonian kernel file
+    auto fileName = xacc::getOption("vqe-program");
+    if (!boost::filesystem::exists(fileName)) {
+        xacc::error("Error: No such file - " + fileName);
+    }
 	std::ifstream moleculeKernelHpp(xacc::getOption("vqe-program"));
 	std::string src((std::istreambuf_iterator<char>(moleculeKernelHpp)),
 			std::istreambuf_iterator<char>());
 
 	if (xacc::optionExists("vqe-ansatz")) {
+        fileName = xacc::getOption("vqe-ansatz");
+        if (!boost::filesystem::exists(fileName)) {
+            xacc::error("Error: No such file - " + fileName);
+        }
 		std::ifstream spKernelHpp(xacc::getOption("vqe-ansatz"));
 		std::string spsrc((std::istreambuf_iterator<char>(spKernelHpp)),
 				std::istreambuf_iterator<char>());

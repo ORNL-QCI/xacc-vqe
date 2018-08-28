@@ -46,7 +46,8 @@ public:
 				"Diagonalize Options");
 		desc->add_options()("diagonalize-backend", value<std::string>(),
 							"The backend to use to compute the Hamiltonian eigenspectrum")
-			("diag-number-symmetry","Reduce the dimensionality of the problem by considering Hamiltonian subspace spanned by NELEC occupations.");
+			("diag-number-symmetry","Reduce the dimensionality of the problem by considering Hamiltonian subspace spanned by NELEC occupations.")
+            ("print-ground-state","Also print the eigenvector corresponding to the min eigenvalue");
 		return desc;
 	}
 

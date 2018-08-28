@@ -25,7 +25,16 @@ VQETaskResult DiagonalizeTask::execute(
 				DiagonalizeBackend>("diagonalize-eigen");
 	}
 
-	auto energy = backend->diagonalize(program);
+    double energy = 0.0;
+    if (xacc::optionExists("print-ground-state")) {
+        auto pair = backend->diagonalizeWithGroundState(program);
+        energy = pair.first;
+        std::stringstream s;
+        s << "Ground State = (" << -1.0*pair.second.transpose() << ")";
+        xacc::info(s.str());
+    } else {
+	    energy = backend->diagonalize(program);
+    }
 
 	VQETaskResult result;
 	result.angles = parameters;
