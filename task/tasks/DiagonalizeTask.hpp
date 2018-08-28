@@ -59,14 +59,19 @@ public:
 class DiagonalizeBackend : public Identifiable {
 public:
 	virtual double diagonalize(std::shared_ptr<VQEProgram> prog) = 0;
+    virtual std::pair<double, Eigen::VectorXcd> diagonalizeWithGroundState(std::shared_ptr<VQEProgram> prog) {
+        return {diagonalize(prog),Eigen::VectorXcd::Zero(1)};
+    }
 	virtual ~DiagonalizeBackend() {}
 };
 
 class EigenDiagonalizeBackend: public DiagonalizeBackend {
+protected:
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> es;
 public:
 
 	virtual double diagonalize(std::shared_ptr<VQEProgram> prog);
-
+    virtual std::pair<double, Eigen::VectorXcd> diagonalizeWithGroundState(std::shared_ptr<VQEProgram> prog);
 	virtual const std::string name() const {
 		return "diagonalize-eigen";
 	}

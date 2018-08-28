@@ -194,7 +194,7 @@ double EigenDiagonalizeBackend::diagonalize(
 			}
 		}
 
-		Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> es(A);
+		es.compute(A);
 		eigenvalues = es.eigenvalues();
 	}
 
@@ -205,5 +205,9 @@ double EigenDiagonalizeBackend::diagonalize(
 	return std::real(gsReal);
 }
 
+std::pair<double, Eigen::VectorXcd> EigenDiagonalizeBackend::diagonalizeWithGroundState(std::shared_ptr<VQEProgram> prog) {
+    auto ground = diagonalize(prog);
+    return {ground, es.eigenvectors().col(0)};
+}
 }
 }
