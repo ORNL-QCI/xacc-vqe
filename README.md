@@ -1,4 +1,4 @@
-[![Build Status](http://ci.eclipse.org/xacc/buildStatus/icon?job=xacc-vqe-ci)](http://ci.eclipse.org/xacc/job/xacc-vqe-ci/)
+[![Build Status](https://travis-ci.org/ORNL-QCI/xacc-vqe.svg?branch=master)](https://travis-ci.org/ORNL-QCI/xacc-vqe)
 
 # XACC Plugins and Programs for the Variational Quantum Eigensolver
 
