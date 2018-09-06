@@ -343,7 +343,7 @@ std::shared_ptr<Function> UCCSD::generate(
 					auto rx =
 							gateRegistry->createInstruction(
 									"Rx", std::vector<int> { qbitIdx });
-					InstructionParameter p(4 * pi - (pi /2.0));
+					InstructionParameter p(-1.0 * (pi /2.0));
 					rx->setParameter(0, p);
 					tempFunction->addInstruction(rx);
 				}

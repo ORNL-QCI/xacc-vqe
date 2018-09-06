@@ -77,6 +77,9 @@ public:
 		return instructions.size();
 	}
 
+    std::shared_ptr<Function> enabledView() override {
+        xacc::error("FermionKernel::enabledView is not implemented.");
+    }
 	/**
 	 * Return the FermionInstruction at the given index.
 	 *
@@ -88,7 +91,7 @@ public:
 		if (instructions.size() > idx) {
 			ptr = *std::next(instructions.begin(), idx);
 		} else {
-			xacc::error("Invalid instruction index.");
+			xacc::error("Invalid instruction index - " + std::to_string(idx) + ".");
 		}
 		return ptr;
 	}
