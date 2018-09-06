@@ -25,15 +25,18 @@ VQETaskResult ComputeEnergyVQETask::execute(
 	// Evaluate our variable parameterized State Prep circuite
 	// to produce a state prep circuit with actual rotations
 	auto evaluatedStatePrep = statePrep->operator()(parameters);
-
-    xacc::info("ComputeEnergyVQETask: N Ansatz Gates: " + std::to_string(evaluatedStatePrep->nInstructions()));
-    // Perform any circuit optimizations
-    auto opt = xacc::getService<IRTransformation>("circuit-optimizer");
-    auto ir = xacc::getService<IRProvider>("gate")->createIR();//std::make_shared<GateIR>();
-    ir->addKernel(evaluatedStatePrep);
-    opt->transform(ir);
-    evaluatedStatePrep = ir->getKernels()[0]->enabledView();
-    xacc::info("ComputeEnergyVQETask: N Optimized Ansatz Gates: " + std::to_string(evaluatedStatePrep->nInstructions()));
+    auto optPrep = evaluatedStatePrep->enabledView();
+    
+//     xacc::setOption("circuit-opt-silent","");
+    
+//    xacc::info("ComputeEnergyVQETask: N Ansatz Gates: " + std::to_string(optPrep->nInstructions()));
+//     // Perform any circuit optimizations
+//     auto opt = xacc::getService<IRTransformation>("circuit-optimizer");
+//     auto ir = xacc::getService<IRProvider>("gate")->createIR();//std::make_shared<GateIR>();
+//     ir->addKernel(evaluatedStatePrep);
+//     opt->transform(ir);
+//     optPrep = ir->getKernels()[0]->enabledView();
+//     xacc::info("ComputeEnergyVQETask: N Optimized Ansatz Gates: " + std::to_string(optPrep->nInstructions()));
 
 	// Utility functions for readability
 	auto isReadoutErrorKernel = [](const std::string& tag) -> bool 
@@ -45,7 +48,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
     if (qpu->name() == "tnqvm" && !xacc::optionExists("vqe-use-mpi")) {
         xacc::setOption("run-and-measure","");
         std::vector<std::shared_ptr<Function>> ks;
-        ks.push_back(evaluatedStatePrep);
+        ks.push_back(optPrep);
         for (auto& k : program->getVQEKernels()) ks.push_back(k.getIRFunction());
         auto buffer = qpu->createBuffer("q", nQubits);
         auto tmpBuffers = qpu->execute(buffer, ks);
@@ -69,7 +72,7 @@ VQETaskResult ComputeEnergyVQETask::execute(
 		if (k.getIRFunction()->nInstructions() > 0) { 
 			// If not identity, add the state prep to the circuit
 			if (k.getIRFunction()->getTag() != "readout-error") {
-				k.getIRFunction()->insertInstruction(0,evaluatedStatePrep);
+				k.getIRFunction()->insertInstruction(0,optPrep);
 			}
 			kernels.push_back(k);
 		} else {
