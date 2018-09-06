@@ -1,6 +1,7 @@
 #include "ComputeEnergyVQETask.hpp"
 #include "XACC.hpp"
 #include "VQEProgram.hpp"
+#include "IRProvider.hpp"
 
 namespace xacc {
 namespace vqe {
@@ -23,8 +24,16 @@ VQETaskResult ComputeEnergyVQETask::execute(
 
 	// Evaluate our variable parameterized State Prep circuite
 	// to produce a state prep circuit with actual rotations
-	auto evaluatedStatePrep = StatePreparationEvaluator::evaluateCircuit(
-			statePrep, program->getNParameters(), parameters);
+	auto evaluatedStatePrep = statePrep->operator()(parameters);
+
+    xacc::info("ComputeEnergyVQETask: N Ansatz Gates: " + std::to_string(evaluatedStatePrep->nInstructions()));
+    // Perform any circuit optimizations
+    auto opt = xacc::getService<IRTransformation>("circuit-optimizer");
+    auto ir = xacc::getService<IRProvider>("gate")->createIR();//std::make_shared<GateIR>();
+    ir->addKernel(evaluatedStatePrep);
+    opt->transform(ir);
+    evaluatedStatePrep = ir->getKernels()[0]->enabledView();
+    xacc::info("ComputeEnergyVQETask: N Optimized Ansatz Gates: " + std::to_string(evaluatedStatePrep->nInstructions()));
 
 	// Utility functions for readability
 	auto isReadoutErrorKernel = [](const std::string& tag) -> bool 
