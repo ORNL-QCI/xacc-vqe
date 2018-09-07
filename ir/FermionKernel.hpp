@@ -162,6 +162,14 @@ public:
 		return "";
 	}
 
+    const int depth() override {
+        xacc::error("FermionKernel.depth() not implemented.");
+    }
+    
+    const std::string persistGraph() override {
+        xacc::error("FermionKernel.persistGraph() not implemented.");
+    }
+    
 	/**
 	 * Return the qubits this function acts on.
 	 * @return
