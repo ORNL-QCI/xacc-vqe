@@ -76,28 +76,29 @@ class Term: public TermTuple,
 
 protected:
 
-	static std::map<std::string, std::pair<c, std::string>> create_map() {
-		static std::map<std::string, std::pair<c, std::string>> m;
-		m.insert( { "II", { c(1.0, 0.0), "I" } });
-		m.insert( { "IX", { c(1.0, 0.0), "X" } });
-		m.insert( { "XI", { c(1.0, 0.0), "X" } });
-		m.insert( { "IY", { c(1.0, 0.0), "Y" } });
-		m.insert( { "YI", { c(1.0, 0.0), "Y" } });
-		m.insert( { "ZI", { c(1.0, 0.0), "Z" } });
-		m.insert( { "IZ", { c(1.0, 0.0), "Z" } });
-		m.insert( { "XX", { c(1.0, 0.0), "I" } });
-		m.insert( { "YY", { c(1.0, 0.0), "I" } });
-		m.insert( { "ZZ", { c(1.0, 0.0), "I" } });
-		m.insert( { "XY", { c(0.0, 1.0), "Z" } });
-		m.insert( { "XZ", { c(0.0, -1.0), "Y" } });
-		m.insert( { "YX", { c(0.0, -1.0), "Z" } });
-		m.insert( { "YZ", { c(0.0, 1.0), "X" } });
-		m.insert( { "ZX", { c(0.0, 1.0), "Y" } });
-		m.insert( { "ZY", { c(0.0, -1.0), "X" } });
-		return m;
+	//static std::map<std::string, std::pair<c, std::string>> 
+        void create_map() {
+		//static std::map<std::string, std::pair<c, std::string>> m;
+		pauliProducts.insert( { "II", { c(1.0, 0.0), "I" } });
+		pauliProducts.insert( { "IX", { c(1.0, 0.0), "X" } });
+		pauliProducts.insert( { "XI", { c(1.0, 0.0), "X" } });
+		pauliProducts.insert( { "IY", { c(1.0, 0.0), "Y" } });
+		pauliProducts.insert( { "YI", { c(1.0, 0.0), "Y" } });
+		pauliProducts.insert( { "ZI", { c(1.0, 0.0), "Z" } });
+		pauliProducts.insert( { "IZ", { c(1.0, 0.0), "Z" } });
+		pauliProducts.insert( { "XX", { c(1.0, 0.0), "I" } });
+		pauliProducts.insert( { "YY", { c(1.0, 0.0), "I" } });
+		pauliProducts.insert( { "ZZ", { c(1.0, 0.0), "I" } });
+		pauliProducts.insert( { "XY", { c(0.0, 1.0), "Z" } });
+		pauliProducts.insert( { "XZ", { c(0.0, -1.0), "Y" } });
+		pauliProducts.insert( { "YX", { c(0.0, -1.0), "Z" } });
+		pauliProducts.insert( { "YZ", { c(0.0, 1.0), "X" } });
+		pauliProducts.insert( { "ZX", { c(0.0, 1.0), "Y" } });
+		pauliProducts.insert( { "ZY", { c(0.0, -1.0), "X" } });
+		//return m;
 	}
 
-	static const std::map<std::string, std::pair<c, std::string>> pauliProducts;
+	std::map<std::string, std::pair<c, std::string>> pauliProducts;
 
 public:
 
@@ -105,60 +106,70 @@ public:
 		std::get<0>(*this) = std::complex<double>(0, 0);
 		std::get<1>(*this) = "";
 		std::get<2>(*this) = { };
+		create_map();
 	}
 
 	Term(const Term& t) {
 		std::get<0>(*this) = std::get<0>(t);
 		std::get<1>(*this) = std::get<1>(t);
 		std::get<2>(*this) = std::get<2>(t);
+		create_map();
 	}
 
 	Term(std::complex<double> c) {
 		std::get<0>(*this) = c;
 		std::get<1>(*this) = "";
 		std::get<2>(*this) = { };
+		create_map();
 	}
 
 	Term(double c) {
 		std::get<0>(*this) = std::complex<double>(c, 0);
 		std::get<1>(*this) = "";
 		std::get<2>(*this) = { };
+		create_map();
 	}
 
 	Term(std::complex<double> c, std::map<int, std::string> ops) {
 		std::get<0>(*this) = c;
 		std::get<1>(*this) = "";
 		std::get<2>(*this) = ops;
+		create_map();
 	}
 
 	Term(std::string var) {
 		std::get<0>(*this) = std::complex<double>(1,0);
 		std::get<1>(*this) = var;
 		std::get<2>(*this) = {};
+		create_map();
 	}
 
 	Term(std::complex<double> c, std::string var) {
 		std::get<0>(*this) = c;
 		std::get<1>(*this) = var;
 		std::get<2>(*this) = { };
+		create_map();
 	}
 
 	Term(std::string var, std::map<int, std::string> ops) {
 		std::get<0>(*this) = std::complex<double>(1,0);
 		std::get<1>(*this) = var;
 		std::get<2>(*this) = ops;
+		create_map();
 	}
 
 	Term(std::complex<double> c, std::string var, std::map<int, std::string> ops) {
 		std::get<0>(*this) = c;
 		std::get<1>(*this) = var;
 		std::get<2>(*this) = ops;
+		create_map();
 	}
 
 	Term(std::map<int, std::string> ops) {
 		std::get<0>(*this) = std::complex<double>(1,0);
 		std::get<1>(*this) = "";
 		std::get<2>(*this) = ops;
+		create_map();
 	}
 
 	static const std::string id(const std::map<int, std::string>& ops, const std::string& var = "") {

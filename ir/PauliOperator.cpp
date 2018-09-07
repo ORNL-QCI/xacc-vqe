@@ -4,7 +4,7 @@
 
 namespace xacc {
 namespace vqe {
-const std::map<std::string, std::pair<c, std::string>> Term:: pauliProducts =  Term::create_map();
+//const std::map<std::string, std::pair<c, std::string>> Term:: pauliProducts =  Term::create_map();
 
 PauliOperator::PauliOperator() {
 }
