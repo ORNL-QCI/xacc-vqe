@@ -36,7 +36,7 @@ class qpu(xacc.qpu):
               compiledKernel = program.getKernels()[0]
               getParams = lambda params: ','.join(map(str, params)) 
 
-              execParams = {'ansatz':compiledKernel.getIRFunction(), 'task':'vqe'}
+              execParams = {'accelerator':qpu.name(), 'ansatz':compiledKernel.getIRFunction(), 'task':'vqe'}
               obs = self.kwargs['observable']
               ars = list(args)
               if len(ars) > 0:
