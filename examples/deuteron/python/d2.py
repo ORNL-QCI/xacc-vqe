@@ -7,6 +7,7 @@ xacc.Initialize(['--compiler','quil'])
 
 ibm = xacc.getAccelerator('local-ibm')
 tnqvm = xacc.getAccelerator('tnqvm')
+rigetti = xacc.getAccelerator('rigetti')
 
 #buffer = ibm.createBuffer('q', 2)
 buffer = tnqvm.createBuffer('q', 2)
@@ -23,19 +24,14 @@ xacc.setOption('ibm-shots','8192')
 #xacc.setOption('vqe-backend','vqe-bayesopt')
 #xacc.setOption('bo-n-iter','20')
 
-def ansatz2(buffer, t0):
-    X(0)
-    Ry(t0, 1)
-    CNOT(1, 0)
-
-@xaccvqe.qpu.vqe(accelerator=tnqvm, observable=ham)
+@xaccvqe.qpu.energy(accelerator=tnqvm, observable=ham)
 def ansatz(buffer, t0):
     X(0)
     Ry(t0, 1)
     CNOT(1, 0)
 
 # Run VQE with given ansatz kernel
-initAngle = .50
+initAngle = .59
 
 ansatz(buffer, initAngle)
 
