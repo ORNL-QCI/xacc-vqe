@@ -43,4 +43,5 @@ class EigenDiagonalizeTest(unittest.TestCase):
         self.assertEqual(vqe.execute(op, buffer).energy, -1.137270422069755)
 
 if __name__ == '__main__':
-    unittest.main()
+    if xacc.hasAccelerator('tnqvm'):
+       unittest.main()     
