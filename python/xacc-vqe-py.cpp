@@ -30,6 +30,7 @@ using GateFunctionPtr = std::shared_ptr<xacc::Function>;
  * @return op Pauli Hamiltonian representation of given Fermion Hamiltonian source code
  *
  */
+ 
 PauliOperator compile(const std::string& fermiSrc) {
 
 	if (!xacc::isInitialized()) {
@@ -136,7 +137,7 @@ PauliOperator compile(py::object fermionOperator, py::kwargs kwargs) {
  * @param kwargs
  * @return
  */
-VQETaskResult execute(PauliOperator& op, py::kwargs kwargs) {
+VQETaskResult execute(PauliOperator& op, std::shared_ptr<AcceleratorBuffer> buffer, py::kwargs kwargs) {
 	if (!xacc::isInitialized()) {
 		xacc::Initialize({"--use-cout", "--no-color"});
 		xacc::info("You did not initialize the XACC framework. "
@@ -239,6 +240,7 @@ VQETaskResult execute(PauliOperator& op, py::kwargs kwargs) {
 
 	auto program = std::make_shared<VQEProgram>(accelerator, op, statePrep, world);
 	program->build();
+    program->setGlobalBuffer(buffer);
 
 	auto parameters = VQEParameterGenerator::generateParameters(program->getNParameters(), world);
 	auto vqeTask = xacc::getService<VQETask>(task);
@@ -248,7 +250,7 @@ VQETaskResult execute(PauliOperator& op, py::kwargs kwargs) {
 	return result;
 }
 
-VQETaskResult execute(py::object& fermionOperator, py::kwargs kwargs) {
+VQETaskResult execute(py::object& fermionOperator, std::shared_ptr<AcceleratorBuffer> buffer, py::kwargs kwargs) {
 
 	if (!fermionOperator) {
 		xacc::error("FermionOperator was null. Exiting.");
@@ -364,6 +366,7 @@ VQETaskResult execute(py::object& fermionOperator, py::kwargs kwargs) {
 	auto program = std::make_shared<VQEProgram>(accelerator, s.str(), statePrep,
 			world);
 	program->build();
+    program->setGlobalBuffer(buffer);
 
 	auto parameters = VQEParameterGenerator::generateParameters(
 			program->getNParameters(), world);
@@ -421,10 +424,10 @@ PYBIND11_MODULE(_pyxaccvqe, m) {
 
 	py::class_<StatePreparationEvaluator>(m, "AnsatzEvaluator").def_static("evaluate",StatePreparationEvaluator::evaluateCircuit, "");
 
-	m.def("execute", (VQETaskResult (*)(PauliOperator& op, py::kwargs kwargs))
+	m.def("execute", (VQETaskResult (*)(PauliOperator& op, std::shared_ptr<AcceleratorBuffer> b, py::kwargs kwargs))
 			&execute, py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>(), "");
 
-	m.def("execute", (VQETaskResult (*)(py::object& op, py::kwargs kwargs))
+	m.def("execute", (VQETaskResult (*)(py::object& op, std::shared_ptr<AcceleratorBuffer> b, py::kwargs kwargs))
 			&execute, py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>(), "");
 
 	m.def("compile", (PauliOperator (*)(const std::string& src))

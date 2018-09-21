@@ -359,6 +359,14 @@ public:
 				nQubits);
 	}
 
+    void setGlobalBuffer(std::shared_ptr<AcceleratorBuffer> b) {
+        globalBuffer = b;
+    }
+    
+    std::shared_ptr<AcceleratorBuffer> getGlobalBuffer() {
+        return globalBuffer;
+    }
+    
 	virtual ~VQEProgram() {
 	}
 
@@ -374,6 +382,8 @@ protected:
 
 	std::shared_ptr<FermionKernel> fermionKernel;
 
+    std::shared_ptr<AcceleratorBuffer> globalBuffer;
+    
 	/**
 	 * Reference to the state preparation circuit
 	 * represented as XACC IR.

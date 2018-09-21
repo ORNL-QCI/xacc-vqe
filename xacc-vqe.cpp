@@ -120,6 +120,9 @@ int main(int argc, char** argv) {
 
 	program->build();
 
+    // auto buffer = accelerator->createBuffer("q",program->getNQubits());
+    // program->setGlobalBuffer(buffer);
+    
 	auto parameters = VQEParameterGenerator::generateParameters(program->getNParameters(), world);
 	auto vqeTask = xacc::getService<VQETask>(task);
 	vqeTask->setVQEProgram(program);
