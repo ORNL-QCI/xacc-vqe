@@ -6,6 +6,6 @@ services:
 
 before_install:
   - docker pull xacc/base-plugin-ci
-  - docker run -it --rm xacc/base-plugin-ci bash -c "git clone https://github.com/ornl-qci/xacc-vqe && cd xacc-vqe && mkdir build && cd build && cmake .. -DXACC_DIR=~/.xacc -DPYTHON_INCLUDE_DIR=/usr/include/python3.5 -DPYTHON_EXECUTABLE=/usr/bin/python3 -DVQE_BUILD_TESTS=TRUE && make -j4 install && ctest"
+  - docker run -it --rm xacc/base-plugin-ci bash -c "git clone https://github.com/ornl-qci/xacc-vqe && cd xacc-vqe && mkdir build && cd build && cmake .. -DXACC_DIR=~/.xacc -DPYTHON_INCLUDE_DIR=/usr/include/python3.5 -DPYTHON_EXECUTABLE=/usr/bin/python3 -DVQE_BUILD_TESTS=TRUE && make -j4 install && ctest --output-on-failure"
 script:
   - echo ""
