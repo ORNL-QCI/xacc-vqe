@@ -10,7 +10,7 @@ nElectrons = 2
 uccsdGen = xacc.getIRGenerator("uccsd")
 f = uccsdGen.generate({'n-electrons':nElectrons, 'n-qubits':nQubits})
 
-f = f.eval([3.14,-1.51])
+f = f.eval([0,-1.51])
 state = xacc.gate.getState(tnqvm, f)
 
 print(state)

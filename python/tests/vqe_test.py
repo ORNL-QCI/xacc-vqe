@@ -38,7 +38,9 @@ class VQETest(unittest.TestCase):
    -0.4759344611440753 3 1 3 0
 }"""
         op = vqe.compile(src)
-        self.assertAlmostEqual(vqe.execute(op, **{'task':'vqe', 'n-electrons':2}).energy, -1.13727, places=5)
+        buffer = xacc.getAccelerator('tnqvm').createBuffer('q',4)
+
+        self.assertAlmostEqual(vqe.execute(op, buffer, **{'task':'vqe', 'n-electrons':2}).energy, -1.13727, places=5)
 		
 				
 if __name__ == '__main__':

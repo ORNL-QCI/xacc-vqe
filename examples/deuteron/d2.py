@@ -35,7 +35,7 @@ def ansatz(buffer, t0):
     CNOT(1, 0)
 
 # Run VQE with given ansatz kernel
-initAngle = .59
+initAngle = .50
 
 ansatz(buffer, initAngle)
 

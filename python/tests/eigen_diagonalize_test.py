@@ -38,7 +38,9 @@ class EigenDiagonalizeTest(unittest.TestCase):
    -0.4759344611440753 3 1 3 0
 }"""
         op = vqe.compile(src)
-        self.assertEqual(vqe.execute(op).energy, -1.137270422069755)
+        buffer = xacc.getAccelerator('tnqvm').createBuffer('q',4)
+
+        self.assertEqual(vqe.execute(op, buffer).energy, -1.137270422069755)
 
 if __name__ == '__main__':
     unittest.main()
