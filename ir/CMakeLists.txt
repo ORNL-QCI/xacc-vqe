@@ -35,12 +35,14 @@ set (PACKAGE_DESCIPTION "XACC Variational Quantum Eigensolver IR Support")
 set (IR_LIBRARY_NAME xacc-vqe-ir)
 
 file (GLOB_RECURSE HEADERS *.hpp)
-file (GLOB SRC *.cpp algorithms/uccsd/*.cpp)
+file (GLOB SRC *.cpp algorithms/hwe/*.cpp algorithms/uccsd/*.cpp)
 
 # Set up dependencies to resources to track changes
 usFunctionGetResourceSource(TARGET ${IR_LIBRARY_NAME} OUT SRC)
 # Generate bundle initialization code
 usFunctionGenerateBundleInit(TARGET ${IR_LIBRARY_NAME} OUT SRC)
+
+include_directories(algorithms/hwe)
 
 add_library(${IR_LIBRARY_NAME} SHARED ${SRC})
 

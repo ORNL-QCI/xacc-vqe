@@ -76,7 +76,6 @@ class qpu(xacc.qpu):
                       if 'opt_params' in self.kwargs:
                           for k,v in self.kwargs['opt_params'].items():
                               xacc.setOption(k,str(v))
-              print(execParams)
               execute(obs, buffer, **execParams)
               return
           return wrapped_f

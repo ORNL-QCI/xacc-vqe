@@ -1,5 +1,5 @@
 /***********************************************************************************
- * Copyright (c) 2017, UT-Battelle
+ * Copyright (c) 2018, UT-Battelle
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,45 +28,43 @@
  *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
-#include "cppmicroservices/BundleActivator.h"
-#include "cppmicroservices/BundleContext.h"
-#include "cppmicroservices/ServiceProperties.h"
+#ifndef VQE_IR_HWE_HPP_
+#define VQE_IR_HWE_HPP_
 
-#include "UCCSD.hpp"
-#include "HWE.hpp"
+#include "IRGenerator.hpp"
 
-#include <memory>
-#include <set>
+namespace xacc {
 
-using namespace cppmicroservices;
-
-namespace {
+namespace vqe {
 
 /**
+ * Hardware efficient ansatz from Kandala et. al.
  */
-class US_ABI_LOCAL VQEIRActivator: public BundleActivator {
+class HWE: public xacc::IRGenerator {
 
 public:
 
-	VQEIRActivator() {
+	virtual std::shared_ptr<Function> generate(
+			std::shared_ptr<AcceleratorBuffer> buffer,
+			std::vector<InstructionParameter> parameters = std::vector<
+					InstructionParameter> { });
+
+	virtual std::shared_ptr<Function> generate(
+			std::map<std::string, InstructionParameter> parameters = std::map<
+					std::string, InstructionParameter> { });
+
+
+	virtual const std::string name() const {
+		return "hwe";
 	}
 
-	/**
-	 */
-	void Start(BundleContext context) {
-		auto uccsd = std::make_shared<xacc::vqe::UCCSD>();
-		context.RegisterService<xacc::IRGenerator>(uccsd);
-        auto hwe = std::make_shared<xacc::vqe::HWE>();
-		context.RegisterService<xacc::IRGenerator>(hwe);
+	virtual const std::string description() const {
+		return "";
 	}
-
-	/**
-	 */
-	void Stop(BundleContext /*context*/) {
-	}
-
 };
 
 }
 
-CPPMICROSERVICES_EXPORT_BUNDLE_ACTIVATOR(VQEIRActivator)
+}
+
+#endif
