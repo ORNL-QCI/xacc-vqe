@@ -13,6 +13,8 @@ HWE::generate(std::map<std::string, InstructionParameter> parameters) {
   std::vector<InstructionParameter> params;
   if (!parameters.count("layers")) {
     params.push_back(InstructionParameter(1));
+  } else {
+      params.push_back(parameters["layers"]);
   }
 
   if (!parameters.count("n_qubits")) {
@@ -41,6 +43,9 @@ HWE::generate(std::shared_ptr<AcceleratorBuffer> buffer,
     layers = boost::get<int>(parameters[0]);
     auto cStr = boost::get<std::string>(parameters[2]);
 
+    boost::replace_all(cStr, "'","");
+    
+    // xacc::info("CONNECTIVITY STRING: " + cStr);
     std::vector<int> ints;
     boost::char_separator<char> sep(",");
     boost::tokenizer<char_separator<char>> tokens(cStr, sep);
@@ -77,10 +82,10 @@ HWE::generate(std::shared_ptr<AcceleratorBuffer> buffer,
   auto f = provider->createFunction("hwe", {}, fParams);
   int angleCounter = 0;
   for (int d = 0; d < layers; d++) {
-
+    
     for (int q = 0; q < nQubits; q++) {
       auto rx = provider->createInstruction(
-          "Rx", {q},
+          "Ry", {q},
           {InstructionParameter("t" + std::to_string(angleCounter))});
       auto rz = provider->createInstruction(
           "Rz", {q},
@@ -91,11 +96,17 @@ HWE::generate(std::shared_ptr<AcceleratorBuffer> buffer,
     }
 
     for (auto &p : connectivity) {
+      auto h1 = provider->createInstruction("H",{p.second});
+      auto h2 = provider->createInstruction("H",{p.second});
+
       auto cnot = provider->createInstruction("CNOT", {p.first, p.second});
+      f->addInstruction(h1);
       f->addInstruction(cnot);
+      f->addInstruction(h2);
     }
   }
 
+//   std::cout << "THE FUNCTION:\n" << f->toString("q") << "\n";
   return f;
 }
 
