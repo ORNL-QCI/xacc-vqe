@@ -418,6 +418,7 @@ PYBIND11_MODULE(_pyxaccvqe, m) {
 			.def("nTerms", &PauliOperator::nTerms)
 			.def("isClose", &PauliOperator::isClose)
 			.def("__len__", &PauliOperator::nTerms)
+            .def("nQubits", &PauliOperator::nQubits)
 			.def("__iter__",
 			[](PauliOperator& op) {return py::make_iterator(op.begin(), op.end());},
 			py::keep_alive<0, 1>());

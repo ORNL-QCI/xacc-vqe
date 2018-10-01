@@ -45,6 +45,7 @@ TEST(PauliOperatorTester,checkEasy) {
 	op += PauliOperator({{1,"X"}, {2, "Z"}, {3,"Y"}}, std::complex<double>(0,.25));
 	op += PauliOperator({{1,"Y"}, {2, "Z"}, {3,"Y"}}, .25);
 	op += PauliOperator({{1,"Y"}, {2, "Z"}, {3,"X"}}, std::complex<double>(0,-.25));
+    EXPECT_EQ(4, op.nQubits());
 
 	PauliOperator sum({{0,"Z"}, {1, "Y"}}, std::complex<double>(0,-.5));
 	sum += PauliOperator({{0, "Z"}, {1,"X"}}, .5);
@@ -55,6 +56,9 @@ TEST(PauliOperatorTester,checkEasy) {
 	op *= sum;
 
 	std::cout << "CURRENTMULT: " << op.toString() << "\n";
+
+    EXPECT_EQ(0, op.nQubits());
+
 }
 TEST(PauliOperatorTester,checkConstruction) {
 
