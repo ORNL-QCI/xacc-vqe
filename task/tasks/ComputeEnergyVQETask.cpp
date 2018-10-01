@@ -33,6 +33,7 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
   auto evaluatedStatePrep = statePrep->operator()(parameters);
   auto optPrep = evaluatedStatePrep->enabledView();
 
+//   xacc::info("StatePrep:\n" + optPrep->toString("q"));
   // Utility functions for readability
   auto isReadoutErrorKernel = [](const std::string &tag) -> bool {
     return boost::contains(tag, "readout-error");

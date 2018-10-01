@@ -13,7 +13,7 @@ ham = PauliOperator(5.906709445) + \
     PauliOperator({0:'Z'}, .21829) + \
     PauliOperator({1:'Z'}, -6.125)
 
-@qpu.vqe(accelerator=tnqvm, observable=ham, optimizer='scipy-nelder-mead', opt_params={'tol':1e-2})
+@qpu.vqe(accelerator=tnqvm, observable=ham, optimizer='vqe-bayesopt', opt_params={'tol':1e-2})
 def ansatz(buffer, initialTheta):
    X(0)
    Ry(initialTheta, 1)

@@ -96,13 +96,8 @@ HWE::generate(std::shared_ptr<AcceleratorBuffer> buffer,
     }
 
     for (auto &p : connectivity) {
-    //   auto h1 = provider->createInstruction("H",{p.second});
-    //   auto h2 = provider->createInstruction("H",{p.second});
-
       auto cnot = provider->createInstruction("CNOT", {p.first, p.second});
-    //   f->addInstruction(h1);
       f->addInstruction(cnot);
-    //   f->addInstruction(h2);
     }
   }
 

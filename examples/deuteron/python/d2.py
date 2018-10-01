@@ -52,11 +52,11 @@ print('Opt Angles = ', buffer.getInformation('vqe-angles'))
     
 # Get all unique children parameters 
 ps=buffer.getAllUnique('parameters')
-print(ps,'\n', len(ps))
+#print(ps,'\n', len(ps))
 
 # Get all unique kernel names (should be 5 of them)
-print(buffer.getAllUnique('kernel'))
+#print(buffer.getAllUnique('kernel'))
 
-print(buffer)
+#print(buffer)
 
 xacc.Finalize()
