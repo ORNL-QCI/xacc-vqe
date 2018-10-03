@@ -58,10 +58,12 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
       auto kernel = ks[count];
       auto t =
           std::real(boost::get<std::complex<double>>(kernel->getParameter(0)));
-      sum += t * b->getExpectationValueZ();
+      auto expval = b->getExpectationValueZ();
+      sum += t * expval;
       b->addExtraInfo("parameters", paramsInfo);
       b->addExtraInfo("kernel", ExtraInfo(kernel->name()));
-
+      b->addExtraInfo("exp-val-z", ExtraInfo(expval));
+      
       globalBuffer->appendChild(kernel->name(), b);
       count++;
     }
@@ -121,6 +123,7 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
           sum += exp * getCoeff(k);
           results[i]->addExtraInfo("parameters", paramsInfo);
           results[i]->addExtraInfo("kernel", ExtraInfo(k.getName()));
+          results[i]->addExtraInfo("exp-val-z", ExtraInfo(exp));
           globalBuffer->appendChild(k.getName(), results[i]);
         }
         if (k.getIRFunction()->getTag() != "readout-error") {
