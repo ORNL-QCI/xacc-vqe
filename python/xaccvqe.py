@@ -72,7 +72,6 @@ class WrappedVQEF(xacc.WrappedF):
                 if 'opt_params' in self.kwargs:
                     for k, v in self.kwargs['opt_params'].items():
                         optargs[k] = v
-                print(ars, compiledKernel.getIRFunction().nParameters())
                 opt_result = minimize(energy, ars, **optargs)
                 return
             else:
@@ -115,7 +114,6 @@ class WrappedEnergyF(xacc.WrappedF):
         if len(ars) > 0:
             arStr = getParams(ars)
             execParams['vqe-params'] = arStr
-        print(execParams)
         execute(obs, buffer, **execParams)
         return
 
