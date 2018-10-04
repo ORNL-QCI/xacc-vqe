@@ -46,14 +46,11 @@ class VQE(Algorithm):
         print("VQE Algorithm Executing")
         qpu = xacc.getAccelerator(inputParams['accelerator'])
         ir_generator = xacc.getIRGenerator(inputParams['ansatz'])
-        n_electrons = int(inputParams['n-electrons'])
-        xaccOp = xaccvqe.compile(
-            self.molecule_generators[inputParams['molecule-generator']].generate(inputParams))
+        xaccOp = self.molecule_generators[inputParams['molecule-generator']].generate(inputParams)
         n_qubits = xaccOp.nQubits()
-        buffer = qpu.createBuffer(inputParams['qubit-register'], n_qubits)
-        function = ir_generator.generate([n_electrons, n_qubits])
-        results = xaccvqe.execute(xaccOp, buffer, **{'task': 'vqe',
-                                                     'n-electrons': n_electrons})
+        buffer = qpu.createBuffer('q', n_qubits)
+        function = ir_generator.generate(ast.literal_eval(inputParams['ansatz-params']))
+        results = xaccvqe.execute(xaccOp, buffer, **{'task': 'vqe', 'ansatz':function})
         return buffer
 
     def analyze(self, buffer, inputParams):

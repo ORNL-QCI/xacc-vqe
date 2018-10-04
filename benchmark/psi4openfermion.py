@@ -5,7 +5,7 @@ from openfermionpsi4 import run_psi4
 from openfermion.transforms import get_fermion_operator
 from moleculegenerator import MoleculeGenerator
 import ast
-
+import xaccvqe
 
 @ComponentFactory("Psi4OF_molecule_generator_factory")
 @Provides("molecule_generator_service")
@@ -32,4 +32,4 @@ class Psi4OpenFermion(MoleculeGenerator):
                               int(inputParams['charge']))
         molecule = run_psi4(mdata, run_scf=1, run_fci=1)
         fermiOp = get_fermion_operator(molecule.get_molecular_hamiltonian())
-        return fermiOp
+        return xaccvqe.compile(fermiOp)
