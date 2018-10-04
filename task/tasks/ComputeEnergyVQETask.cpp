@@ -33,6 +33,8 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
   auto evaluatedStatePrep = statePrep->operator()(parameters);
   auto optPrep = evaluatedStatePrep->enabledView();
 
+  globalBuffer->addExtraInfo("circuit-depth",optPrep->depth());
+  
 //   xacc::info("StatePrep:\n" + optPrep->toString("q"));
   // Utility functions for readability
   auto isReadoutErrorKernel = [](const std::string &tag) -> bool {
