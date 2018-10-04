@@ -46,7 +46,7 @@ class VQE(Algorithm):
         ir_generator = xacc.getIRGenerator(inputParams['ansatz'])
         n_electrons = int(inputParams['n-electrons'])
         xaccOp = xaccvqe.compile(
-            self.molecule_generators[inputParams['molecule-generator']].generate(settings))
+            self.molecule_generators[inputParams['molecule-generator']].generate(inputParams))
         n_qubits = xaccOp.nQubits()
         buffer = qpu.createBuffer(inputParams['qubit-register'], n_qubits)
         function = ir_generator.generate([n_electrons, n_qubits])
