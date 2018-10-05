@@ -17,8 +17,8 @@ from algorithm import Algorithm
 class VQEEnergy(Algorithm):
 
     def __init__(self):
+        
         self.molecule_generators = {}
-        print("VQEEnergy Algorithm...")
 
     @Validate
     def validate(self, context):
@@ -39,20 +39,18 @@ class VQEEnergy(Algorithm):
 
     @Invalidate
     def invalidate(self, context):
-        print("VQEEnergy Algorithm Stopped")
+        print("VQEEnergy Algorithm Invalidated")
 
     def execute(self, inputParams):
-        print("VQEEnergy Algorithm Executing")
         qpu = xacc.getAccelerator(inputParams['accelerator'])
         ir_generator = xacc.getIRGenerator(inputParams['ansatz'])
-        n_electrons = int(inputParams['n-electrons'])
-        xaccOp = xaccvqe.compile(
-            self.molecule_generators[inputParams['molecule-generator']].generate(inputParams))
+        xaccOp = self.molecule_generators[inputParams['molecule-generator']].generate(inputParams)
         n_qubits = xaccOp.nQubits()
-        buffer = qpu.createBuffer(inputParams['qubit-register'], n_qubits)
-        function = ir_generator.generate([n_electrons, n_qubits])
+        buffer = qpu.createBuffer('q', n_qubits)
+        function = ir_generator.generate(ast.literal_eval(inputParams['ansatz-params']))
         results = xaccvqe.execute(xaccOp, buffer, **{'task': 'compute-energy',
-                                                     'n-electrons': n_electrons, 'vqe-params': inputParams['vqe-params']})
+                                                     'ansatz': function,
+                                                     'vqe-params': inputParams['vqe-params']})
         return buffer
 
     def analyze(self, buffer, inputParams):

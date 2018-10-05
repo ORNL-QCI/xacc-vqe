@@ -1,13 +1,11 @@
 from pelix.ipopo.decorators import (ComponentFactory, Property, Requires,
                                     BindField, UnbindField, Provides, Validate, 
                                     Invalidate, Instantiate)
-
 import ast
 import configparser
 import xacc
 import xaccvqe
 from algorithm import Algorithm
-
 
 @ComponentFactory("vqe_algorithm_factory")
 @Provides("xacc_algorithm_service")
@@ -18,8 +16,9 @@ from algorithm import Algorithm
 class VQE(Algorithm):
 
     def __init__(self):
+        
+        # define the list of MoleculeGenerator services installed and available
         self.molecule_generators = {}
-        print("VQE Algorithm...")
 
     @Validate
     def validate(self, context):
@@ -27,23 +26,23 @@ class VQE(Algorithm):
 
     @BindField('_molecule_generator')
     def bind_dict(self, field, service, svc_ref):
-        print('binding molecule gen')
+        
+        # Bind the molecule_generator properties of the MoleculeGenerator services installed and available
         generator = svc_ref.get_property('molecule_generator')
         self.molecule_generators[generator] = service
 
     @UnbindField('_molecule_generator')
     def unbind_dict(self, field, service, svc_ref):
-
+        
+        # Unbind the molecule_generator properties when bundle is dead
         generator = svc_ref.get_property('molecule_generator')
-
         del self.molecule_generators[generator]
 
     @Invalidate
     def invalidate(self, context):
-        print("VQE Algorithm Stopped")
+        print("VQE Algorithm Invalidated")
 
     def execute(self, inputParams):
-        print("VQE Algorithm Executing")
         qpu = xacc.getAccelerator(inputParams['accelerator'])
         ir_generator = xacc.getIRGenerator(inputParams['ansatz'])
         xaccOp = self.molecule_generators[inputParams['molecule-generator']].generate(inputParams)

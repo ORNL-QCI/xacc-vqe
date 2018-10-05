@@ -2,6 +2,7 @@
 #include "IRProvider.hpp"
 #include "VQEProgram.hpp"
 #include "XACC.hpp"
+#include <boost/algorithm/string.hpp>
 
 namespace xacc {
 namespace vqe {
@@ -34,6 +35,9 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
   auto optPrep = evaluatedStatePrep->enabledView();
 
   globalBuffer->addExtraInfo("circuit-depth",optPrep->depth());
+  auto qasmStr = optPrep->toString("q");
+  boost::replace_all(qasmStr, "\\n","\\\\n");
+  globalBuffer->addExtraInfo("ansatz-qasm", qasmStr);
   
 //   xacc::info("StatePrep:\n" + optPrep->toString("q"));
   // Utility functions for readability
