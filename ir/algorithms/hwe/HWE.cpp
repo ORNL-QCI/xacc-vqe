@@ -14,7 +14,7 @@ HWE::generate(std::map<std::string, InstructionParameter> parameters) {
   if (!parameters.count("layers")) {
     params.push_back(InstructionParameter(1));
   } else {
-      params.push_back(parameters["layers"]);
+    params.push_back(parameters["layers"]);
   }
 
   if (!parameters.count("n_qubits")) {
@@ -43,8 +43,8 @@ HWE::generate(std::shared_ptr<AcceleratorBuffer> buffer,
     layers = boost::get<int>(parameters[0]);
     auto cStr = boost::get<std::string>(parameters[2]);
 
-    boost::replace_all(cStr, "'","");
-    
+    boost::replace_all(cStr, "'", "");
+
     // xacc::info("CONNECTIVITY STRING: " + cStr);
     std::vector<int> ints;
     boost::char_separator<char> sep(",");
@@ -75,33 +75,41 @@ HWE::generate(std::shared_ptr<AcceleratorBuffer> buffer,
   }
 
   std::vector<InstructionParameter> fParams;
-  for (int nP = 0; nP < 2 * nQubits * layers; nP++)
+  for (int nP = 0; nP < (nQubits + 2 * nQubits * layers); nP++)
     fParams.push_back(InstructionParameter("t" + std::to_string(nP)));
 
   auto provider = xacc::getService<IRProvider>("gate");
   auto f = provider->createFunction("hwe", {}, fParams);
   int angleCounter = 0;
-  for (int d = 0; d < layers; d++) {
-    
-    for (int q = 0; q < nQubits; q++) {
-      auto rx = provider->createInstruction(
-          "Ry", {q},
-          {InstructionParameter("t" + std::to_string(angleCounter))});
-      auto rz = provider->createInstruction(
-          "Rz", {q},
-          {InstructionParameter("t" + std::to_string(angleCounter + 1))});
-      f->addInstruction(rx);
-      f->addInstruction(rz);
-      angleCounter += 2;
-    }
 
+  // Zeroth layer, start with X rotations
+  for (int q = 0; q < nQubits; q++) {
+    auto rx = provider->createInstruction(
+        "Rx", {q}, {InstructionParameter("t" + std::to_string(angleCounter))});
+    f->addInstruction(rx);
+    angleCounter++;
+  }
+
+  for (int d = 0; d < layers; d++) {
     for (auto &p : connectivity) {
       auto cnot = provider->createInstruction("CNOT", {p.first, p.second});
       f->addInstruction(cnot);
     }
+    for (int q = 0; q < nQubits; q++) {
+      auto rx = provider->createInstruction(
+          "Rx", {q},
+          {InstructionParameter("t" + std::to_string(angleCounter))});
+      f->addInstruction(rx);
+
+      auto rz = provider->createInstruction(
+          "Rz", {q},
+          {InstructionParameter("t" + std::to_string(angleCounter + 1))});
+      f->addInstruction(rz);
+      angleCounter += 2;
+    }
   }
 
-//   std::cout << "THE FUNCTION:\n" << f->toString("q") << "\n";
+  //   std::cout << "THE FUNCTION:\n" << f->toString("q") << "\n";
   return f;
 }
 
