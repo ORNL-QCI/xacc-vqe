@@ -20,6 +20,22 @@ def QubitOperator2XACC(qubit_op):
             xaccOp += PauliOperator(v)
     return(xaccOp)
 
+def mapToPhysicalQubits(op, ansatz, logical2PhysicalMap):
+    n_qubits = max(logical2PhysicalMap) + 1
+    ir = op.toXACCIR()
+    xacc.setOption('qubit-map',','.join([str(i) for i in [3,4]]))
+    irp = xacc.getIRPreprocessor('qubit-map-preprocessor')
+    irp.process(ir)
+
+    ham = PauliOperator()
+    ham.fromXACCIR(ir)
+    
+    ansatzir = xacc.gate.createIR()
+    ansatzir.addKernel(ansatz)
+    irp.process(ansatzir)
+    xacc.unsetOption('qubit-map')
+    return ham, ansatz, n_qubits
+    
 class WrappedVQEF(xacc.WrappedF):
     def __init__(self, f, *args, **kwargs):
         xacc.WrappedF.__init__(self, f, *args, **kwargs)

@@ -69,7 +69,7 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
       b->addExtraInfo("parameters", paramsInfo);
       b->addExtraInfo("kernel", ExtraInfo(kernel->name()));
       b->addExtraInfo("exp-val-z", ExtraInfo(expval));
-      
+      b->addExtraInfo("coefficient", ExtraInfo(t));
       globalBuffer->appendChild(kernel->name(), b);
       count++;
     }
@@ -126,10 +126,13 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
         auto k = kernels[i];
         auto exp = results[i]->getExpectationValueZ();
         if (!isReadoutErrorKernel(k.getIRFunction()->getTag())) {
-          sum += exp * getCoeff(k);
+          auto t = getCoeff(k);
+          sum += exp * t;
           results[i]->addExtraInfo("parameters", paramsInfo);
           results[i]->addExtraInfo("kernel", ExtraInfo(k.getName()));
           results[i]->addExtraInfo("exp-val-z", ExtraInfo(exp));
+          results[i]->addExtraInfo("coefficient", ExtraInfo(t));
+
           globalBuffer->appendChild(k.getName(), results[i]);
         }
         if (k.getIRFunction()->getTag() != "readout-error") {

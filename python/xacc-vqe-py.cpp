@@ -415,6 +415,7 @@ PYBIND11_MODULE(_pyxaccvqe, m) {
 			.def("__repr__", &PauliOperator::toString)
 			.def("eval", &PauliOperator::eval)
 			.def("toXACCIR", &PauliOperator::toXACCIR)
+            .def("fromXACCIR", &PauliOperator::fromXACCIR)
 			.def("nTerms", &PauliOperator::nTerms)
 			.def("isClose", &PauliOperator::isClose)
 			.def("__len__", &PauliOperator::nTerms)
