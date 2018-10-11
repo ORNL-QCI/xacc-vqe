@@ -85,9 +85,13 @@ class WrappedVQEF(xacc.WrappedF):
                     ars = [
                         random.uniform(-pi, pi) for _ in range(compiledKernel.getIRFunction().nParameters())]
                 optargs = {'method': optimizer, 'options': {'disp': True}}
+                if 'options' in self.kwargs:
+                    print(self.kwargs['options'])
+                    optargs['options'] = self.kwargs['options']
                 if 'opt_params' in self.kwargs:
                     for k, v in self.kwargs['opt_params'].items():
                         optargs[k] = v
+                print(optargs)
                 opt_result = minimize(energy, ars, **optargs)
                 return
             else:

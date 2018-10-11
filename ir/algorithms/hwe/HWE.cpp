@@ -75,7 +75,7 @@ HWE::generate(std::shared_ptr<AcceleratorBuffer> buffer,
   }
 
   std::vector<InstructionParameter> fParams;
-  for (int nP = 0; nP < (nQubits + 2 * nQubits * layers); nP++)
+  for (int nP = 0; nP < (nQubits + 3 * nQubits * layers); nP++)
     fParams.push_back(InstructionParameter("t" + std::to_string(nP)));
 
   auto provider = xacc::getService<IRProvider>("gate");
@@ -96,16 +96,22 @@ HWE::generate(std::shared_ptr<AcceleratorBuffer> buffer,
       f->addInstruction(cnot);
     }
     for (int q = 0; q < nQubits; q++) {
+      auto rz1 = provider->createInstruction(
+          "Rz", {q},
+          {InstructionParameter("t" + std::to_string(angleCounter))});
+      f->addInstruction(rz1);
+      
       auto rx = provider->createInstruction(
           "Rx", {q},
-          {InstructionParameter("t" + std::to_string(angleCounter))});
+          {InstructionParameter("t" + std::to_string(angleCounter+1))});
       f->addInstruction(rx);
 
-      auto rz = provider->createInstruction(
+      auto rz2 = provider->createInstruction(
           "Rz", {q},
-          {InstructionParameter("t" + std::to_string(angleCounter + 1))});
-      f->addInstruction(rz);
-      angleCounter += 2;
+          {InstructionParameter("t" + std::to_string(angleCounter + 2))});
+      f->addInstruction(rz2);
+
+      angleCounter += 3;
     }
   }
 
