@@ -89,8 +89,16 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
         kernels.push_back(k);
       } else {
         // if it is identity, add its coeff to the energy sum
-        if (rank == 0)
+        if (rank == 0) {
           sum += getCoeff(k);
+
+          auto ibuff = qpu->createBuffer("I",globalBuffer->size());
+          ibuff->addExtraInfo("kernel",ExtraInfo("I"));
+          ibuff->addExtraInfo("exp-val-z",ExtraInfo(1.0));
+          ibuff->addExtraInfo("coefficient", ExtraInfo(getCoeff(k)));
+          ibuff->addExtraInfo("parameters", paramsInfo);
+          globalBuffer->appendChild("I", ibuff);
+        }
       }
     }
 
@@ -118,7 +126,7 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
       sum = result;
     } else {
       // Execute all nontrivial kernels!
-      auto results = kernels.execute(buf);
+      auto results = kernels.execute(globalBuffer);
       totalQpuCalls += qpu->isRemote() ? 1 : kernels.size();
 
       // Compute the energy
@@ -132,7 +140,7 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
           results[i]->addExtraInfo("kernel", ExtraInfo(k.getName()));
           results[i]->addExtraInfo("exp-val-z", ExtraInfo(exp));
           results[i]->addExtraInfo("coefficient", ExtraInfo(t));
-
+          
           globalBuffer->appendChild(k.getName(), results[i]);
         }
         if (k.getIRFunction()->getTag() != "readout-error") {
@@ -157,6 +165,7 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
       // from the measurement kernels
       for (auto &k : kernels)
         k.getIRFunction()->removeInstruction(0);
+
     }
   }
 
