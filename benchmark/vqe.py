@@ -1,56 +1,127 @@
 from pelix.ipopo.decorators import (ComponentFactory, Property, Requires,
-                                    BindField, UnbindField, Provides, Validate, 
+                                    BindField, UnbindField, Provides, Validate,
                                     Invalidate, Instantiate)
 import ast
 import configparser
 import xacc
 import xaccvqe
+from scipy.optimize import minimize
+import numpy as np
+import time
+import os
 from algorithm import Algorithm
+
 
 @ComponentFactory("vqe_algorithm_factory")
 @Provides("xacc_algorithm_service")
 @Property("_algorithm", "algorithm", "vqe")
 @Property("_name", "name", "vqe")
+@Requires("_ansatz_generator", "ansatz_generator_service", aggregate=True)
 @Requires("_molecule_generator", "molecule_generator_service", aggregate=True)
 @Instantiate("vqe_algorithm_instance")
 class VQE(Algorithm):
 
     def __init__(self):
-        
         # define the list of MoleculeGenerator services installed and available
         self.molecule_generators = {}
+        self.ansatz_generators = {}
 
     @Validate
     def validate(self, context):
         print("VQE Algorithm Validated")
 
-    @BindField('_molecule_generator')
-    def bind_dict(self, field, service, svc_ref):
-        
-        # Bind the molecule_generator properties of the MoleculeGenerator services installed and available
-        generator = svc_ref.get_property('molecule_generator')
-        self.molecule_generators[generator] = service
-
-    @UnbindField('_molecule_generator')
-    def unbind_dict(self, field, service, svc_ref):
-        
-        # Unbind the molecule_generator properties when bundle is dead
-        generator = svc_ref.get_property('molecule_generator')
-        del self.molecule_generators[generator]
-
     @Invalidate
     def invalidate(self, context):
         print("VQE Algorithm Invalidated")
 
+    @BindField('_ansatz_generator')
+    @BindField('_molecule_generator')
+    def bind_dicts(self, field, service, svc_ref):
+        if svc_ref.get_property('molecule_generator'):
+            generator = svc_ref.get_property('molecule_generator')
+            self.molecule_generators[generator] = service
+        elif svc_ref.get_property('ansatz_generator'):
+            generator = svc_ref.get_property('ansatz_generator')
+            self.ansatz_generators[generator] = service
+
+    @UnbindField('_ansatz_generator')
+    @UnbindField('_molecule_generator')
+    def unbind_dicts(self, field, service, svc_ref):
+
+        if svc_ref.get_property('molecule_generator'):
+            generator = svc_ref.get_property('molecule_generator')
+            del self.molecule_generators[generator]
+        elif svc_ref.get_property('ansatz_generator'):
+            generator = svc_ref.get_property('ansatz_generator')
+            del self.ansatz_generators[generator]
+
     def execute(self, inputParams):
         qpu = xacc.getAccelerator(inputParams['accelerator'])
-        ir_generator = xacc.getIRGenerator(inputParams['ansatz'])
-        xaccOp = self.molecule_generators[inputParams['molecule-generator']].generate(inputParams)
-        n_qubits = xaccOp.nQubits()
+        vqe_opts = {'task': 'vqe', 'accelerator': qpu.name()}
+        xaccOp = self.molecule_generators[inputParams['molecule-generator']].generate(
+            inputParams)
+        ansatz = self.ansatz_generators[inputParams['name']].generate(
+            inputParams, xaccOp.nQubits())
+
+        if 'qubit-map' in inputParams:
+            qubit_map = ast.literal_eval(inputParams['qubit-map'])
+            xaccOp, ansatz, n_qubits = xaccvqe.mapToPhysicalQubits(
+                xaccOp, ansatz, qubit_map)
+        else:
+            n_qubits = xaccOp.nQubits()
+
+        vqe_opts['ansatz'] = ansatz
         buffer = qpu.createBuffer('q', n_qubits)
-        function = ir_generator.generate(ast.literal_eval(inputParams['ansatz-params']))
-        results = xaccvqe.execute(xaccOp, buffer, **{'task': 'vqe', 'ansatz':function})
+        buffer.addExtraInfo('hamiltonian', str(xaccOp))
+
+        xacc.setOptions(inputParams)
+
+        if 'initial-parameters' in inputParams:
+            vqe_opts['vqe-params'] = inputParams['initial-parameters']
+        if (inputParams['optimizer'] != 'nelder-mead'):
+            if 'scipy' in inputParams['optimizer']:
+                scipy_opts = {}
+                scipy_opts['method'] = inputParams['optimizer'].replace('scipy-', '')
+                if 'tol' in inputParams:
+                    scipy_opts['tol'] = ast.literal_eval(inputParams['tol'])
+                if 'options' in inputParams:
+                    scipy_opts['options'] = ast.literal_eval(inputParams['options'])
+                else:
+                    scipy_opts['options'] = {'disp': True}
+                def energy(p):
+                    e = xaccvqe.execute(xaccOp, buffer, **{'task': 'compute-energy',
+                                                           'ansatz': ansatz,
+                                                           'vqe-params': str(p[0])+','+str(p[1]),
+                                                           'accelerator': qpu.name()}).energy
+                    return e
+                if 'initial-parameters' in inputParams:
+                    init_params = ast.literal_eval(inputParams['initial-parameters'])
+                else:
+                    init_params = np.random.uniform(
+                        low=-np.pi, high=np.pi, size=(ansatz.nParameters(),))
+                print(str(scipy_opts))
+                opt_result = minimize(
+                    energy, init_params, **scipy_opts)
+                return buffer
+            else:
+                xacc.setOption('vqe-backend', inputParams['optimizer'])
+
+        result = xaccvqe.execute(xaccOp, buffer, **vqe_opts)
         return buffer
 
     def analyze(self, buffer, inputParams):
-        print(buffer.getInformation())
+        ps = buffer.getAllUnique('parameters')
+        timestr = time.strftime("%Y%m%d-%H%M%S")
+        csv_name = "%s_%s_%s_%s" % (os.path.splitext(buffer.getInformation('file-name'))[0],
+                                    buffer.getInformation('accelerator'),
+                                    'vqe', timestr)
+        f = open(csv_name+".csv", 'w')
+        for p in ps:
+            f.write(str(p).replace('[', '').replace(']', ''))
+            energy = 0.0
+            for c in buffer.getChildren('parameters', p):
+                exp = c.getInformation('exp-val-z')
+                energy += exp * c.getInformation('coefficient')
+                f.write(','+str(c.getInformation('exp-val-z')))
+            f.write(','+str(energy)+'\n')
+        f.close()

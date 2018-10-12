@@ -72,6 +72,8 @@ endif()
 
 install(TARGETS xacc-vqe DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 
+install(FILES ${CMAKE_SOURCE_DIR}/benchmark/vqe_energy.py DESTINATION ${CMAKE_INSTALL_PREFIX}/py-plugins)
+install(FILES ${CMAKE_SOURCE_DIR}/benchmark/vqe.py DESTINATION ${CMAKE_INSTALL_PREFIX}/py-plugins)
 configure_file("${CMAKE_SOURCE_DIR}/cmake/xaccvqe-config.cmake.in" "${CMAKE_BINARY_DIR}/xaccvqe-config.cmake" @ONLY)
 install(FILES "${CMAKE_BINARY_DIR}/xaccvqe-config.cmake" DESTINATION ${CMAKE_INSTALL_PREFIX})
 install( DIRECTORY "${CMAKE_SOURCE_DIR}/tpls/cppnumericalsolvers/cppoptlib" DESTINATION ${CMAKE_INSTALL_PREFIX}/include )
