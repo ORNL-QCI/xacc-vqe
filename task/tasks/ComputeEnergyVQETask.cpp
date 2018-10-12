@@ -69,7 +69,6 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
       b->addExtraInfo("parameters", paramsInfo);
       b->addExtraInfo("kernel", ExtraInfo(kernel->name()));
       b->addExtraInfo("exp-val-z", ExtraInfo(expval));
-      b->addExtraInfo("ro-fixed-exp-val-z", ExtraInfo(expval));
       b->addExtraInfo("coefficient", ExtraInfo(t));
       globalBuffer->appendChild(kernel->name(), b);
       count++;
@@ -98,6 +97,8 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
           ibuff->addExtraInfo("exp-val-z",ExtraInfo(1.0));
           ibuff->addExtraInfo("coefficient", ExtraInfo(getCoeff(k)));
           ibuff->addExtraInfo("parameters", paramsInfo);
+          ibuff->addExtraInfo("ro-fixed-exp-val-z", ExtraInfo(1.0));
+
           globalBuffer->appendChild("I", ibuff);
         }
       }
