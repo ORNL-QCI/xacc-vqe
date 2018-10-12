@@ -74,10 +74,12 @@ class WrappedVQEF(xacc.WrappedF):
                 from scipy.optimize import minimize
                 execParams['task'] = 'compute-energy'
 
+                energies = []
                 def energy(params):
                     pStr = getParams(params)
                     execParams['vqe-params'] = pStr
                     e = execute(obs, buffer, **execParams).energy
+                    energies.append(e)
                     return e
                 if len(ars) == 0:
                     import random
@@ -93,6 +95,7 @@ class WrappedVQEF(xacc.WrappedF):
                         optargs[k] = v
                 print(optargs)
                 opt_result = minimize(energy, ars, **optargs)
+                buffer.addExtraInfo('vqe-energies',energies)
                 return
             else:
                 xacc.setOption('vqe-backend', optimizer)
