@@ -228,6 +228,9 @@ public:
   std::vector<Triplet> getSparseMatrixElements(const int nQubits);
 
   ActionResult action(const std::string &bitString, ActionType type);
+
+  std::pair<std::vector<int>, std::vector<int>>
+  toBinaryVector(const int nQubits);
 };
 
 class PauliOperator

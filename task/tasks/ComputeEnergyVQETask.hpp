@@ -41,7 +41,8 @@ public:
         "Compute Energy VQE Task Options");
     desc->add_options()("vqe-use-mpi", "Use MPI distributed execution.")(
         "vqe-persist-data", value<std::string>(),
-        "Base file name for buffer data.");
+        "Base file name for buffer data.")
+        ("converge-ro-error", value<std::string>(), "Use ro-fixed-exp-val-z to compute energy.");
     return desc;
   }
 

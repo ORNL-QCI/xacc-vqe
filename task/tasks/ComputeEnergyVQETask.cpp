@@ -134,13 +134,19 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
       // Compute the energy
       for (int i = 0; i < results.size(); ++i) {
         auto k = kernels[i];
-        auto exp = results[i]->getExpectationValueZ();
+        double exp = 0.0;
+        if (xacc::optionExists("converge-ro-error") && results[i]->hasExtraInfoKey("ro-fixed-exp-val-z")) {
+            exp = boost::get<double>(results[i]->getInformation("ro-fixed-exp-val-z"));
+            results[i]->addExtraInfo("exp-val-z", ExtraInfo(results[i]->getExpectationValueZ()));
+        } else {
+            exp = results[i]->getExpectationValueZ();
+            results[i]->addExtraInfo("exp-val-z", ExtraInfo(exp));
+        }
         if (!isReadoutErrorKernel(k.getIRFunction()->getTag())) {
           auto t = getCoeff(k);
           sum += exp * t;
           results[i]->addExtraInfo("parameters", paramsInfo);
           results[i]->addExtraInfo("kernel", ExtraInfo(k.getName()));
-          results[i]->addExtraInfo("exp-val-z", ExtraInfo(exp));
           results[i]->addExtraInfo("coefficient", ExtraInfo(t));
           
           globalBuffer->appendChild(k.getName(), results[i]);

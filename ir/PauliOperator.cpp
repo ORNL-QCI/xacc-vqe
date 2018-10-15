@@ -69,6 +69,27 @@ PauliOperator::PauliOperator(std::map<int, std::string> operators,
                 std::forward_as_tuple(coeff, var, operators));
 }
 
+std::pair<std::vector<int>, std::vector<int>>
+Term::toBinaryVector(const int nQubits) {
+  // return v,w
+  std::vector<int> v(nQubits), w(nQubits);
+
+  for (auto &kv : ops()) {
+    auto site = kv.first;
+    auto pauli = kv.second;
+    if (pauli == "X") {
+      w[site] = 1;
+    } else if (pauli == "Z") {
+      v[site] = 1;
+    } else if (pauli == "Y") {
+      v[site] = 1;
+      w[site] = 1;
+    }
+  }
+
+  return {v, w};
+}
+
 std::vector<Triplet> PauliOperator::getSparseMatrixElements() {
 
   // Get number of qubits
@@ -297,8 +318,8 @@ std::vector<Triplet> Term::getSparseMatrixElements(const int nQubits) {
           bits.push_back(i);
         }
 
-        //					if (bitmask[i]) std::cout << " " <<
-        //i;
+        //					if (bitmask[i]) std::cout << " "
+        //<< i;
       }
 
       bool add = true;
@@ -353,7 +374,7 @@ std::vector<Triplet> Term::getSparseMatrixElements(const int nQubits) {
       auto x = (c % 2);
 
       //			Now I know the Operator and whether this is hte
-      //0 or 1st term for that op
+      // 0 or 1st term for that op
 
       auto term = subterms[ithOp][x];
 
@@ -373,7 +394,6 @@ std::vector<Triplet> Term::getSparseMatrixElements(const int nQubits) {
       }
     }
 
-    std::cout << "HEY WORLD: " << bra << ", " << ket << "\n";
     // now convert bra and ket into integers
     auto row = std::stol(bra, nullptr, 2);
     auto col = std::stol(ket, nullptr, 2);
