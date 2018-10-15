@@ -9,7 +9,7 @@ from scipy.optimize import minimize
 import numpy as np
 import time
 import os
-from algorithm import Algorithm
+from xacc import Algorithm
 
 
 @ComponentFactory("vqe_algorithm_factory")
@@ -73,7 +73,10 @@ class VQE(Algorithm):
         vqe_opts['ansatz'] = ansatz
         buffer = qpu.createBuffer('q', n_qubits)
         buffer.addExtraInfo('hamiltonian', str(xaccOp))
-
+ 
+        if 'readout-error' in inputParams and inputParams['readout-error']:
+            qpu = xacc.getAcceleratorDecorator('ro-error',qpu)
+  
         xacc.setOptions(inputParams)
 
         if 'initial-parameters' in inputParams:
@@ -88,11 +91,17 @@ class VQE(Algorithm):
                     scipy_opts['options'] = ast.literal_eval(inputParams['options'])
                 else:
                     scipy_opts['options'] = {'disp': True}
+
+                energies = []
+                paramStrings = []
                 def energy(p):
+                    paramStr = ','.join([str(x) for x in p])
                     e = xaccvqe.execute(xaccOp, buffer, **{'task': 'compute-energy',
                                                            'ansatz': ansatz,
-                                                           'vqe-params': str(p[0])+','+str(p[1]),
+                                                           'vqe-params':paramStr,
                                                            'accelerator': qpu.name()}).energy
+                    energies.append(e)
+                    paramStrings.append(paramStr)
                     return e
                 if 'initial-parameters' in inputParams:
                     init_params = ast.literal_eval(inputParams['initial-parameters'])
@@ -102,6 +111,8 @@ class VQE(Algorithm):
                 print(str(scipy_opts))
                 opt_result = minimize(
                     energy, init_params, **scipy_opts)
+                buffer.addExtraInfo('vqe-energies',energies)
+                buffer.addExtraInfo('vqe-parameters',paramStrings)
                 return buffer
             else:
                 xacc.setOption('vqe-backend', inputParams['optimizer'])

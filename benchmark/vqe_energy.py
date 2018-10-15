@@ -8,7 +8,7 @@ import xacc
 import xaccvqe
 import time
 import os
-from algorithm import Algorithm
+from xacc import Algorithm
 
 @ComponentFactory("VQE_energy_algorithm_factory")
 @Provides("xacc_algorithm_service")
@@ -67,12 +67,15 @@ class VQEEnergy(Algorithm):
         else:
             n_qubits = xaccOp.nQubits()
 
+        if 'readout-error' in inputParams and inputParams['readout-error']:
+            qpu = xacc.getAcceleratorDecorator('ro-error',qpu)
+            
         xacc.setOptions(inputParams)
         
         buffer = qpu.createBuffer('q', n_qubits)
         results = xaccvqe.execute(xaccOp, buffer, **{'task': 'compute-energy',
                                                      'ansatz': ansatz,
-                                                     'vqe-params': inputParams['initial-parameters'],
+                                                     'vqe-params': ','.join([str(x) for x in ast.literal_eval(inputParams['initial-parameters'])]),
                                                      'accelerator': qpu.name()})
         return buffer
 
