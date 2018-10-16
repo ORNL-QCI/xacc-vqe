@@ -76,7 +76,7 @@ class VQEEnergy(Algorithm):
         results = xaccvqe.execute(xaccOp, buffer, **{'task': 'compute-energy',
                                                      'ansatz': ansatz,
                                                      'vqe-params': ','.join([str(x) for x in ast.literal_eval(inputParams['initial-parameters'])]),
-                                                     'accelerator': qpu.name()})
+                                                     'accelerator': qpu})
         return buffer
 
     def analyze(self, buffer, inputParams):

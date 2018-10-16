@@ -57,7 +57,6 @@ class VQE(Algorithm):
 
     def execute(self, inputParams):
         qpu = xacc.getAccelerator(inputParams['accelerator'])
-        vqe_opts = {'task': 'vqe', 'accelerator': qpu.name()}
         xaccOp = self.molecule_generators[inputParams['molecule-generator']].generate(
             inputParams)
         ansatz = self.ansatz_generators[inputParams['name']].generate(
@@ -77,10 +76,13 @@ class VQE(Algorithm):
         if 'readout-error' in inputParams and inputParams['readout-error']:
             qpu = xacc.getAcceleratorDecorator('ro-error',qpu)
   
+       vqe_opts = {'task': 'vqe', 'accelerator': qpu}
+
         xacc.setOptions(inputParams)
 
         if 'initial-parameters' in inputParams:
             vqe_opts['vqe-params'] = inputParams['initial-parameters']
+        
         if (inputParams['optimizer'] != 'nelder-mead'):
             if 'scipy' in inputParams['optimizer']:
                 scipy_opts = {}
@@ -99,7 +101,7 @@ class VQE(Algorithm):
                     e = xaccvqe.execute(xaccOp, buffer, **{'task': 'compute-energy',
                                                            'ansatz': ansatz,
                                                            'vqe-params':paramStr,
-                                                           'accelerator': qpu.name()}).energy
+                                                           'accelerator': qpu}).energy
                     energies.append(e)
                     paramStrings.append(paramStr)
                     return e

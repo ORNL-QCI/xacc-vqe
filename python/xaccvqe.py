@@ -52,8 +52,7 @@ class WrappedVQEF(xacc.WrappedF):
         compiledKernel = program.getKernels()[0]
 
         def getParams(params): return ','.join(map(str, params))
-        execParams = {'accelerator': qpu.name(
-        ), 'ansatz': compiledKernel.getIRFunction(), 'task': 'vqe'}
+        execParams = {'accelerator': qpu, 'ansatz': compiledKernel.getIRFunction(), 'task': 'vqe'}
         obs = self.kwargs['observable']
         ars = list(args)
 
@@ -123,8 +122,7 @@ class WrappedEnergyF(xacc.WrappedF):
 
         def getParams(params): return ','.join(map(str, params))
 
-        execParams = {'accelerator': qpu.name(
-        ), 'ansatz': compiledKernel.getIRFunction(), 'task': 'compute-energy'}
+        execParams = {'accelerator': qpu, 'ansatz': compiledKernel.getIRFunction(), 'task': 'compute-energy'}
         obs = self.kwargs['observable']
         ars = list(args)
 
