@@ -69,14 +69,13 @@ class VQE(Algorithm):
         else:
             n_qubits = xaccOp.nQubits()
 
-        vqe_opts['ansatz'] = ansatz
         buffer = qpu.createBuffer('q', n_qubits)
         buffer.addExtraInfo('hamiltonian', str(xaccOp))
  
         if 'readout-error' in inputParams and inputParams['readout-error']:
             qpu = xacc.getAcceleratorDecorator('ro-error',qpu)
   
-       vqe_opts = {'task': 'vqe', 'accelerator': qpu}
+        vqe_opts = {'task': 'vqe', 'accelerator': qpu, 'ansatz':ansatz}
 
         xacc.setOptions(inputParams)
 

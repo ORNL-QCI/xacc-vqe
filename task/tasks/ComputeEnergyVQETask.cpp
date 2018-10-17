@@ -34,16 +34,11 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
   auto evaluatedStatePrep = statePrep->operator()(parameters);
   auto optPrep = evaluatedStatePrep->enabledView();
 
-  globalBuffer->addExtraInfo("circuit-depth",optPrep->depth());
+  globalBuffer->addExtraInfo("circuit-depth", optPrep->depth());
   auto qasmStr = optPrep->toString("q");
-  boost::replace_all(qasmStr, "\\n","\\\\n");
+  boost::replace_all(qasmStr, "\\n", "\\\\n");
   globalBuffer->addExtraInfo("ansatz-qasm", qasmStr);
-  
-//   xacc::info("StatePrep:\n" + optPrep->toString("q"));
-  // Utility functions for readability
-  auto isReadoutErrorKernel = [](const std::string &tag) -> bool {
-    return boost::contains(tag, "readout-error");
-  };
+
   auto getCoeff = [](Kernel<> &k) -> double {
     return std::real(
         boost::get<std::complex<double>>(k.getIRFunction()->getParameter(0)));
@@ -75,26 +70,27 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
     }
     // globalBuffer->appendChild(k)
     xacc::setOption("tnqvm-reset-visitor", "true");
-  } else {
+  } else { // NOT TNQVM
+
     // Create an empty KernelList to be filled
     // with non-trivial kernels
     KernelList<> kernels(qpu);
     // kernels.setBufferPostprocessors(program->getBufferPostprocessors());
     for (auto &k : program->getVQEKernels()) {
-      if (k.getIRFunction()->nInstructions() > 0) {
+      if (k.getIRFunction()->nInstructions() > 0) { // IF NOT IDENTITY TERM
         // If not identity, add the state prep to the circuit
         if (k.getIRFunction()->getTag() != "readout-error") {
           k.getIRFunction()->insertInstruction(0, optPrep);
         }
         kernels.push_back(k);
-      } else {
+      } else { // IF IS IDENTITY TERM
         // if it is identity, add its coeff to the energy sum
         if (rank == 0) {
           sum += getCoeff(k);
 
-          auto ibuff = qpu->createBuffer("I",globalBuffer->size());
-          ibuff->addExtraInfo("kernel",ExtraInfo("I"));
-          ibuff->addExtraInfo("exp-val-z",ExtraInfo(1.0));
+          auto ibuff = qpu->createBuffer("I", globalBuffer->size());
+          ibuff->addExtraInfo("kernel", ExtraInfo("I"));
+          ibuff->addExtraInfo("exp-val-z", ExtraInfo(1.0));
           ibuff->addExtraInfo("coefficient", ExtraInfo(getCoeff(k)));
           ibuff->addExtraInfo("parameters", paramsInfo);
           ibuff->addExtraInfo("ro-fixed-exp-val-z", ExtraInfo(1.0));
@@ -104,19 +100,16 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
       }
     }
 
-    // Allocate some qubits
-    auto buf = qpu->createBuffer("tmp", nQubits);
-
     // We can do this in parallel or serially
     if (xacc::optionExists("vqe-use-mpi")) {
+      // Allocate some qubits
+      auto buf = qpu->createBuffer("tmp", nQubits);
       int myStart = (rank)*kernels.size() / nRanks;
       int myEnd = (rank + 1) * kernels.size() / nRanks;
       for (int i = myStart; i < myEnd; i++) {
         kernels[i](buf);
         totalQpuCalls++;
-        if (!isReadoutErrorKernel(kernels[i].getIRFunction()->getTag())) {
-          sum += getCoeff(kernels[i]) * buf->getExpectationValueZ();
-        }
+        sum += getCoeff(kernels[i]) * buf->getExpectationValueZ();
         buf->resetBuffer();
       }
 
@@ -126,7 +119,8 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
       comm->sumInts(totalQpuCalls, ncalls);
       totalQpuCalls = ncalls;
       sum = result;
-    } else {
+    } else { // THIS IS NOT TNQVM AND NOT MPI
+
       // Execute all nontrivial kernels!
       auto results = kernels.execute(globalBuffer);
       totalQpuCalls += qpu->isRemote() ? 1 : kernels.size();
@@ -135,45 +129,31 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
       for (int i = 0; i < results.size(); ++i) {
         auto k = kernels[i];
         double exp = 0.0;
-        if (xacc::optionExists("converge-ro-error") && results[i]->hasExtraInfoKey("ro-fixed-exp-val-z")) {
-            exp = boost::get<double>(results[i]->getInformation("ro-fixed-exp-val-z"));
-            results[i]->addExtraInfo("exp-val-z", ExtraInfo(results[i]->getExpectationValueZ()));
-        } else {
-            exp = results[i]->getExpectationValueZ();
-            results[i]->addExtraInfo("exp-val-z", ExtraInfo(exp));
+        if (xacc::optionExists("converge-ro-error") && 
+            results[i]->hasExtraInfoKey("ro-fixed-exp-val-z")) {
+          exp = boost::get<double>(
+              results[i]->getInformation("ro-fixed-exp-val-z"));
+          results[i]->addExtraInfo(
+              "exp-val-z", ExtraInfo(results[i]->getExpectationValueZ()));
+        } else { // GET THE REGULAR EXP VALUE, NOT RO-FIXED
+          exp = results[i]->getExpectationValueZ();
+          results[i]->addExtraInfo("exp-val-z", ExtraInfo(exp));
         }
-        if (!isReadoutErrorKernel(k.getIRFunction()->getTag())) {
-          auto t = getCoeff(k);
-          sum += exp * t;
-          results[i]->addExtraInfo("parameters", paramsInfo);
-          results[i]->addExtraInfo("kernel", ExtraInfo(k.getName()));
-          results[i]->addExtraInfo("coefficient", ExtraInfo(t));
-          
-          globalBuffer->appendChild(k.getName(), results[i]);
-        }
-        if (k.getIRFunction()->getTag() != "readout-error") {
-          expVals.insert({k.getName(), exp});
-        } else if (xacc::optionExists("correct-readout-errors")) {
-          auto name = k.getName(); // Qubit_{0,1}
-          std::vector<std::string> split;
-          boost::split(split, name, boost::is_any_of("_"));
-          auto qbit = std::stoi(split[0]);
-          auto zero_one = std::stoi(split[1]);
-          std::string bitstr = "";
-          for (int i = 0; i < nQubits; i++)
-            bitstr += "0";
-          if (zero_one == 0)
-            bitstr[nQubits - qbit - 1] = '1';
-          auto prob = results[i]->computeMeasurementProbability(bitstr);
-          readoutProbs.insert({"p_" + name, std::isnan(prob) ? 0.0 : prob});
-        }
+
+        auto t = getCoeff(k);
+        sum += exp * t;
+        results[i]->addExtraInfo("parameters", paramsInfo);
+        results[i]->addExtraInfo("kernel", ExtraInfo(k.getName()));
+        results[i]->addExtraInfo("coefficient", ExtraInfo(t));
+
+        globalBuffer->appendChild(k.getName(), results[i]);
+        expVals.insert({k.getName(), exp});
       }
 
       // Clean up by removing the state prep
       // from the measurement kernels
       for (auto &k : kernels)
         k.getIRFunction()->removeInstruction(0);
-
     }
   }
 
@@ -190,8 +170,11 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
   auto added = globalBuffer->addExtraInfo(
       "vqe-energy", ExtraInfo(sum),
       [&](ExtraInfo &i) -> bool { return sum < boost::get<double>(i); });
-  if (added)
+      
+  if (added) {
     globalBuffer->addExtraInfo("vqe-angles", paramsInfo);
+  }
+  
   globalBuffer->addExtraInfo("vqe-nQPU-calls", ExtraInfo(totalQpuCalls));
 
   // See if the user requested data persisitence

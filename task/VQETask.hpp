@@ -80,22 +80,10 @@ public:
 		program = p;
 	}
 
-	/**
-	 * Return an empty options_description, this is for
-	 * subclasses to implement.
-	 */
 	virtual std::shared_ptr<options_description> getOptions() {
 		return std::make_shared<options_description>();
 	}
 
-	/**
-	 * Given user-input command line options, perform
-	 * some operation. Returns true if runtime should exit,
-	 * false otherwise.
-	 *
-	 * @param map The mapping of options to values
-	 * @return exit True if exit, false otherwise
-	 */
 	virtual bool handleOptions(variables_map& map) {
 		return false;
 	}
