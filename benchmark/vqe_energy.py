@@ -73,7 +73,11 @@ class VQEEnergy(Algorithm):
             
         if 'readout-error' in inputParams and inputParams['readout-error']:
             qpu = xacc.getAcceleratorDecorator('ro-error',qpu)
-            
+
+        if 'n-execs' in inputParams:
+            xacc.setOption('sampler-n-execs', inputParams['n-execs'])
+            qpu = xacc.getAcceleratorDecorator('improved-sampling', qpu)
+           
         xacc.setOptions(inputParams)
         
         buffer = qpu.createBuffer('q', n_qubits)
