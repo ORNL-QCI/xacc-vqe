@@ -66,17 +66,18 @@ class VQEEnergy(Algorithm):
                 xaccOp, ansatz, qubit_map)
         else:
             n_qubits = xaccOp.nQubits()
-
+        vqe_opts = {'task': 'compute-energy', 'ansatz': ansatz, 'accelerator': qpu}
+        
+        if 'initial-parameters' in inputParams:
+            vqe_opts['vqe-params'] = ','.join([str(x) for x in ast.literal_eval(inputParams['initial-parameters'])])
+            
         if 'readout-error' in inputParams and inputParams['readout-error']:
             qpu = xacc.getAcceleratorDecorator('ro-error',qpu)
             
         xacc.setOptions(inputParams)
         
         buffer = qpu.createBuffer('q', n_qubits)
-        results = xaccvqe.execute(xaccOp, buffer, **{'task': 'compute-energy',
-                                                     'ansatz': ansatz,
-                                                     'vqe-params': ','.join([str(x) for x in ast.literal_eval(inputParams['initial-parameters'])]),
-                                                     'accelerator': qpu})
+        results = xaccvqe.execute(xaccOp, buffer, **vqe_opts)
         return buffer
 
     def analyze(self, buffer, inputParams):
