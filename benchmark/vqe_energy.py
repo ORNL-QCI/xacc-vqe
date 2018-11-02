@@ -102,3 +102,8 @@ class VQEEnergy(Algorithm):
                 f.write(','+str(c.getInformation('exp-val-z')))
             f.write(','+str(energy)+'\n')
         f.close()
+        if 'hf-energy' in inputParams:
+            hf_energy = ast.literal_eval(inputParams['hf-energy'])
+            energy = buffer.getInformation('vqe-energy')
+            correlation_energy = energy - hf_energy
+            buffer.addExtraInfo('correlation-energy', correlation_energy)        
