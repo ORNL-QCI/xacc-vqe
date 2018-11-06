@@ -112,10 +112,14 @@ class WrappedEnergyF(xacc.WrappedF):
     def __call__(self, *args, **kwargs):
         src = '\n'.join(inspect.getsource(self.function).split('\n')[1:])
         compiler = xacc.getCompiler('xacc-py')
-        if isinstance(self.kwargs['accelerator'], xacc.Accelerator):
-            qpu = self.kwargs['accelerator']
+        if self.accelerator == None:
+            if isinstance(self.kwargs['accelerator'], xacc.Accelerator):
+                qpu = self.kwargs['accelerator']
+            else:
+                qpu = xacc.getAccelerator(self.kwargs['accelerator'])
         else:
-            qpu = xacc.getAccelerator(self.kwargs['accelerator'])
+            qpu = self.accelerator
+            
         ir = compiler.compile(src, qpu)
         program = xacc.Program(qpu, ir)
         compiledKernel = program.getKernels()[0]
