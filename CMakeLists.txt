@@ -56,6 +56,7 @@ add_subdirectory(ir)
 add_subdirectory(transformations)
 add_subdirectory(compiler)
 add_subdirectory(task)
+add_subdirectory(decorators)
 
 if(PYTHON_INCLUDE_DIR)
    include_directories(${PYTHON_INCLUDE_DIR})

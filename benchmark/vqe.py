@@ -76,11 +76,19 @@ class VQE(Algorithm):
         self.n_qubits = n_qubits
         buffer = qpu.createBuffer('q', n_qubits)
         buffer.addExtraInfo('hamiltonian', str(xaccOp))
-
+        buffer.addExtraInfo('ansatz-qasm', ansatz.toString('q').replace('\\n', '\\\\n'))
+        pycompiler = xacc.getCompiler('xacc-py')
+        buffer.addExtraInfo('ansatz-qasm-py', '\n'.join(pycompiler.translate('q',ansatz).split('\n')[1:]))
+            
         if 'n-execs' in inputParams:
             xacc.setOption('sampler-n-execs', inputParams['n-execs'])
             qpu = xacc.getAcceleratorDecorator('improved-sampling', qpu)
-            
+
+        if 'restart-from-file' in inputParams:
+            xacc.setOption('vqe-restart-file', inputParams['restart-from-file'])
+            qpu = xacc.getAcceleratorDecorator('vqe-restart',qpu)
+            qpu.initialize()
+                        
         if 'readout-error' in inputParams and inputParams['readout-error']:
             qpu = xacc.getAcceleratorDecorator('ro-error',qpu) 
             

@@ -37,7 +37,7 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
   globalBuffer->addExtraInfo("circuit-depth", optPrep->depth());
   auto qasmStr = optPrep->toString("q");
   boost::replace_all(qasmStr, "\\n", "\\\\n");
-  globalBuffer->addExtraInfo("ansatz-qasm", qasmStr);
+//   globalBuffer->addExtraInfo("ansatz-qasm", qasmStr);
 
   auto getCoeff = [](Kernel<> &k) -> double {
     return std::real(
