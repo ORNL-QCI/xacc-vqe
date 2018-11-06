@@ -217,6 +217,62 @@ const std::string PauliOperator::toString() {
   return r;
 }
 
+void PauliOperator::fromString(const std::string str) {
+  // We expect strings like this
+  // (-0.00944179,0) Z1 X2 X3 + (0.0816923,0) Z2 Z3 ..
+  std::vector<std::string> splitPlus, splitSpace;
+
+  boost::split(splitPlus, str, boost::is_any_of("+"));
+
+  clear();
+
+  for (auto &termStr : splitPlus) {
+    boost::trim(termStr);
+    boost::split(splitSpace, termStr, boost::is_any_of(" "));
+    std::vector<std::string> splitComma;
+    int startIdx = 0;
+
+    std::complex<double> coeff(1, 0);
+    if (boost::contains(termStr, "(") && boost::contains(termStr, ")")) {
+      auto coeffStr = splitSpace[0];
+      boost::replace_all(coeffStr, "(", "");
+      boost::replace_all(coeffStr, ")", "");
+      boost::split(splitComma, coeffStr, boost::is_any_of(","));
+      coeff = std::complex<double>(std::stod(splitComma[0]),
+                                   std::stod(splitComma[1]));
+      startIdx = 1;
+    }
+
+    std::map<int, std::string> terms;
+    for (int i = startIdx; i < splitSpace.size(); i++) {
+      std::string pauliOpStr = splitSpace[i];
+      std::string pauli = std::string(1, pauliOpStr[0]);
+      int index = 0;
+      if (pauli != "I") {
+        index = std::stoi(pauliOpStr.substr(1, pauliOpStr.size()));
+      }
+      terms.insert({index, pauli});
+    }
+
+    operator+=(PauliOperator(terms, coeff));
+  }
+}
+
+bool PauliOperator::contains(PauliOperator &op) {
+  if (op.nTerms() > 1)
+    xacc::error("Cannot check PauliOperator.contains for more than 1 term.");
+  for (auto &term : getTerms()) {
+    if (op.terms.count(term.first)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool PauliOperator::commutes(PauliOperator &op) {
+  return (op * (*this) - (*this) * op).nTerms() == 0;
+}
+
 void PauliOperator::clear() { terms.clear(); }
 
 PauliOperator &PauliOperator::operator+=(const PauliOperator &v) noexcept {
@@ -560,23 +616,28 @@ void PauliOperator::fromXACCIR(std::shared_ptr<IR> ir) {
   for (auto &kernel : ir->getKernels()) {
     std::map<int, std::string> pauliTerm;
     for (auto inst : kernel->getInstructions()) {
-      bool seen = false;
-      if (inst->name() == "H") {
-        pauliTerm.insert({inst->bits()[0], "X"});
-      } else if (inst->name() == "Rx") {
-        pauliTerm.insert({inst->bits()[0], "Y"});
-      }
 
-      if (pauliTerm.count(inst->bits()[0]) == 0) {
-        pauliTerm.insert({inst->bits()[0], "Z"});
+      bool seen = false;
+      if (!inst->isComposite()) {
+
+        if (inst->name() == "H") {
+          pauliTerm.insert({inst->bits()[0], "X"});
+        } else if (inst->name() == "Rx") {
+          pauliTerm.insert({inst->bits()[0], "Y"});
+        }
+
+        if (pauliTerm.count(inst->bits()[0]) == 0) {
+          pauliTerm.insert({inst->bits()[0], "Z"});
+        }
       }
     }
-
     std::complex<double> c(1, 0);
     if (kernel->nParameters() > 0) {
       c = boost::get<std::complex<double>>(kernel->getParameter(0));
     }
 
+    if (pauliTerm.empty()) pauliTerm.insert({0,"I"});
+    
     Term t(c, pauliTerm);
     terms.insert({t.id(), t});
   }

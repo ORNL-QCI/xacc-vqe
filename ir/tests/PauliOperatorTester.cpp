@@ -348,7 +348,6 @@ TEST(PauliOperatorTester,checkFromXACCIR) {
 
 	using namespace xacc;
 
-	xacc::Initialize();
 	auto gateRegistry = xacc::getService<IRProvider>("gate");
 	auto f = gateRegistry->createFunction("f", {}, {});
 	auto f2 = gateRegistry->createFunction("f2", {}, {});
@@ -401,10 +400,67 @@ TEST(PauliOperatorTester,checkFromXACCIR) {
 
 	std::cout << "HEY: " << op.toString() << "\n";
 
-	xacc::Finalize();
 }
 
+TEST(PauliOperatorTester,checkFromXACCIR2) {
+
+    PauliOperator op;
+    op.fromString("I + Z0 Z1 + X0 X1 + Y0 Y1 + Z0 + Z1");
+
+    std::cout << "OP ON OUR SIDE IS " << op.toString() << "\n";
+    auto measureFunctions = op.toXACCIR()->getKernels();
+    // for (auto& m : measureFunctions) {
+    //     m->insertInstruction(0,f);
+    // }
+
+    auto ir = xacc::getService<xacc::IRProvider>("gate")->createIR();
+  for (auto& f : measureFunctions) {
+      ir->addKernel(f);
+  }
+  PauliOperator H;
+  H.fromXACCIR(ir);
+  std::cout << "H is\n" << H.toString() << "\n";
+
+  EXPECT_TRUE(H == op);
+
+}
+TEST(PauliOperatorTester,checkFromStr) {
+   const std::string s = "(-.00944179,0) Z1 X2 X3 + (0.0816923,0) Z2 Z3";
+   PauliOperator op;
+   op.fromString(s);
+
+   PauliOperator expected({{1,"Z"},{2,"X"},{3,"X"}}, -0.00944179);
+   expected += PauliOperator({{2,"Z"},{3,"Z"}}, 0.0816923);
+   
+   EXPECT_TRUE(op == expected);
+}
+
+TEST(PauliOperatorTester,checkContainsTerm) {
+   const std::string s = "(-.00944179,0) Z1 X2 X3 + (0.0816923,0) Z2 Z3";
+   PauliOperator op;
+   op.fromString(s);
+
+   PauliOperator subOp({{1,"Z"},{2,"X"},{3,"X"}}, -0.00944179);
+   PauliOperator subOp2({{2,"X"},{3,"X"}}, -0.00944179);
+
+   EXPECT_TRUE(op.contains(subOp));
+   EXPECT_FALSE(op.contains(subOp2));
+}
+
+TEST(PauliOperatorTester,checkCommutes) {
+    PauliOperator op;
+    op.fromString("I + Z0 + Z1 + X0 X1 + Y0 Y1 + Z0 Z1");
+
+    PauliOperator zz({{0,"Z"},{1,"Z"}});
+    PauliOperator y({{0,"Y"}});
+    
+    EXPECT_TRUE(op.commutes(zz));
+    EXPECT_FALSE(PauliOperator({{0,"X"}}).commutes(y));
+}
 int main(int argc, char** argv) {
+    xacc::Initialize(argc,argv);
    ::testing::InitGoogleTest(&argc, argv);
-   return RUN_ALL_TESTS();
+   auto ret = RUN_ALL_TESTS();
+   xacc::Finalize();
+   return ret;
 }

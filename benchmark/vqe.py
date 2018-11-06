@@ -11,7 +11,6 @@ import time
 import os
 from xacc import Algorithm
 
-
 @ComponentFactory("vqe_algorithm_factory")
 @Provides("xacc_algorithm_service")
 @Property("_algorithm", "algorithm", "vqe")
@@ -25,7 +24,10 @@ class VQE(Algorithm):
         # define the list of MoleculeGenerator services installed and available
         self.molecule_generators = {}
         self.ansatz_generators = {}
-
+        self.vqe_options_dict = {}
+        self.n_qubits = 0
+        self.op = None
+        
     @Validate
     def validate(self, context):
         print("VQE Algorithm Validated")
@@ -69,19 +71,24 @@ class VQE(Algorithm):
         else:
             n_qubits = xaccOp.nQubits()
 
+        print(xaccOp)
+        self.op = xaccOp
+        self.n_qubits = n_qubits
         buffer = qpu.createBuffer('q', n_qubits)
         buffer.addExtraInfo('hamiltonian', str(xaccOp))
  
-        if 'readout-error' in inputParams and inputParams['readout-error']:
-            qpu = xacc.getAcceleratorDecorator('ro-error',qpu)
-
         if 'n-execs' in inputParams:
             xacc.setOption('sampler-n-execs', inputParams['n-execs'])
             qpu = xacc.getAcceleratorDecorator('improved-sampling', qpu)
-            
-        vqe_opts = {'task': 'vqe', 'accelerator': qpu, 'ansatz':ansatz}
 
+        if 'readout-error' in inputParams and inputParams['readout-error']:
+            qpu = xacc.getAcceleratorDecorator('ro-error',qpu)
+           
+        vqe_opts = {'task': 'vqe', 'accelerator': qpu, 'ansatz':ansatz}
+        
         xacc.setOptions(inputParams)
+
+        self.vqe_options_dict = vqe_opts
 
         if 'initial-parameters' in inputParams:
             vqe_opts['vqe-params'] = inputParams['initial-parameters']
@@ -107,6 +114,9 @@ class VQE(Algorithm):
                                                            'accelerator': qpu}).energy
                     energies.append(e)
                     paramStrings.append(paramStr)
+                    f = open('.tmp_persisted_buffer.ab', 'w')
+                    f.write(str(buffer))
+                    f.close()
                     return e
                 if 'initial-parameters' in inputParams:
                     init_params = ast.literal_eval(inputParams['initial-parameters'])
@@ -136,8 +146,42 @@ class VQE(Algorithm):
             f.write(str(p).replace('[', '').replace(']', ''))
             energy = 0.0
             for c in buffer.getChildren('parameters', p):
-                exp = c.getInformation('exp-val-z')
+                exp = c.getInformation('ro-fixed-exp-val-z') if c.hasExtraInfoKey('ro-fixed-exp-val-z') else c.getInformation('exp-val-z')
                 energy += exp * c.getInformation('coefficient')
-                f.write(','+str(c.getInformation('exp-val-z')))
+                f.write(','+str(exp))
             f.write(','+str(energy)+'\n')
         f.close()
+
+        if 'richardson-extrapolation' in inputParams and inputParams['richardson-extrapolation']:
+            angles = buffer.getInformation('vqe-angles')
+            qpu = self.vqe_options_dict['accelerator']
+            self.vqe_options_dict['accelerator'] = xacc.getAcceleratorDecorator('rich-extrap',qpu)
+            self.vqe_options_dict['task'] = 'compute-energy'
+            xaccOp = self.op
+            self.vqe_options_dict['vqe-params'] = ','.join([str(x) for x in angles])
+
+            print(xaccOp, self.vqe_options_dict['ansatz'].toString('q'))
+         
+            for r in [1,3,5,7]:
+                csv_name = "%s_%s_%s_%s" % (os.path.splitext(buffer.getInformation('file-name'))[0],
+                            buffer.getInformation('accelerator'),
+                            'rich_extrap_'+str(r), timestr)
+                f = open(csv_name+".csv", 'w')
+                xacc.setOption('rich-extrap-r',r)
+
+                for i in range(1 if not 'rich-extrap-iter' in inputParams else inputParams['rich-extrap-iter']):
+                    richardson_buffer = qpu.createBuffer('q', self.n_qubits)
+                    results = xaccvqe.execute(xaccOp, richardson_buffer, **self.vqe_options_dict)
+                
+                    ps = richardson_buffer.getAllUnique('parameters')
+                    for p in ps:
+                        f.write(str(p).replace('[', '').replace(']', ''))
+                        energy = 0.0
+                        for c in richardson_buffer.getChildren('parameters', p):
+                            exp = c.getInformation('ro-fixed-exp-val-z') if c.hasExtraInfoKey('ro-fixed-exp-val-z') else c.getInformation('exp-val-z')
+                            energy += exp * c.getInformation('coefficient')
+                            f.write(','+str(exp))
+                        f.write(','+str(energy)+'\n')
+                f.close()
+
+

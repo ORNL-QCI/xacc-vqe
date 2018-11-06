@@ -270,6 +270,10 @@ public:
   const int nTerms();
 
   const std::string toString();
+  void fromString(const std::string str);
+
+  bool contains(PauliOperator &op);
+  bool commutes(PauliOperator &op);
 
   void clear();
 

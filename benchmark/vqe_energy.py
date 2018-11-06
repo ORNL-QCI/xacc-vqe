@@ -71,15 +71,15 @@ class VQEEnergy(Algorithm):
         if 'initial-parameters' in inputParams:
             vqe_opts['vqe-params'] = ','.join([str(x) for x in ast.literal_eval(inputParams['initial-parameters'])])
             
-        if 'readout-error' in inputParams and inputParams['readout-error']:
-            qpu = xacc.getAcceleratorDecorator('ro-error',qpu)
-            vqe_opts['accelerator'] = qpu
-
         if 'n-execs' in inputParams:
             xacc.setOption('sampler-n-execs', inputParams['n-execs'])
             qpu = xacc.getAcceleratorDecorator('improved-sampling', qpu)
             vqe_opts['accelerator'] = qpu
-           
+
+        if 'readout-error' in inputParams and inputParams['readout-error']:
+            qpu = xacc.getAcceleratorDecorator('ro-error',qpu)
+            vqe_opts['accelerator'] = qpu
+               
         xacc.setOptions(inputParams)
         
         buffer = qpu.createBuffer('q', n_qubits)

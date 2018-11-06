@@ -444,8 +444,10 @@ PYBIND11_MODULE(_pyxaccvqe, m) {
       .def("eval", &PauliOperator::eval)
       .def("toXACCIR", &PauliOperator::toXACCIR)
       .def("fromXACCIR", &PauliOperator::fromXACCIR)
+      .def("fromString", &PauliOperator::fromString)
       .def("nTerms", &PauliOperator::nTerms)
       .def("isClose", &PauliOperator::isClose)
+      .def("commutes", &PauliOperator::commutes)
       .def("__len__", &PauliOperator::nTerms)
       .def("nQubits", &PauliOperator::nQubits)
       .def("__iter__",
