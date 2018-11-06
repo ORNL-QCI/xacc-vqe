@@ -76,14 +76,14 @@ class VQE(Algorithm):
         self.n_qubits = n_qubits
         buffer = qpu.createBuffer('q', n_qubits)
         buffer.addExtraInfo('hamiltonian', str(xaccOp))
- 
+
         if 'n-execs' in inputParams:
             xacc.setOption('sampler-n-execs', inputParams['n-execs'])
             qpu = xacc.getAcceleratorDecorator('improved-sampling', qpu)
-
+            
         if 'readout-error' in inputParams and inputParams['readout-error']:
-            qpu = xacc.getAcceleratorDecorator('ro-error',qpu)
-           
+            qpu = xacc.getAcceleratorDecorator('ro-error',qpu) 
+            
         vqe_opts = {'task': 'vqe', 'accelerator': qpu, 'ansatz':ansatz}
         
         xacc.setOptions(inputParams)
@@ -114,9 +114,10 @@ class VQE(Algorithm):
                                                            'accelerator': qpu}).energy
                     energies.append(e)
                     paramStrings.append(paramStr)
-                    f = open('.tmp_persisted_buffer.ab', 'w')
-                    f.write(str(buffer))
-                    f.close()
+                    fileName = ".persisted_buffer_%s" % (inputParams['accelerator'])
+                    file = open(fileName+'.ab', 'w')
+                    file.write(str(buffer))
+                    file.close()
                     return e
                 if 'initial-parameters' in inputParams:
                     init_params = ast.literal_eval(inputParams['initial-parameters'])
@@ -184,4 +185,8 @@ class VQE(Algorithm):
                         f.write(','+str(energy)+'\n')
                 f.close()
 
-
+        if 'hf-energy' in inputParams:
+            hf_energy = ast.literal_eval(inputParams['hf-energy'])
+            energy = buffer.getInformation('vqe-energy')
+            correlation_energy = energy - hf_energy
+            buffer.addExtraInfo('correlation-energy', correlation_energy)
