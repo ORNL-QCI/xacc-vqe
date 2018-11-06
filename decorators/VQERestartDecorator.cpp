@@ -56,17 +56,19 @@ VQERestartDecorator::execute(
   
   // Must initialize here since we overrode (is that a word?) 
   // initialize() and did not have a set decorated accelerator
-  if (decoratedAccelerator && !initialized) {
-      decoratedAccelerator->initialize();
-      initialized = true;
-  }
+//   if (decoratedAccelerator && !initialized) {
+//       decoratedAccelerator->initialize();
+//       initialized = true;
+//   }
 
   if (!queuedChildren.empty()) {
       buffers = queuedChildren.front();
       queuedChildren.pop();
-      xacc::info("[VQERestart] Returning Queued Child List of size " + std::to_string(buffers.size())+".");
+      xacc::info(std::to_string(queuedChildren.size() )+ ", [VQERestart] Returning Queued Child List of size " + std::to_string(buffers.size())+".");
       return buffers;
   } else {
+      if (!initialized) decoratedAccelerator->initialize();
+      
       return decoratedAccelerator->execute(buffer, functions);
   }
 }
