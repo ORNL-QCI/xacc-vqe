@@ -23,6 +23,9 @@ class VQEEnergy(Algorithm):
         
         self.molecule_generators = {}
         self.ansatz_generators = {}
+        self.vqe_options_dict = {}
+        self.n_qubits = 0
+        self.op = None
 
     @Validate
     def validate(self, context):
@@ -68,6 +71,9 @@ class VQEEnergy(Algorithm):
             n_qubits = xaccOp.nQubits()
         vqe_opts = {'task': 'compute-energy', 'ansatz': ansatz, 'accelerator': qpu}
         
+        self.op = xaccOp
+        self.n_qubits = n_qubits
+        
         if 'initial-parameters' in inputParams:
             vqe_opts['vqe-params'] = ','.join([str(x) for x in ast.literal_eval(inputParams['initial-parameters'])])
             
@@ -81,7 +87,9 @@ class VQEEnergy(Algorithm):
             vqe_opts['accelerator'] = qpu
                
         xacc.setOptions(inputParams)
-        
+
+        self.vqe_options_dict = vqe_opts
+
         buffer = qpu.createBuffer('q', n_qubits)
         results = xaccvqe.execute(xaccOp, buffer, **vqe_opts)
         return buffer
@@ -102,6 +110,39 @@ class VQEEnergy(Algorithm):
                 f.write(','+str(c.getInformation('exp-val-z')))
             f.write(','+str(energy)+'\n')
         f.close()
+       
+        if 'richardson-extrapolation' in inputParams and inputParams['richardson-extrapolation']:
+            angles = buffer.getInformation('vqe-angles')
+            qpu = self.vqe_options_dict['accelerator']
+            self.vqe_options_dict['accelerator'] = xacc.getAcceleratorDecorator('rich-extrap',qpu)
+            self.vqe_options_dict['task'] = 'compute-energy'
+            xaccOp = self.op
+            self.vqe_options_dict['vqe-params'] = ','.join([str(x) for x in angles])
+
+            print(xaccOp, self.vqe_options_dict['ansatz'].toString('q'))
+         
+            for r in [1,3,5,7]:
+                csv_name = "%s_%s_%s_%s" % (os.path.splitext(buffer.getInformation('file-name'))[0],
+                            buffer.getInformation('accelerator'),
+                            'rich_extrap_'+str(r), timestr)
+                f = open(csv_name+".csv", 'w')
+                xacc.setOption('rich-extrap-r',r)
+
+                for i in range(1 if not 'rich-extrap-iter' in inputParams else int(inputParams['rich-extrap-iter'])):
+                    richardson_buffer = qpu.createBuffer('q', self.n_qubits)
+                    results = xaccvqe.execute(xaccOp, richardson_buffer, **self.vqe_options_dict)
+                
+                    ps = richardson_buffer.getAllUnique('parameters')
+                    for p in ps:
+                        f.write(str(p).replace('[', '').replace(']', ''))
+                        energy = 0.0
+                        for c in richardson_buffer.getChildren('parameters', p):
+                            exp = c.getInformation('ro-fixed-exp-val-z') if c.hasExtraInfoKey('ro-fixed-exp-val-z') else c.getInformation('exp-val-z')
+                            energy += exp * c.getInformation('coefficient')
+                            f.write(','+str(exp))
+                        f.write(','+str(energy)+'\n')
+                f.close()
+
         if 'hf-energy' in inputParams:
             hf_energy = ast.literal_eval(inputParams['hf-energy'])
             energy = buffer.getInformation('vqe-energy')

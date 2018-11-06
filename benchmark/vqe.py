@@ -170,7 +170,7 @@ class VQE(Algorithm):
                 f = open(csv_name+".csv", 'w')
                 xacc.setOption('rich-extrap-r',r)
 
-                for i in range(1 if not 'rich-extrap-iter' in inputParams else inputParams['rich-extrap-iter']):
+                for i in range(1 if not 'rich-extrap-iter' in inputParams else int(inputParams['rich-extrap-iter'])):
                     richardson_buffer = qpu.createBuffer('q', self.n_qubits)
                     results = xaccvqe.execute(xaccOp, richardson_buffer, **self.vqe_options_dict)
                 
