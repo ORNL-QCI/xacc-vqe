@@ -169,16 +169,20 @@ class VQE(Algorithm):
             xaccOp = self.op
             self.vqe_options_dict['vqe-params'] = ','.join([str(x) for x in angles])
 
-            print(xaccOp, self.vqe_options_dict['ansatz'].toString('q'))
-         
-            for r in [1,3,5,7]:
-                csv_name = "%s_%s_%s_%s" % (os.path.splitext(buffer.getInformation('file-name'))[0],
+            fileNames = {r:"%s_%s_%s_%s" % (os.path.splitext(buffer.getInformation('file-name'))[0],
                             buffer.getInformation('accelerator'),
-                            'rich_extrap_'+str(r), timestr)
-                f = open(csv_name+".csv", 'w')
+                            'rich_extrap_'+str(r), timestr)+'.csv' for r in [1,3,5,7]}
+                            
+            nRE_Execs = 2 if not 'rich-extrap-iter' in inputParams else int(inputParams['rich-extrap-iter'])
+            if nRE_Execs < 2:
+                print('Richardson Extrapolation needs more than 1 execution. Setting to 2.')
+                nRE_execs = 2
+                
+            for r in [1,3,5,7]:
+                f = open(fileNames[r], 'w')
                 xacc.setOption('rich-extrap-r',r)
 
-                for i in range(1 if not 'rich-extrap-iter' in inputParams else int(inputParams['rich-extrap-iter'])):
+                for i in range(nRE_Execs):
                     richardson_buffer = qpu.createBuffer('q', self.n_qubits)
                     results = xaccvqe.execute(xaccOp, richardson_buffer, **self.vqe_options_dict)
                 
@@ -192,6 +196,42 @@ class VQE(Algorithm):
                             f.write(','+str(exp))
                         f.write(','+str(energy)+'\n')
                 f.close()
+
+            nParams = len(ps[0])
+            columns = ['t{}'.format(i) for i in range(nParams)]
+
+            kernelNames = [c.getInformation('kernel') for c in buffer.getChildren('parameters',ps[0])]
+            columns += kernelNames
+            columns.append('E')
+
+            dat = [np.genfromtxt(fileNames[1], delimiter=',', names=columns),
+                np.genfromtxt(fileNames[3], delimiter=',', names=columns),
+                np.genfromtxt(fileNames[5], delimiter=',', names=columns),
+                np.genfromtxt(fileNames[7], delimiter=',', names=columns)]
+
+            allExps = [{k:[] for k in kernelNames} for i in range(4)]
+            allEnergies = []
+
+            temp = {r:[] for r in range(4)}
+
+            for i in range(nRE_Execs):
+                for r in range(4):
+                    for term in kernelNames:
+                        allExps[r][term].append(dat[r][term][i])
+                    temp[r].append(dat[r]['E'][i])
+
+            evars = [np.std(temp[r]) for r in range(4)]
+            xVals = [1,3,5,7]
+
+            avgExps = {k:[np.mean(allExps[r][k]) for r in range(4)] for k in kernelNames}
+            varExps = {k:[np.std(allExps[r][k]) for r in range(4)] for k in kernelNames}
+            energies = [np.mean(temp[r]) for r in range(4)]
+
+            def f(x, a, b):
+                return a*x + b
+            res = curve_fit(f, xVals, energies, [1.,energies[0]], sigma=evars)
+            print('\nnoisy energy: ', energies[0])
+            print('\nrich_extrap intercept: ', res[0][1],'+- ', np.sqrt(np.diag(res[1])[1]))
 
         if 'hf-energy' in inputParams:
             hf_energy = ast.literal_eval(inputParams['hf-energy'])
