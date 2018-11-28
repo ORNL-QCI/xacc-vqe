@@ -391,14 +391,14 @@ std::vector<Triplet> Term::getSparseMatrixElements(const int nQubits) {
       }
     } while (std::prev_permutation(bitmask.begin(), bitmask.end()));
 
-    for (auto a : allCombinations) {
-      for (auto b : a) {
-        std::cout << b << " ";
-      }
-      std::cout << "\n";
-    }
+    // for (auto a : allCombinations) {
+    //   for (auto b : a) {
+    //     std::cout << b << " ";
+    //   }
+    //   std::cout << "\n";
+    // }
 
-    std::cout << (3 / 2) << "\n";
+    // std::cout << (3 / 2) << "\n";
     return allCombinations;
   };
 

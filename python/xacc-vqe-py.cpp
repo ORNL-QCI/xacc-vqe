@@ -2,17 +2,16 @@
 #include <pybind11/eigen.h>
 #include <pybind11/iostream.h>
 #include <pybind11/operators.h>
-#include <pybind11/pybind11.h>
+// #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/stl_bind.h>
 
 #include "AcceleratorDecorator.hpp"
 
-#include "DiagonalizeTask.hpp"
-#include "FermionToSpinTransformation.hpp"
+#include "MPIProvider.hpp"
+
 #include "GateFunction.hpp"
 #include "PauliOperator.hpp"
-#include "StatePreparationEvaluator.hpp"
 #include "VQEParameterGenerator.hpp"
 #include "VQEProgram.hpp"
 #include "VQETask.hpp"
@@ -419,7 +418,7 @@ PYBIND11_MODULE(_pyxaccvqe, m) {
       .def_readonly("energy", &VQETaskResult::energy)
       .def_readonly("ansatzQASM", &VQETaskResult::ansatzQASM);
 
-  py::class_<Term>(m, "Term").def("coeff", &Term::coeff);
+  py::class_<Term>(m, "Term").def("coeff", &Term::coeff).def("ops",&Term::ops);
   py::class_<PauliOperator>(m, "PauliOperator")
       .def(py::init<>())
       .def(py::init<std::complex<double>>())
@@ -455,9 +454,6 @@ PYBIND11_MODULE(_pyxaccvqe, m) {
              return py::make_iterator(op.begin(), op.end());
            },
            py::keep_alive<0, 1>());
-
-  py::class_<StatePreparationEvaluator>(m, "AnsatzEvaluator")
-      .def_static("evaluate", StatePreparationEvaluator::evaluateCircuit, "");
 
   m.def("execute",
         (VQETaskResult(*)(PauliOperator & op,

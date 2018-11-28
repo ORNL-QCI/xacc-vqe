@@ -20,6 +20,18 @@ def QubitOperator2XACC(qubit_op):
             xaccOp += PauliOperator(v)
     return(xaccOp)
 
+def XACC2QubitOperator(pauli_op):
+    try:
+        from openfermion import QubitOperator
+    except:
+        xacc.error("OpenFermion not installed, cannot convert PauliOperator to QubitOperator.")
+        return
+        
+    qop = QubitOperator()
+    for o in pauli_op:
+        qop += QubitOperator(tuple(o[1].ops().items()), o[1].coeff())
+    return qop
+
 def mapToPhysicalQubits(op, ansatz, logical2PhysicalMap):
     n_qubits = max(logical2PhysicalMap) + 1
     ir = op.toXACCIR()

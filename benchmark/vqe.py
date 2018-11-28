@@ -227,11 +227,26 @@ class VQE(Algorithm):
             varExps = {k:[np.std(allExps[r][k]) for r in range(4)] for k in kernelNames}
             energies = [np.mean(temp[r]) for r in range(4)]
 
-            def f(x, a, b):
-                return a*x + b
-            res = curve_fit(f, xVals, energies, [1.,energies[0]], sigma=evars)
+            def linear(x, a, b):
+                return a*x+b
+    
+            def exp(x, a,b):
+                return a*np.exp(b*x)# + b
+
+            from scipy.optimize import curve_fit
+            res = curve_fit(linear, xVals, energies, [1,energies[0]], sigma=evars)
+
+            print(res)
             print('\nnoisy energy: ', energies[0])
-            print('\nrich_extrap intercept: ', res[0][1],'+- ', np.sqrt(np.diag(res[1])[1]))
+            print('\nrich linear extrap: ', res[0][1],'+- ', np.sqrt(np.diag(res[1])[1]))
+
+            res_exp = curve_fit(exp, xVals, energies, [0,0], sigma=evars)
+
+            print('\nrich exp extrap: ', exp(0,res_exp[0][0],res_exp[0][1]), '+-', np.sqrt(np.diag(res_exp[1])[1]))
+
+            print('\n')
+            print('E(r): ', energies)
+            print('a*exp(b*r):', [exp(x,res_exp[0][0],res_exp[0][1]) for x in xVals])
 
         if 'hf-energy' in inputParams:
             hf_energy = ast.literal_eval(inputParams['hf-energy'])

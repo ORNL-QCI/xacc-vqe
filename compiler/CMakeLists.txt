@@ -32,13 +32,15 @@ set (PACKAGE_NAME "XACC VQE Fermion Compiler")
 set (PACKAGE_DESCIPTION "XACC Variational Quantum Eigensolver Fermion Compiler Support")
 
 set (LIBRARY_NAME xacc-vqe-fermion-compiler)
-file (GLOB SRC *.cpp)
-file (GLOB HEADERS *.hpp)
+file (GLOB SRC *.cpp optimizers/*.cpp)
+file (GLOB HEADERS *.hpp optimizers/*.hpp)
 
 # Set up dependencies to resources to track changes
 usFunctionGetResourceSource(TARGET ${LIBRARY_NAME} OUT SRC)
 # Generate bundle initialization code
 usFunctionGenerateBundleInit(TARGET ${LIBRARY_NAME} OUT SRC)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/optimizers)
 
 add_library(${LIBRARY_NAME} SHARED ${SRC})
 
@@ -76,5 +78,6 @@ install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/vqe)
 # Gather tests
 if (VQE_BUILD_TESTS)
 	add_subdirectory(tests)
+    add_subdirectory(optimizers/tests)
 endif()
 

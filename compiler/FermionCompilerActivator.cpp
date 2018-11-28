@@ -29,6 +29,7 @@
  *
  **********************************************************************************/
 #include "FermionCompiler.hpp"
+#include "QubitTapering.hpp"
 
 #include "cppmicroservices/BundleActivator.h"
 #include "cppmicroservices/BundleContext.h"
@@ -54,8 +55,12 @@ public:
 	 */
 	void Start(BundleContext context) {
 		auto c = std::make_shared<xacc::vqe::FermionCompiler>();
+        auto o = std::make_shared<xacc::vqe::QubitTapering>();
+        
 		context.RegisterService<xacc::Compiler>(c);
 		context.RegisterService<xacc::OptionsProvider>(c);
+        context.RegisterService<xacc::IRTransformation>(o);
+		context.RegisterService<xacc::OptionsProvider>(o);
 	}
 
 	/**

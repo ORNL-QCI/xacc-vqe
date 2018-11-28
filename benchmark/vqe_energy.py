@@ -183,6 +183,7 @@ class VQEEnergy(Algorithm):
             res = curve_fit(f, xVals, energies, [1.,energies[0]], sigma=evars)
             print('\nnoisy energy: ', energies[0])
             print('\nrich_extrap intercept: ', res[0][1],'+- ', np.sqrt(np.diag(res[1])[1]))
+            print('\n')
             
         if 'hf-energy' in inputParams:
             hf_energy = ast.literal_eval(inputParams['hf-energy'])
