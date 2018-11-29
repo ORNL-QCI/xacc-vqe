@@ -35,23 +35,12 @@ class VQEEnergy(VQEBase):
     @BindField('_ansatz_generator')
     @BindField('_molecule_generator')
     def bind_dicts(self, field, service, svc_ref):
-        if svc_ref.get_property('molecule_generator'):
-            generator = svc_ref.get_property('molecule_generator')
-            self.molecule_generators[generator] = service
-        elif svc_ref.get_property('ansatz_generator'):
-            generator = svc_ref.get_property('ansatz_generator')
-            self.ansatz_generators[generator] = service
+        super().bind_dicts(field, service, svc_ref)
 
     @UnbindField('_ansatz_generator')
     @UnbindField('_molecule_generator')
     def unbind_dicts(self, field, service, svc_ref):
-        
-        if svc_ref.get_property('molecule_generator'):
-            generator = svc_ref.get_property('molecule_generator')
-            del self.molecule_generators[generator]
-        elif svc_ref.get_property('ansatz_generator'):
-            generator = svc_ref.get_property('ansatz_generator')
-            del self.ansatz_generators[generator]
+        super().unbind_dicts(field, service, svc_ref)
 
     def execute(self, inputParams):
         super().execute(inputParams)
