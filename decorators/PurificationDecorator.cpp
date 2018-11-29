@@ -5,7 +5,7 @@
 #include "XACC.hpp"
 
 namespace xacc {
-namespace quantum {
+namespace vqe {
 void PurificationDecorator::execute(std::shared_ptr<AcceleratorBuffer> buffer,
                                     const std::shared_ptr<Function> function) {
 
@@ -81,11 +81,11 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> PurificationDecorator::execute(
     opMap.insert({op.getTerms().begin()->second.id(), op});
   }
 
-//   for (auto &kv : opMap)
-//     std::cout << kv.first << ", " << kv.second.toString() << "\n";
+  for (auto &kv : opMap)
+    std::cout << kv.first << ", " << kv.second.toString() << "\n";
     
-//   std::cout << all.toString() << "\n";
-//   std::cout << Paulis.size() << " operators to measure\n";
+  std::cout << all.toString() << "\n";
+  std::cout << Paulis.size() << " operators to measure\n";
 
   auto kernels = all.toXACCIR()->getKernels();
   for (auto &k : kernels) {
@@ -180,12 +180,12 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> PurificationDecorator::execute(
 
     auto b = bufMap[f->name()];
     
-    b->addExtraInfo("exp-val-Z", ExtraInfo(expVal));
+    b->addExtraInfo("exp-val-z", ExtraInfo(expVal));
     retBuffers.push_back(b);
   }
 
   return retBuffers;
 }
 
-} // namespace quantum
+} // namespace vqe
 } // namespace xacc

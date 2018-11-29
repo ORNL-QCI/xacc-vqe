@@ -17,8 +17,6 @@
 
 using namespace xacc;
 
-using namespace xacc::quantum;
-
 using namespace xacc::vqe;
 
 TEST(ImprovedSamplingDecoratorTester, checkMultiple) {
