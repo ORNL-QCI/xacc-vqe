@@ -164,6 +164,32 @@ PauliOperator::computeActionOnBra(const std::string &bitString) {
   return ret;
 }
 
+Eigen::MatrixXcd PauliOperator::toDenseMatrix(const int n) {
+  std::size_t dim = 1;
+  std::size_t two = 2;
+  for (int i = 0; i < n; i++)
+    dim *= two;
+  auto getBitStrForIdx = [&](std::uint64_t i) {
+    std::stringstream s;
+    for (int k = n - 1; k >= 0; k--)
+      s << ((i >> k) & 1);
+    return s.str();
+  };
+
+  Eigen::MatrixXcd A(dim, dim);
+  A.setZero();
+  for (std::uint64_t myRow = 0; myRow < dim; myRow++) {
+    auto rowBitStr = getBitStrForIdx(myRow);
+    auto results = computeActionOnBra(rowBitStr);
+    for (auto &result : results) {
+      std::uint64_t k = std::stol(result.first, nullptr, 2);
+      A(myRow, k) += result.second;
+    }
+  }
+
+  return A;
+}
+
 const int PauliOperator::nTerms() { return terms.size(); }
 
 bool PauliOperator::isClose(PauliOperator &other) {

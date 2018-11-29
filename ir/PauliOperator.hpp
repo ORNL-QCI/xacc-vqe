@@ -293,6 +293,8 @@ public:
   std::unordered_map<std::string, Term> getTerms() const { return terms; }
 
   std::vector<Triplet> getSparseMatrixElements();
+  Eigen::MatrixXcd toDenseMatrix(const int nQubits);
+  
   std::shared_ptr<IR> toXACCIR();
   void fromXACCIR(std::shared_ptr<IR> ir);
   PauliOperator

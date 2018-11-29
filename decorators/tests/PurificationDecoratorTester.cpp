@@ -45,7 +45,7 @@ TEST(ImprovedSamplingDecoratorTester, checkMultiple) {
     PauliOperator op;
     op.fromString("(5.9067,0) I + (-2.1433,0) X0 X1 + (-2.1433,0) Y0 Y1 + (.21829,0) Z0 + (-6.125,0) Z1");
 
-    std::cout << "OP: " << op.toString() << "\n";
+    // std::cout << "OP: " << op.toString() << "\n";
     
     auto measureFunctions = op.toXACCIR()->getKernels();
     for (auto& m : measureFunctions) {
@@ -57,7 +57,7 @@ TEST(ImprovedSamplingDecoratorTester, checkMultiple) {
     
     auto buffers = decorator.execute(buffer, measureFunctions);
 
-   
+    for (auto& b : buffers) b->print();
   }
 }
 int main(int argc, char **argv) {
