@@ -63,7 +63,7 @@ TEST(QubitTaperingTester, checkH2) {
   auto newIR = tapering.transform(ir);
 
   PauliOperator expected, actual;
-  expected.fromString("(-0.335683,0) I + (-0.780643,0) Z3 + (0.181625,0) X3");
+  expected.fromString("(-0.335683,0) I + (-0.780643,0) Z0 + (0.181625,0) X0");
 
   actual.fromXACCIR(newIR);
 
@@ -99,7 +99,7 @@ TEST(QubitTaperingTester, checkH2WithAnsatz) {
     auto newIR = tapering.transform(tir);
 
     PauliOperator expected, actual;
-    expected.fromString("(-0.335683,0) I + (-0.780643,0) Z3 + (0.181625,0) X3");
+    expected.fromString("(-0.335683,0) I + (-0.780643,0) Z0 + (0.181625,0) X0");
 
     actual.fromXACCIR(newIR);
 

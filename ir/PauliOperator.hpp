@@ -274,7 +274,20 @@ public:
 
   bool contains(PauliOperator &op);
   bool commutes(PauliOperator &op);
+  
+  void mapQubitSites(std::map<int,int>& siteMap) {
+      PauliOperator op;
+      for (auto& termKv : *this) {
+          auto ops = termKv.second.ops();
+          std::map<int,std::string> nops;
+          for (auto& kv : ops) {
+              nops.insert({siteMap[kv.first], kv.second});
+          }
+          op += PauliOperator(nops, termKv.second.coeff());
+      }
 
+      *this = op;
+  }
   void clear();
 
   std::unordered_map<std::string, Term> getTerms() const { return terms; }
