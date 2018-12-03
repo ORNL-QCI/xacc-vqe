@@ -75,19 +75,22 @@ HWE::generate(std::shared_ptr<AcceleratorBuffer> buffer,
   }
 
   std::vector<InstructionParameter> fParams;
-  for (int nP = 0; nP < (nQubits + 3 * nQubits * layers); nP++)
+  for (int nP = 0; nP < (2*nQubits + 3 * nQubits * layers); nP++)
     fParams.push_back(InstructionParameter("t" + std::to_string(nP)));
 
   auto provider = xacc::getService<IRProvider>("gate");
   auto f = provider->createFunction("hwe", {}, fParams);
   int angleCounter = 0;
 
-  // Zeroth layer, start with X rotations
+  // Zeroth layer, start with X and Z rotations
   for (int q = 0; q < nQubits; q++) {
     auto rx = provider->createInstruction(
         "Rx", {q}, {InstructionParameter("t" + std::to_string(angleCounter))});
+    auto rz = provider->createInstruction(
+        "Rz", {q}, {InstructionParameter("t" + std::to_string(angleCounter+1))});
     f->addInstruction(rx);
-    angleCounter++;
+    f->addInstruction(rz);
+    angleCounter+=2;
   }
 
   for (int d = 0; d < layers; d++) {
