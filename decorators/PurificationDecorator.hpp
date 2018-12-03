@@ -17,7 +17,7 @@
 
 namespace xacc {
 
-namespace quantum {
+namespace vqe {
 
 class PurificationDecorator : public AcceleratorDecorator {
 public:
@@ -38,6 +38,6 @@ public:
   ~PurificationDecorator() override {}
 };
 
-} // namespace quantum
+} // namespace vqe
 } // namespace xacc
 #endif

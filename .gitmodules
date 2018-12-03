@@ -1,0 +1,6 @@
+[submodule "task/tasks/arpackpp/arpackpp"]
+	path = task/tasks/arpackpp/arpackpp
+	url = https://github.com/m-reuter/arpackpp
+[submodule "tpls/arpackpp"]
+	path = tpls/arpackpp
+	url = https://github.com/amccaskey/arpackpp

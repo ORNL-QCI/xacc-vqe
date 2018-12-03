@@ -5,7 +5,7 @@
 #include "XACC.hpp"
 
 namespace xacc {
-namespace quantum {
+namespace vqe {
 void PurificationDecorator::execute(std::shared_ptr<AcceleratorBuffer> buffer,
                                     const std::shared_ptr<Function> function) {
 
@@ -83,6 +83,7 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> PurificationDecorator::execute(
 
   for (auto &kv : opMap)
     std::cout << kv.first << ", " << kv.second.toString() << "\n";
+    
   std::cout << all.toString() << "\n";
   std::cout << Paulis.size() << " operators to measure\n";
 
@@ -91,7 +92,7 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> PurificationDecorator::execute(
     k->insertInstruction(0, ansatz);
   }
 
-  std::cout << "EXECUTING\n";
+//   std::cout << "EXECUTING\n";
   buffers = decoratedAccelerator->execute(buffer, kernels);
 
   std::size_t dim = 1;
@@ -102,27 +103,21 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> PurificationDecorator::execute(
   Eigen::MatrixXcd rho(dim, dim);
   rho.setZero();
 
+  std::map<std::string, std::shared_ptr<AcceleratorBuffer>> bufMap;
   for (auto &b : buffers) {
     auto id = b->name();
+    bufMap.insert({id,b});
     auto op = opMap[id];
 
-    Eigen::MatrixXcd p(dim, dim);
-    p.setZero();
-
-    for (auto &t : op.getSparseMatrixElements()) {
-      p(t.row(), t.col()) = t.coeff();
-    }
-
+    Eigen::MatrixXcd p = op.toDenseMatrix(buffer->size());
     rho += b->getExpectationValueZ() * p;
   }
 
-  // Add the Identity term
+  // Add the Identity term Tr(I rho) * I = <I> * I
   rho += Eigen::MatrixXcd::Identity(dim, dim);
 
-  rho *= 0.25;
-
-  std::cout << "RHO:\n" << rho << "\n";
-  std::cout << rho.trace() << "\n";
+//   std::cout << "RHO:\n" << rho << "\n";
+//   std::cout << rho.trace() << "\n";
 
   Eigen::MatrixXcd rhosq = rho * rho;
   Eigen::MatrixXcd diff = rhosq - rho;
@@ -130,21 +125,21 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> PurificationDecorator::execute(
 
   int counter = 0;
   auto tr = std::real(diffsq.trace());
-  while (tr > 1e-2) {
+  while (tr > 1e-4) {
     rho = 3. * rhosq - 2. * rhosq * rho;
-    rho = rho / rho.trace();
+    rho /= rho.trace();
 
     rhosq = rho * rho;
     diff = rhosq - rho;
     diffsq = diff * diff;
     tr = std::real(diffsq.trace());
-    std::cout << counter << ", TRACE: " << tr << "\n";
+    // std::cout << counter << ", TRACE: " << tr << "\n";
     counter++;
     if (counter > 100)
       break;
   }
 
-  std::cout << rho.trace() << "\n" << rho << "\n";
+//   std::cout << rho.trace() << "\n" << rho << "\n";
 
   // new E = Tr(H*rho)
   // so get H
@@ -155,51 +150,42 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> PurificationDecorator::execute(
   }
   HOp.fromXACCIR(ir);
 
-  std::cout << "MADE IT HERE\n";
-  std::cout << HOp.toString() << "\n";
+//   std::cout << "MADE IT HERE\n";
+//   std::cout << HOp.toString() << "\n";
 
-  auto getBitStrForIdx = [&](std::uint64_t i) {
-    std::stringstream s;
-    for (int k = buffer->size() - 1; k >= 0; k--)
-      s << ((i >> k) & 1);
-    return s.str();
-  };
+  Eigen::MatrixXcd H = HOp.toDenseMatrix(buffer->size());
   
-  Eigen::MatrixXcd H(dim, dim);
-  H.setZero();
-  for (std::uint64_t myRow = 0; myRow < dim; myRow++) {
-    auto rowBitStr = getBitStrForIdx(myRow);
-    auto results = HOp.computeActionOnBra(rowBitStr);
-    for (auto &result : results) {
-      std::uint64_t k = std::stol(result.first, nullptr, 2);
-      H(myRow, k) += result.second;
-    }
+//   std::cout << "CONJ:\n" << (rho - rho.conjugate()) << "\n";
+//   std::cout << "IDEMP:\n" << (rho*rho - rho) << "\n";
+//   std::cout << "H:\n" << H << "\n";
+//   std::cout << "HI\n";
+//   std::cout << "Energy: " << std::real((H * rho).trace()) << "\n";
+
+  // Need to take new rho and compute <P> = Tr(P rho) for each of our 
+  // input functions 
+
+  std::vector<std::shared_ptr<AcceleratorBuffer>> retBuffers;
+  for (auto& f : functions) {
+      if (f->name() == "I") {
+          continue;
+      }
+    auto tmp = xacc::getService<xacc::IRProvider>("gate")->createIR();
+    tmp->addKernel(f);
+    
+    xacc::vqe::PauliOperator o;
+    o.fromXACCIR(tmp);
+    
+    auto mat = o.toDenseMatrix(buffer->size());
+    auto expVal = std::real((mat * rho).trace());
+
+    auto b = bufMap[f->name()];
+    
+    b->addExtraInfo("exp-val-z", ExtraInfo(expVal));
+    retBuffers.push_back(b);
   }
 
-  H(0,0) = std::complex<double>(0.0,0.0);
-
-  std::cout << "CONJ:\n" << (rho - rho.conjugate()) << "\n";
-  std::cout << "IDEMP:\n" << (rho*rho - rho) << "\n";
-  std::cout << "H:\n" << H << "\n";
-  std::cout << "HI\n";
-  std::cout << "Energy: " << (H * rho).trace() << "\n";
-  return buffers;
+  return retBuffers;
 }
 
-} // namespace quantum
+} // namespace vqe
 } // namespace xacc
-
-// auto getBitStrForIdx = [&](std::uint64_t i) {
-//     std::stringstream s;
-//     for (int k = buffer->size() - 1; k >= 0; k--)
-//       s << ((i >> k) & 1);
-//     return s.str();
-//   };
-// for (std::uint64_t myRow = 0; myRow < dim; myRow++) {
-//   auto rowBitStr = getBitStrForIdx(myRow);
-//   auto results = op.computeActionOnBra(rowBitStr);
-//   for (auto &result : results) {
-//     std::uint64_t k = std::stol(result.first, nullptr, 2);
-//     p(myRow, k) = result.second;
-//   }
-// }
