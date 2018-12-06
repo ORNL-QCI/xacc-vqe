@@ -41,8 +41,14 @@ class VQE(VQEBase):
     @UnbindField('_molecule_generator')
     def unbind_dicts(self, field, service, svc_ref):
         super().unbind_dicts(field, service, svc_ref)
-
+    
     def execute(self, inputParams):
+    """
+        Inherited method with algorithm-specific implementation
+        
+        Adds options:
+        - 'scipy-[METHOD]': uses scipy.optimize instead of default nelder-mead to optimize the parameters
+    """
         super().execute(inputParams)  
         self.vqe_options_dict['task'] = 'vqe'
         if (inputParams['optimizer'] != 'nelder-mead'):
@@ -76,7 +82,6 @@ class VQE(VQEBase):
                 else:
                     init_params = np.random.uniform(
                         low=-np.pi, high=np.pi, size=(self.ansatz.nParameters(),))
-                print(str(scipy_opts))
                 opt_result = minimize(
                     energy, init_params, **scipy_opts)
                 self.buffer.addExtraInfo('vqe-energies',energies)

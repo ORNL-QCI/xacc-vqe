@@ -43,6 +43,11 @@ class VQEEnergy(VQEBase):
         super().unbind_dicts(field, service, svc_ref)
 
     def execute(self, inputParams):
+    """
+        Inherited method with algorithm-specific implementation
+        
+        - sets XACC VQE task to 'compute-energy' 
+    """
         super().execute(inputParams)
         self.vqe_options_dict['task'] = 'compute-energy'
         results = xaccvqe.execute(self.op, self.buffer, **self.vqe_options_dict)

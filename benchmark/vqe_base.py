@@ -19,6 +19,10 @@ class VQEBase(Algorithm):
         self.qpu = None
         
     def bind_dicts(self, field, service, svc_ref):
+    """
+        This method is intended to be overriden by iPOPO bundle subclasses. 
+        Binds the service references of the available molecule and ansatz generators.
+    """
         if svc_ref.get_property('molecule_generator'):
             generator = svc_ref.get_property('molecule_generator')
             self.molecule_generators[generator] = service
@@ -26,15 +30,36 @@ class VQEBase(Algorithm):
             generator = svc_ref.get_property('ansatz_generator')
             self.ansatz_generators[generator] = service
 
-    def unbind_dicts(self, field, service, svc_ref):     
+    def unbind_dicts(self, field, service, svc_ref):    
+        """
+            This method is intended to be overriden by iPOPO bundle subclasses. 
+            Unbinds the service references of the available molecule and ansatz generators when the instance is killed
+        """
         if svc_ref.get_property('molecule_generator'):
             generator = svc_ref.get_property('molecule_generator')
             del self.molecule_generators[generator]
         elif svc_ref.get_property('ansatz_generator'):
             generator = svc_ref.get_property('ansatz_generator')
             del self.ansatz_generators[generator]
-        
+    
     def execute(self, inputParams):
+    """
+        This method is intended to be overridden by vqe and vqe_energy subclasses to allow algorithm-specific implementation. 
+        This superclass method adds extra information to the buffer and allows XACC settings options to be set before executing VQE.
+        
+        @inputParams a dictionary of input parameters obtained from .ini file
+        
+        return QPU Accelerator buffer
+        
+        Options used (obtained from inputParams):
+            'qubit-map': map of logical qubits to physical qubits
+            'n-execs': number of sampler executions of measurements
+            'initial-parameters': list of initial parameters for the VQE algorithm
+            
+            'restart-from-file': AcceleratorDecorator option to allow restart of VQE algorithm 
+            'readout-error': AcceleratorDecorator option for readout-error mitigation
+            
+    """
         self.qpu = xacc.getAccelerator(inputParams['accelerator'])
         xaccOp = self.molecule_generators[inputParams['molecule-generator']].generate(
             inputParams)
@@ -46,13 +71,15 @@ class VQEBase(Algorithm):
                 xaccOp, self.ansatz, qubit_map)
         else:
             n_qubits = xaccOp.nQubits()
+            
         self.op = xaccOp
         self.n_qubits = n_qubits
         self.buffer = self.qpu.createBuffer('q', n_qubits)
         self.buffer.addExtraInfo('hamiltonian', str(xaccOp))
         self.buffer.addExtraInfo('ansatz-qasm', self.ansatz.toString('q').replace('\\n', '\\\\n'))
         pycompiler = xacc.getCompiler('xacc-py')
-        #self.buffer.addExtraInfo('ansatz-qasm-py', '\n'.join(pycompiler.translate('q',self.ansatz).split('\n')[1:]))
+        self.buffer.addExtraInfo('ansatz-qasm-py', '\n'.join(pycompiler.translate('q',self.ansatz).split('\n')[1:]))
+        
         if 'n-execs' in inputParams:
             xacc.setOption('sampler-n-execs', inputParams['n-execs'])
             self.qpu = xacc.getAcceleratorDecorator('improved-sampling', self.qpu)
@@ -73,6 +100,19 @@ class VQEBase(Algorithm):
         xacc.setOptions(inputParams)            
     
     def analyze(self, buffer, inputParams):
+    """
+        This method is also to be overridden by vqe and vqe_energy subclasses to allow for algorithm-specific implementation.
+        
+        This superclass method always generates a .csv file with measured expectation values for each kernel and calculated energy of each iteration. 
+        
+        @inputParams a dictionary of input parameters obtained from .ini file
+        @buffer QPU Accelerator Buffer of VQE results
+        
+        Options used (in inputParams):
+            'readout-error': generate .csv file with readout-error corrected expectation values and calculated energy for each kernel and iteration.
+            'richardson-extrapolation': run Richardson-Extrapolation on the resulting Accelerator buffer (generating 4 more .csv files of expectation values and energies)
+                'rich-extra-iter': the number of iterations of Richardson-Extrapolation
+    """
         ps = buffer.getAllUnique('parameters')
         timestr = time.strftime("%Y%m%d-%H%M%S")
         exp_csv_name = "%s_%s_%s_%s" % (os.path.splitext(buffer.getInformation('file-name'))[0],
@@ -89,7 +129,6 @@ class VQEBase(Algorithm):
                 f.write(str(exp)+',')
             f.write(str(energy)+'\n')
         f.close()
-        ## Repeating code - putting in one loop would be messy, but possible
         if 'readout-error' in inputParams:
             ro_exp_csv_name = "%s_%s_%s_%s" % (os.path.splitext(buffer.getInformation('file-name'))[0],
                                         buffer.getInformation('accelerator'),"ro_fixed_exp_val_z",
@@ -112,7 +151,6 @@ class VQEBase(Algorithm):
             self.vqe_options_dict['task'] = 'compute-energy'
             xaccOp = self.op
             self.vqe_options_dict['vqe-params'] = ','.join([str(x) for x in angles])
-
             fileNames = {r:"%s_%s_%s_%s" % (os.path.splitext(buffer.getInformation('file-name'))[0],
                             buffer.getInformation('accelerator'),
                             'rich_extrap_'+str(r), timestr)+'.csv' for r in [1,3,5,7]}
