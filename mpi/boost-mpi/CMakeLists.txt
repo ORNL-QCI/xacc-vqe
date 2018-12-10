@@ -38,7 +38,7 @@ usFunctionEmbedResources(TARGET ${LIBRARY_NAME}
     manifest.json
   )
 
-target_link_libraries(${LIBRARY_NAME} ${XACC_LIBRARIES} xacc-vqe-ir ${MPI_CXX_LIBRARIES})
+target_link_libraries(${LIBRARY_NAME} xacc-vqe-ir ${MPI_CXX_LIBRARIES})
 
 if(APPLE)
    set_target_properties(${LIBRARY_NAME} PROPERTIES INSTALL_RPATH "@loader_path/../lib;@loader_path")

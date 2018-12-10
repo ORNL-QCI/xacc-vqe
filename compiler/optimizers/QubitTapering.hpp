@@ -28,66 +28,67 @@ public:
   virtual std::shared_ptr<options_description> getOptions() {
     auto desc = std::make_shared<options_description>("QubitTapering Options");
     desc->add_options()("phase-sector", value<std::string>(),
-                        "Provide the +-1 vector.")
-                        ("qubit-tapering-show","Create and display reduced hamiltonian, but then exit.");
+                        "Provide the +-1 vector.")(
+        "qubit-tapering-show",
+        "Create and display reduced hamiltonian, but then exit.");
     return desc;
   }
 
 private:
   Eigen::MatrixXi computeTableaux(PauliOperator &H, const int nQubits);
-  std::vector<std::vector<int>>
-  generateCombinations(const int nQubits,
-                              std::function<void(std::vector<int> &)> &&f = [](std::vector<int> &tmp) { return; });
+  std::vector<std::vector<int>> generateCombinations(
+      const int nQubits, std::function<void(std::vector<int> &)> &&f =
+                             [](std::vector<int> &tmp) { return; });
   int binaryVectorInnerProduct(std::vector<int> &bv1, std::vector<int> &bv2);
   const double computeGroundStateEnergy(PauliOperator &op, const int n);
 
   unsigned pivot(Eigen::MatrixXd &B, unsigned r, unsigned c) {
-  for (unsigned k = r; k < B.rows(); k++) {
-    if (std::fabs(B(k, c)) > 1e-12) {
-      return k;
+    for (unsigned k = r; k < B.rows(); k++) {
+      if (std::fabs(B(k, c)) > 1e-12) {
+        return k;
+      }
     }
+    return B.rows();
   }
-  return B.rows();
-}
 
-void reduced_row_echelon_form(const Eigen::MatrixXd &A, Eigen::MatrixXd &B,
-                              std::vector<int> &pivotCols) {
-  unsigned row = A.rows(), col = A.cols();
-  unsigned index = 0, i, j, k;
-  B = A;
+  void reduced_row_echelon_form(const Eigen::MatrixXd &A, Eigen::MatrixXd &B,
+                                std::vector<int> &pivotCols) {
+    unsigned row = A.rows(), col = A.cols();
+    unsigned index = 0, i, j, k;
+    B = A;
 
-  for (i = 0; i < col; i++) {
-    if (index == row)
-      break;
+    for (i = 0; i < col; i++) {
+      if (index == row)
+        break;
 
-    k = pivot(B, index, i);
-    if (k == row)
-      continue;
-    if (k != index) {
-      B.row(k).swap(B.row(index));
+      k = pivot(B, index, i);
+      if (k == row)
+        continue;
+      if (k != index) {
+        B.row(k).swap(B.row(index));
+      }
+
+      B.row(index) *= 1.0 / B(index, i);
+
+      for (j = 0; j < row; j++) {
+        if (j == index)
+          continue;
+
+        B.row(j) += (-1.0 * B(j, i)) * B.row(index);
+      }
+
+      index++;
     }
 
-    B.row(index) *= 1.0 / B(index, i);
-
-    for (j = 0; j < row; j++) {
-      if (j == index)
+    unsigned row2 = 0;
+    for (unsigned col = 0; col < B.cols() && row2 < B.rows(); col++) {
+      if (std::fabs(B(row2, col)) < 1e-12)
         continue;
 
-      B.row(j) += (-1.0 * B(j, i)) * B.row(index);
+      pivotCols.push_back(col);
+      row2++;
     }
-
-    index++;
   }
-
-  unsigned row2 = 0;
-  for (unsigned col = 0; col < B.cols() && row2 < B.rows(); col++) {
-    if (std::fabs(B(row2, col)) < 1e-12)
-      continue;
-
-    pivotCols.push_back(col);
-    row2++;
-  }
-}
 };
 } // namespace vqe
 } // namespace xacc

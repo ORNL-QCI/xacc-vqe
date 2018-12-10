@@ -108,15 +108,15 @@ public:
 	 *
 	 * @return name The name of this Instruction
 	 */
-	virtual const std::string name() const {
+	const std::string name() const override {
 		return "fermion-instruction";
 	};
 
-	virtual const std::string description() const {
+	const std::string description() const override {
 		return "";
 	}
 
-	virtual void mapBits(std::vector<int> bitMap) {
+	void mapBits(std::vector<int> bitMap) override {
 	}
 
 	/**
@@ -126,26 +126,29 @@ public:
 	 * @param bufferVarName The name of the AcceleratorBuffer
 	 * @return str The assembly-like string.
 	 */
-	virtual const std::string toString(const std::string& bufferVarName) {
+	const std::string toString(const std::string& bufferVarName) override {
 		std::stringstream ss;
-		ss << getParameter(nParameters()-2) << " * ";
-		auto variable = getParameter(nParameters()-1);
+		ss << getParameter(nParameters()-2).toString() << " * ";
+		auto variable = getParameter(nParameters()-1).toString();
 		if (!variable.empty()) {
 			ss << variable << " * ";
 		}
 		for (int i = 0; i < sites.size(); i++) {
-			ss << "a" << sites[i] << (boost::get<int>(getParameter(i)) ? "\u2020" : "") << " * ";
+			ss << "a" << sites[i] << ((getParameter(i).as<int>()) ? "\u2020" : "") << " * ";
 		}
 		return ss.str().substr(0, ss.str().size() - 2);
 	}
 
+    const std::string toString() override {
+        return toString("");
+    }
 	/**
 	 * Return the indices of the bits that this Instruction
 	 * operates on.
 	 *
 	 * @return bits The bits this Instruction operates on.
 	 */
-	virtual const std::vector<int> bits() {
+	const std::vector<int> bits() override {
 		return sites;
 	}
 
@@ -155,7 +158,7 @@ public:
 	 * @param idx The index of the parameter.
 	 * @return param The InstructionParameter at the given index.
 	 */
-	virtual InstructionParameter getParameter(const int idx) const {
+	InstructionParameter getParameter(const int idx) const {
 		return parameters[idx];
 	}
 
@@ -164,7 +167,7 @@ public:
 	 *
 	 * @return params This instructions parameters.
 	 */
-	virtual std::vector<InstructionParameter> getParameters() {
+	std::vector<InstructionParameter> getParameters() override {
 		return parameters;
 	}
 
@@ -174,7 +177,7 @@ public:
 	 * @param idx The index of the parameter
 	 * @param inst The instruction.
 	 */
-	virtual void setParameter(const int idx, InstructionParameter& inst) {
+	void setParameter(const int idx, InstructionParameter& inst) override {
 		parameters[idx] = inst;
 	}
 
@@ -183,7 +186,7 @@ public:
 	 *
 	 * @return nInsts The number of instructions.
 	 */
-	virtual const int nParameters() {
+	const int nParameters() override {
 		return parameters.size();
 	}
 
@@ -192,7 +195,7 @@ public:
 	 *
 	 * @return parameterized True if this Instruction has parameters.
 	 */
-	virtual bool isParameterized() {
+	bool isParameterized() override {
 		return true;
 	}
 	/**
@@ -201,29 +204,68 @@ public:
 	 *
 	 * @return isComposite True if this is a composite Instruction
 	 */
-	virtual bool isComposite() { return false; }
-
-	virtual const std::string getTag() {
-		return "";
-	}
+	bool isComposite() override { return false; }
 
 	/**
 	 * Returns true if this Instruction is enabled
 	 *
 	 * @return enabled True if this Instruction is enabled.
 	 */
-	virtual bool isEnabled() { return true; }
+	bool isEnabled() override { return true; }
 
 	/**
 	 * Disable this Instruction
 	 */
-
-	virtual void disable() {  }
+	void disable() override {  }
 
 	/**
 	 * Enable this Instruction.
 	 */
-	virtual void enable() {  }
+	void enable() override {  }
+
+  /**
+   * Return true if this Instruction has
+   * customizable options.
+   *
+   * @return hasOptions
+   */
+  bool hasOptions() override {
+      return false;
+  }
+
+  /**
+   * Set the value of an option with the given name.
+   *
+   * @param optName The name of the option.
+   * @param option The value of the option
+   */
+  void setOption(const std::string optName,
+                 InstructionParameter option) override {
+      XACCLogger::instance()->error("setOption not implemented for FermionInst."); 
+      return;              
+  }
+  
+  /**
+   * Get the value of an option with the given name.
+   *
+   * @param optName Then name of the option.
+   * @return option The value of the option.
+   */
+  InstructionParameter getOption(const std::string optName) override {
+       XACCLogger::instance()->error("getOption not implemented for FermionInst.");  
+       return InstructionParameter(0);             
+  }
+
+  /**
+   * Return all the Instructions options as a map.
+   *
+   * @return optMap The options map.
+   */
+  std::map<std::string, InstructionParameter> getOptions() override {
+       XACCLogger::instance()->error("getOptions not implemented for FermionInst."); 
+       return std::map<std::string,InstructionParameter>();              
+  }
+
 
 	EMPTY_DEFINE_VISITABLE()
 };

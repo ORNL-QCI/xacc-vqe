@@ -1,5 +1,7 @@
 #include "QubitTapering.hpp"
 #include "PauliOperator.hpp"
+#include "MPIProvider.hpp"
+#include "DiagonalizeTask.hpp"
 
 #include <algorithm>
 
@@ -45,7 +47,7 @@ std::vector<std::vector<int>> QubitTapering::generateCombinations(
 
     do {
 
-      // Perform custom mapping on the vector before adding 
+      // Perform custom mapping on the vector before adding
       // By default this does nothing
       f(test);
       combinations.push_back(test);
@@ -102,7 +104,7 @@ std::shared_ptr<IR> QubitTapering::transform(std::shared_ptr<IR> ir) {
 
   // Get all g_z (combinations of nqubit 1s and 0s)
   auto combinations = generateCombinations(n);
-  
+
   // Lambda to compute the union of 2 sets
   auto getUnion = [](const std::set<std::vector<int>> &a,
                      const std::set<std::vector<int>> &b) {
@@ -174,7 +176,7 @@ std::shared_ptr<IR> QubitTapering::transform(std::shared_ptr<IR> ir) {
     }
     return newOp;
   };
-  
+
   // Compute U = U1 U2 U3 ...
   double invSqrt2 = 1.0 / std::sqrt(2.0);
   PauliOperator U(1.0);
@@ -182,7 +184,7 @@ std::shared_ptr<IR> QubitTapering::transform(std::shared_ptr<IR> ir) {
     int i = t.getTerms().begin()->second.ops().begin()->first;
     U *= (t + PauliOperator({{i, "X"}})) * invSqrt2;
     U *= (PauliOperator({{i, "X"}}) + PauliOperator({{i, "Z"}})) *
-           (1.0 / std::sqrt(2));
+         (1.0 / std::sqrt(2));
   }
 
   // Use U to compute HPrime
@@ -196,8 +198,9 @@ std::shared_ptr<IR> QubitTapering::transform(std::shared_ptr<IR> ir) {
   reduced_row_echelon_form(tableauxD2, b2, hPrimePivotCols);
 
   // Convert to hPrimePivotCols vector to a set
-  std::set<int> hPrimePivotColsSet(hPrimePivotCols.begin(), hPrimePivotCols.end()), doubleNSet,
-      nSet;
+  std::set<int> hPrimePivotColsSet(hPrimePivotCols.begin(),
+                                   hPrimePivotCols.end()),
+      doubleNSet, nSet;
 
   // Generate range(2*n)
   for (int i = 0; i < 2 * n; i++)
@@ -207,23 +210,23 @@ std::shared_ptr<IR> QubitTapering::transform(std::shared_ptr<IR> ir) {
   for (int i = 0; i < n; i++)
     nSet.insert(i);
 
-  // Create the phase_sites set which is the difference between 
+  // Create the phase_sites set which is the difference between
   // range(2*nQ) and the hPrimePivotSet
   std::set<int> phase_sites, keep_sites;
-  std::set_difference(doubleNSet.begin(), doubleNSet.end(), hPrimePivotColsSet.begin(),
-                      hPrimePivotColsSet.end(),
+  std::set_difference(doubleNSet.begin(), doubleNSet.end(),
+                      hPrimePivotColsSet.begin(), hPrimePivotColsSet.end(),
                       std::inserter(phase_sites, phase_sites.end()));
 
-  // Create the keep_sites set, i.e. the qubit sites we 
+  // Create the keep_sites set, i.e. the qubit sites we
   // are keeping in the reduction
   std::set_difference(nSet.begin(), nSet.end(), phase_sites.begin(),
                       phase_sites.end(),
                       std::inserter(keep_sites, keep_sites.end()));
 
-  // Generate all 1s and 0s of list size phase_sites.size(), map 
+  // Generate all 1s and 0s of list size phase_sites.size(), map
   // all 0s to -1s.
-  std::vector<std::vector<int>> phase_configs = generateCombinations(
-      phase_sites.size(), [&](std::vector<int> &tmp) {
+  std::vector<std::vector<int>> phase_configs =
+      generateCombinations(phase_sites.size(), [&](std::vector<int> &tmp) {
         for (int i = 0; i < phase_sites.size(); i++) {
           if (tmp[i] == 0)
             tmp[i] = -1;
@@ -231,8 +234,8 @@ std::shared_ptr<IR> QubitTapering::transform(std::shared_ptr<IR> ir) {
         return;
       });
 
-  // Create the reduced hamiltonian 
-  // by mapping operators on unused qubits to 
+  // Create the reduced hamiltonian
+  // by mapping operators on unused qubits to
   // +-1 subspace
   PauliOperator actualReduced;
   double energy = 0.0;
@@ -266,7 +269,7 @@ std::shared_ptr<IR> QubitTapering::transform(std::shared_ptr<IR> ir) {
       }
     }
 
-    // Get the ground state energy to check if this is the 
+    // Get the ground state energy to check if this is the
     // minimizing sector
     auto reducedEnergy = computeGroundStateEnergy(reduced, n);
     if (reducedEnergy < energy) {
@@ -276,26 +279,27 @@ std::shared_ptr<IR> QubitTapering::transform(std::shared_ptr<IR> ir) {
   }
 
   counter = 0;
-  std::map<int,int> keepSites2Logical;
-  for (auto& i : keep_sites) {
-      keepSites2Logical.insert({i,counter});
-      counter++;
+  std::map<int, int> keepSites2Logical;
+  for (auto &i : keep_sites) {
+    keepSites2Logical.insert({i, counter});
+    counter++;
   }
 
   actualReduced.mapQubitSites(keepSites2Logical);
-  
-  std::stringstream s; 
+
+  std::stringstream s;
   s << std::setprecision(12) << energy;
-  xacc::info("Reduced Hamiltonian:" + actualReduced.toString() + ", with energy = " + s.str());
+  xacc::info("Reduced Hamiltonian:" + actualReduced.toString() +
+             ", with energy = " + s.str());
   if (xacc::optionExists("qubit-tapering-show")) {
-      xacc::info("Exiting XACC.");
-      xacc::Finalize();
-      exit(0);
+    xacc::info("Exiting XACC.");
+    xacc::Finalize();
+    exit(0);
   }
-  
+
   auto newIR = actualReduced.toXACCIR();
 
-  // See if we have an ansatz and if so grab 
+  // See if we have an ansatz and if so grab
   // it and add it to the reduced IR
   auto ansatz = std::dynamic_pointer_cast<Function>(
       ir->getKernels()[0]->getInstruction(0));
@@ -311,11 +315,35 @@ std::shared_ptr<IR> QubitTapering::transform(std::shared_ptr<IR> ir) {
 const double QubitTapering::computeGroundStateEnergy(PauliOperator &op,
                                                      const int n) {
 
-  // FIXME, we can do this better with lanczos.
-  auto A = op.toDenseMatrix(n);
-  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> es(A);
-  auto reducedEnergy = es.eigenvalues()[0];
-  return reducedEnergy;
+//   if (xacc::hasService<DiagonalizeBackend>("slepc")) {
+//       xacc::info("Diagonalizing with SLEPC");
+//     std::shared_ptr<MPIProvider> provider;
+//     std::shared_ptr<Communicator> world;
+//     if (xacc::hasService<MPIProvider>("boost-mpi")) {
+//       provider = xacc::getService<MPIProvider>("boost-mpi");
+//       provider->initialize(argc, argv);
+//       world = provider->getCommunicator();
+//       int rank = world->rank();
+//       xacc::setGlobalLoggerPredicate([&]() { return rank == 0; });
+//       xacc::info("Using Boost MPI for distributed computations.");
+//     } else {
+//       provider = xacc::getService<MPIProvider>("no-mpi");
+//       provider->initialize(argc, argv);
+//       world = provider->getCommunicator();
+//       xacc::info("XACC-VQE Built without MPI Support.");
+//     }
+
+//     auto prog = std::make_shared<VQEProgram>(world);
+//     prog->setPauliOperator(op);
+    
+//     auto diag = xacc::getService<DiagonalizeBackend>("slepc");
+//     return diag->diagonalize(prog);
+//   } else {
+    auto A = op.toDenseMatrix(n);
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> es(A);
+    auto reducedEnergy = es.eigenvalues()[0];
+    return reducedEnergy;
+//   }
 }
 
 } // namespace vqe

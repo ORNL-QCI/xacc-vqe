@@ -73,7 +73,7 @@ public:
 	 *
 	 * @return
 	 */
-	virtual const int nInstructions() {
+	const int nInstructions() override {
 		return instructions.size();
 	}
 
@@ -86,7 +86,7 @@ public:
 	 * @param idx The index of the SpinInstruction
 	 * @return instruction
 	 */
-	virtual InstPtr getInstruction(const int idx) {
+	InstPtr getInstruction(const int idx) override {
 		InstPtr ptr;
 		if (instructions.size() > idx) {
 			ptr = *std::next(instructions.begin(), idx);
@@ -96,7 +96,7 @@ public:
 		return ptr;
 	}
 
-	virtual void mapBits(std::vector<int> bitMap) {
+	void mapBits(std::vector<int> bitMap) override {
 	}
 
 	/**
@@ -104,7 +104,7 @@ public:
 	 *
 	 * @return instructions
 	 */
-	virtual std::list<InstPtr> getInstructions() {
+	std::list<InstPtr> getInstructions() override {
 		return instructions;
 	}
 
@@ -113,7 +113,7 @@ public:
 	 *
 	 * @param idx The index of the instruction to remove.
 	 */
-	virtual void removeInstruction(const int idx) {
+	void removeInstruction(const int idx) override {
 		instructions.remove(getInstruction(idx));
 	}
 
@@ -123,7 +123,7 @@ public:
 	 *
 	 * @param instruction
 	 */
-	virtual void addInstruction(InstPtr instruction) {
+	void addInstruction(InstPtr instruction) override {
 		instructions.push_back(instruction);
 	}
 
@@ -134,7 +134,7 @@ public:
 	 * @param currentInst
 	 * @param replacingInst
 	 */
-	virtual void replaceInstruction(const int idx, InstPtr replacingInst) {
+	void replaceInstruction(const int idx, InstPtr replacingInst) override {
 		std::replace(instructions.begin(), instructions.end(),
 				getInstruction(idx), replacingInst);
 	}
@@ -145,7 +145,7 @@ public:
 	 * @param idx The index of the new instruction
 	 * @param newInst
 	 */
-	virtual void insertInstruction(const int idx, InstPtr newInst) {
+	void insertInstruction(const int idx, InstPtr newInst) override {
 		auto iter = std::next(instructions.begin(), idx);
 		instructions.insert(iter, newInst);
 	}
@@ -154,11 +154,11 @@ public:
 	 * Return the name of this function
 	 * @return
 	 */
-	virtual const std::string name() const {
+	const std::string name() const override {
 		return _name;
 	}
 
-	virtual const std::string description() const {
+	const std::string description() const override {
 		return "";
 	}
 
@@ -174,7 +174,7 @@ public:
 	 * Return the qubits this function acts on.
 	 * @return
 	 */
-	virtual const std::vector<int> bits() {
+	const std::vector<int> bits() override {
 		return std::vector<int> { };
 	}
 
@@ -262,13 +262,17 @@ public:
 	 * @param bufferVarName
 	 * @return
 	 */
-	virtual const std::string toString(const std::string& bufferVarName) {
+	const std::string toString(const std::string& bufferVarName) override {
 		std::stringstream ss;
 		for (auto i : instructions) {
 			ss << i->toString("") << " + \n";
 		}
 		return ss.str().substr(0, ss.str().size() - 3);
 	}
+
+    const std::string toString() override {
+        return toString("");
+    }
 
 	/**
 	 * FermionKernel do not contain parameters. This
@@ -278,7 +282,7 @@ public:
 	 * @return
 	 */
 
-	virtual InstructionParameter getParameter(const int idx) const{
+	InstructionParameter getParameter(const int idx) const override {
 		xacc::error("FermionKernel does not contain runtime parameters.");
 		return InstructionParameter(0);
 	}
@@ -291,7 +295,7 @@ public:
 	 * @return
 	 */
 
-	virtual void setParameter(const int idx, InstructionParameter& p) {
+	void setParameter(const int idx, InstructionParameter& p) override {
 		xacc::error("FermionKernel does not contain runtime parameters.");
 	}
 
@@ -303,30 +307,27 @@ public:
 	 * @return
 	 */
 
-	virtual std::vector<InstructionParameter> getParameters() {
+	std::vector<InstructionParameter> getParameters() override {
 		xacc::error("FermionKernel does not contain runtime parameters.");
 		return std::vector<InstructionParameter>{};
 	}
 
-	virtual void addParameter(InstructionParameter instParam) {
+	void addParameter(InstructionParameter instParam) override {
 		xacc::error("FermionKernel does not contain runtime parameters.");
 	}
+    
 	/**
 	 * FermionKernel is not parameterized.
 	 */
-	virtual bool isParameterized() {
+	bool isParameterized() override {
 		return false;
-	}
-
-	virtual const std::string getTag() {
-		return "";
 	}
 
 	/**
 	 * FermionKernel has 0 parameters.
 	 * @return
 	 */
-	virtual const int nParameters() {
+	const int nParameters() override {
 		return 0;
 	}
 
@@ -337,10 +338,69 @@ public:
 	 * @param idx
 	 * @return
 	 */
-	virtual std::shared_ptr<Function> operator()(const Eigen::VectorXd& params) {
+	std::shared_ptr<Function> operator()(const Eigen::VectorXd& params) override {
 		xacc::error("FermionKernel does not contain runtime parameters.");
 		return std::make_shared<FermionKernel>("");
 	}
+/**
+   * Return the number of logical qubits.
+   *
+   * @return nLogical The number of logical qubits.
+   */
+  const int nLogicalBits() override {
+      return 0;
+  }
+
+  /**
+   * Return the number of physical qubits. 
+   * 
+   * @return nPhysical The number of physical qubits.
+   */
+  const int nPhysicalBits() override {
+      return 0;
+  }
+  /**
+   * Return true if this Instruction has
+   * customizable options.
+   *
+   * @return hasOptions
+   */
+  bool hasOptions() override {
+      return false;
+  }
+
+  /**
+   * Set the value of an option with the given name.
+   *
+   * @param optName The name of the option.
+   * @param option The value of the option
+   */
+  void setOption(const std::string optName,
+                 InstructionParameter option) override {
+      XACCLogger::instance()->error("setOption not implemented for FermionKernel."); 
+      return;              
+  }
+  
+  /**
+   * Get the value of an option with the given name.
+   *
+   * @param optName Then name of the option.
+   * @return option The value of the option.
+   */
+  InstructionParameter getOption(const std::string optName) override {
+       XACCLogger::instance()->error("getOption not implemented for FermionKernel.");  
+       return InstructionParameter(0);             
+  }
+
+  /**
+   * Return all the Instructions options as a map.
+   *
+   * @return optMap The options map.
+   */
+  std::map<std::string, InstructionParameter> getOptions() override {
+       XACCLogger::instance()->error("getOptions not implemented for FermionKernel."); 
+       return std::map<std::string,InstructionParameter>();              
+  }
 
 
 	EMPTY_DEFINE_VISITABLE()

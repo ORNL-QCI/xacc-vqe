@@ -59,6 +59,7 @@ public:
 
 class DiagonalizeBackend : public Identifiable {
 public:
+	virtual double diagonalize(PauliOperator& prog) = 0;
 	virtual double diagonalize(std::shared_ptr<VQEProgram> prog) = 0;
     virtual std::pair<double, Eigen::VectorXcd> diagonalizeWithGroundState(std::shared_ptr<VQEProgram> prog) {
         return {diagonalize(prog),Eigen::VectorXcd::Zero(1)};
@@ -71,9 +72,10 @@ protected:
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> es;
 public:
 
-	virtual double diagonalize(std::shared_ptr<VQEProgram> prog);
-    virtual std::pair<double, Eigen::VectorXcd> diagonalizeWithGroundState(std::shared_ptr<VQEProgram> prog);
-	virtual const std::string name() const {
+	double diagonalize(PauliOperator& prog) override;
+	double diagonalize(std::shared_ptr<VQEProgram> prog) override;
+    std::pair<double, Eigen::VectorXcd> diagonalizeWithGroundState(std::shared_ptr<VQEProgram> prog) override;
+	const std::string name() const override {
 		return "diagonalize-eigen";
 	}
 
@@ -81,7 +83,7 @@ public:
 	 * Return the description of this instance
 	 * @return description The description of this object.
 	 */
-	virtual const std::string description() const {
+	const std::string description() const override {
 		return "";
 	}
 };

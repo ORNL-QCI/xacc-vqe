@@ -42,14 +42,12 @@ VQETaskResult DiagonalizeTask::execute(
 	return result;
 }
 
-double EigenDiagonalizeBackend::diagonalize(
-		std::shared_ptr<VQEProgram> prog) {
-	std::complex<double> gsReal;
-	auto hamiltonian = prog->getPauliOperator();
-	auto nQubits = prog->getNQubits();
+double EigenDiagonalizeBackend::diagonalize(PauliOperator& hamiltonian) {
+    auto nQubits = hamiltonian.nQubits();
 	auto fermionTransformation =
 			xacc::optionExists("fermion-transformation") ?
 					xacc::getOption("fermion-transformation") : "";
+	std::complex<double> gsReal;
 
 	Eigen::VectorXd eigenvalues;
 	if (xacc::optionExists("diag-number-symmetry") && 
@@ -212,6 +210,12 @@ double EigenDiagonalizeBackend::diagonalize(
 	ss << std::setprecision(12) << gsReal;
 	xacc::info("Ground State Energy of Hamiltonian = " + ss.str());
 	return std::real(gsReal);
+}
+
+double EigenDiagonalizeBackend::diagonalize(
+		std::shared_ptr<VQEProgram> prog) {
+	auto hamiltonian = prog->getPauliOperator();
+    return diagonalize(hamiltonian);
 }
 
 std::pair<double, Eigen::VectorXcd> EigenDiagonalizeBackend::diagonalizeWithGroundState(std::shared_ptr<VQEProgram> prog) {

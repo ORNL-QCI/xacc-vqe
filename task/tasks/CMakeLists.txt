@@ -2,6 +2,7 @@
 #find_package(MPI)
 #find_package(PETSc) 
 
-if (Boost_FOUND AND MPI_CXX_FOUND AND PETSC_FOUND) 
-   add_subdirectory(petsc)
-endif()
+#if (MPI_CXX_FOUND AND PETSC_FOUND) 
+#  add_subdirectory(petsc)
+#endif()
+#add_subdirectory(arpack)

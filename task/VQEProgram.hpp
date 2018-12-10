@@ -69,6 +69,8 @@ class VQEProgram: public xacc::Program, public OptionsProvider {
 
 public:
 
+    VQEProgram(std::shared_ptr<Communicator> c) : Program(nullptr, ""), comm(c) {}
+    
 	VQEProgram(std::shared_ptr<Accelerator> acc, PauliOperator& op,
 			std::shared_ptr<xacc::Function> sprep,
 			std::shared_ptr<Communicator> c) :
@@ -270,6 +272,10 @@ public:
 		return pauli;
 	}
 
+    void setPauliOperator(PauliOperator op) {
+        pauli = op;
+    }
+    
 	KernelList<> getVQEKernels() {
 		return kernels;
 	}

@@ -88,16 +88,19 @@ TEST(ComputeEnergyVQETaskTester,checkSimple) {
 		// Get the user-specified Accelerator,
 		// or TNQVM if none specified
 		auto accelerator = xacc::getAccelerator("tnqvm");
+        auto b = accelerator->createBuffer("q",4);
 
 		ComputeEnergyVQETask task;
 
 		auto program = std::make_shared<VQEProgram>(accelerator, src, world);
-
+        program->setGlobalBuffer(b);
+        
 		program->build();
 
 		Eigen::VectorXd parameters(2);
 		parameters << 0, -.0571583356234;
 		task.setVQEProgram(program);
+        xacc::info("HELLO WORLD");
 
 		VQETaskResult result = task.execute(parameters);
 		EXPECT_NEAR(result.energy, -1.13727042207, 1e-4);

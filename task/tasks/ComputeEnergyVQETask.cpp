@@ -37,7 +37,8 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
   globalBuffer->addExtraInfo("circuit-depth", optPrep->depth());
   auto qasmStr = optPrep->toString("q");
   boost::replace_all(qasmStr, "\\n", "\\\\n");
-//   globalBuffer->addExtraInfo("ansatz-qasm", qasmStr);
+
+  globalBuffer->addExtraInfo("ansatz-qasm", qasmStr);
 
   auto getCoeff = [](Kernel<> &k) -> double {
     return std::real(
@@ -79,9 +80,7 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
     for (auto &k : program->getVQEKernels()) {
       if (k.getIRFunction()->nInstructions() > 0) { // IF NOT IDENTITY TERM
         // If not identity, add the state prep to the circuit
-        if (k.getIRFunction()->getTag() != "readout-error") {
-          k.getIRFunction()->insertInstruction(0, optPrep);
-        }
+        k.getIRFunction()->insertInstruction(0, optPrep);
         kernels.push_back(k);
       } else { // IF IS IDENTITY TERM
         // if it is identity, add its coeff to the energy sum

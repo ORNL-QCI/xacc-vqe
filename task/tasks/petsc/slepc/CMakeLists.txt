@@ -1,15 +1,12 @@
-
 set (PACKAGE_NAME "XACC Slepc Ground State Energy Calculator")
 set (PACKAGE_DESCIPTION "")
 
 set (LIBRARY_NAME xacc-vqe-slepc)
 
-set(CMAKE_INSTALL_RPATH "${XACC_ROOT}/lib;${XACC_ROOT}/lib/plugins/misc;/usr/local/lib64")
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/task/tasks)
 
+message(STATUS "${PETSC_INCLUDE_DIRS}")
 include_directories(${MPI_CXX_INCLUDE_PATH})
 include_directories(${PETSC_INCLUDE_DIRS})
 include_directories(${SLEPC_INCLUDE_DIRS})
@@ -18,6 +15,7 @@ file (GLOB_RECURSE HEADERS *.hpp)
 
 file (GLOB SRC *.cpp)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DPETSC_USE_COMPLEX")
 # Set up dependencies to resources to track changes
 usFunctionGetResourceSource(TARGET ${LIBRARY_NAME} OUT SRC)
 # Generate bundle initialization code
@@ -51,9 +49,16 @@ usFunctionEmbedResources(TARGET ${LIBRARY_NAME}
     manifest.json
   )
 
-target_link_libraries(${LIBRARY_NAME} ${Boost_LIBRARIES} ${XACC_LIBRARIES} ${PYTHON_LIBRARY} xacc-vqe-ir ${MPI_CXX_LIBRARIES} ${PETSC_LIBRARIES} ${SLEPC_LIBRARIES})
+target_link_libraries(${LIBRARY_NAME} ${XACC_LIBRARIES} ${PYTHON_LIBRARY} xacc-vqe-ir ${MPI_CXX_LIBRARIES} ${PETSC_LIBRARIES} ${SLEPC_LIBRARIES})
+if(APPLE)
+   set_target_properties(${LIBRARY_NAME} PROPERTIES INSTALL_RPATH "@loader_path/../lib;@loader_path")
+   set_target_properties(${LIBRARY_NAME} PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
+else()
+   set_target_properties(${LIBRARY_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/../lib:$ORIGIN")
+   set_target_properties(${LIBRARY_NAME} PROPERTIES LINK_FLAGS "-shared")
+endif()
 
-install(TARGETS ${LIBRARY_NAME} DESTINATION $ENV{HOME}/.xacc/plugins/misc)
+install(TARGETS ${LIBRARY_NAME} DESTINATION $ENV{HOME}/.xacc/plugins)
 
 # Gather tests
 #file (GLOB test_files tests/*.cpp)

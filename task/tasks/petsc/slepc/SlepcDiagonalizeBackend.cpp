@@ -14,8 +14,9 @@ double SlepcDiagonalizeBackend::diagonalize(std::shared_ptr<VQEProgram> prog) {
 	auto world = prog->getCommunicator();
 	int rank = world->rank();
 	int nRanks = world->size();
-	auto nQubits = prog->getNQubits();
 	auto inst = prog->getPauliOperator();
+    auto nQubits = inst.nQubits();
+
 	std::complex<double> gsReal;
 	static char help[] = "";
 	std::vector<std::string> argvVec;

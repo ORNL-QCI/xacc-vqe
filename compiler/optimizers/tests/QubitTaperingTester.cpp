@@ -57,7 +57,10 @@ const std::string src = R"src(__qpu__ kernel() {
 TEST(QubitTaperingTester, checkH2) {
 
   auto c = xacc::getService<xacc::Compiler>("fermion");
+      xacc::info("COMPILING");
+
   auto ir = c->compile(src);
+        xacc::info("COMPILED");
 
   QubitTapering tapering;
   auto newIR = tapering.transform(ir);
@@ -74,7 +77,8 @@ TEST(QubitTaperingTester, checkH2WithAnsatz) {
 
   if (xacc::hasAccelerator("local-ibm")) {
     auto acc = xacc::getAccelerator("local-ibm");
-
+    auto b = acc->createBuffer("q",4);
+    
     auto compiler = xacc::getService<xacc::Compiler>("xacc-py");
     const std::string src2 = R"src(def f(buffer, t0, t1):
        Ry(t0,0)
@@ -82,6 +86,7 @@ TEST(QubitTaperingTester, checkH2WithAnsatz) {
        )src";
 
     auto ir = compiler->compile(src2, acc);
+
     Eigen::VectorXd p(2);
     p(0) = -3.1415;
     p(1) = 1.57;

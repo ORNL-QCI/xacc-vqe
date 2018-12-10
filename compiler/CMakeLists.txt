@@ -41,6 +41,7 @@ usFunctionGetResourceSource(TARGET ${LIBRARY_NAME} OUT SRC)
 usFunctionGenerateBundleInit(TARGET ${LIBRARY_NAME} OUT SRC)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/optimizers)
+include_directories(${CMAKE_SOURCE_DIR}/task/tasks)
 
 add_library(${LIBRARY_NAME} SHARED ${SRC})
 

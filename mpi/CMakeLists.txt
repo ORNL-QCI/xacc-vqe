@@ -1,4 +1,4 @@
-find_package(MPI)
+#find_package(MPI)
 #if (MPI_FOUND) 
 #   set(BOOST_ROOT ${XACC_ROOT})
 #   find_package(Boost COMPONENTS filesystem program_options system mpi)

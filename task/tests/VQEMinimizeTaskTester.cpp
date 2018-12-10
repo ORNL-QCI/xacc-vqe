@@ -88,8 +88,10 @@ TEST(VQEMinimizeTaskTester,checkSimple) {
 		// Get the user-specified Accelerator,
 		// or TNQVM if none specified
 		auto accelerator = xacc::getAccelerator("tnqvm");
+        auto b = accelerator->createBuffer("q",4);
 
 		auto program = std::make_shared<VQEProgram>(accelerator, src, world);
+        program->setGlobalBuffer(b);
 		program->build();
 
 		Eigen::VectorXd parameters(2);
