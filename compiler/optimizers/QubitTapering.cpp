@@ -81,20 +81,18 @@ std::shared_ptr<IR> QubitTapering::transform(std::shared_ptr<IR> ir) {
   // Compute Tableaux of the hamiltonian,
   // This is the E matrix from arxiv:1701.08213
   Eigen::MatrixXi tableaux = computeTableaux(H, n);
-  Eigen::MatrixXd tableauxD = tableaux.cast<double>();
-  Eigen::MatrixXd b = tableauxD;
+  std::vector<int> pivotCols;
 
   // Convert tableaux to rref
-  std::vector<int> pivotCols;
-  reduced_row_echelon_form(tableauxD, b, pivotCols);
-
+  Eigen::MatrixXi b = gauss(tableaux, pivotCols);
+  
   // Get linear independent vectors from rref
   int ker_dim = 2 * n - pivotCols.size();
   Eigen::MatrixXi linIndVecs(pivotCols.size(), 2 * n);
   linIndVecs.setZero();
   std::vector<std::vector<int>> linIndVecsVector;
   for (int i = 0; i < pivotCols.size(); i++) {
-    linIndVecs.row(i) = b.cast<int>().row(i);
+    linIndVecs.row(i) = b.row(i);
   }
 
   // Build up the symmetry group generators
@@ -167,6 +165,8 @@ std::shared_ptr<IR> QubitTapering::transform(std::shared_ptr<IR> ir) {
     }
     taus.emplace_back(terms);
   }
+  
+//   for (auto t : taus) std::cout << "GEN: " << t.toString() << "\n";
 
   // Lambda to compute hermitian conjugate of PauliOperator
   auto hc = [](PauliOperator &op) {
@@ -192,10 +192,8 @@ std::shared_ptr<IR> QubitTapering::transform(std::shared_ptr<IR> ir) {
 
   // Compute rref of HPrime
   Eigen::MatrixXi hPrimeTableaux = computeTableaux(HPrime, n);
-  Eigen::MatrixXd tableauxD2 = hPrimeTableaux.cast<double>();
-  Eigen::MatrixXd b2 = tableauxD2;
   std::vector<int> hPrimePivotCols;
-  reduced_row_echelon_form(tableauxD2, b2, hPrimePivotCols);
+  Eigen::MatrixXi b2 = gauss(hPrimeTableaux, hPrimePivotCols);
 
   // Convert to hPrimePivotCols vector to a set
   std::set<int> hPrimePivotColsSet(hPrimePivotCols.begin(),

@@ -50,6 +50,53 @@ private:
     }
     return B.rows();
   }
+  
+  Eigen::MatrixXi gauss(Eigen::MatrixXi& A, std::vector<int> &pivotCols) {
+     int n = A.rows();
+     int m = A.cols();
+
+     int sc = 0;
+
+     for (int i = 0; i < m; i++) {
+         bool found_row = false;
+         int ip = i-sc;
+         for (int k = ip; k < n; k++) {
+             if (A(k,i) == 1) {
+                 found_row = true;
+                 
+                 if (k > ip) {
+                     for (int j = i; j < m; j++) {
+                         auto tmp = A(k,j);
+                         A(k,j) = A(ip,j);
+                         A(ip,j) = tmp;
+                     }
+                 }
+
+                 for (int l = ip+1; l < n; l++) {
+                     if (A(l,i) != 0) {
+                         for (int j = ip; j < m; j++) {
+                             A(l,j) = (A(l,j)+A(ip,j)) %2;
+                         }
+                     }
+                 }
+                 break;
+             }
+         }
+         if (!found_row) sc += 1;
+     }
+
+    unsigned row2 = 0;
+    for (unsigned col = 0; col < A.cols() && row2 < A.rows(); col++) {
+      if (std::fabs(A(row2, col)) < 1e-12)
+        continue;
+
+      pivotCols.push_back(col);
+      row2++;
+    }
+    
+     return A;
+
+  }
 
   void reduced_row_echelon_form(const Eigen::MatrixXd &A, Eigen::MatrixXd &B,
                                 std::vector<int> &pivotCols) {
@@ -69,14 +116,19 @@ private:
       }
 
       B.row(index) *= 1.0 / B(index, i);
+    //   for (int m = 0; m < B.cols(); m++) B.row(index)(m) = (int) B.row(index)(m) % 2;
 
       for (j = 0; j < row; j++) {
         if (j == index)
           continue;
 
         B.row(j) += (-1.0 * B(j, i)) * B.row(index);
+        // for (int m = 0; m < B.cols(); m++) B.row(j)(m) = (int) B.row(j)(m) % 2;
       }
 
+      Eigen::MatrixXi tmp = B.cast<int>();
+      B = B.cast<int>().unaryExpr([](const int x) { return x%2; }).cast<double>();
+      
       index++;
     }
 
