@@ -41,15 +41,6 @@ private:
                              [](std::vector<int> &tmp) { return; });
   int binaryVectorInnerProduct(std::vector<int> &bv1, std::vector<int> &bv2);
   const double computeGroundStateEnergy(PauliOperator &op, const int n);
-
-  unsigned pivot(Eigen::MatrixXd &B, unsigned r, unsigned c) {
-    for (unsigned k = r; k < B.rows(); k++) {
-      if (std::fabs(B(k, c)) > 1e-12) {
-        return k;
-      }
-    }
-    return B.rows();
-  }
   
   Eigen::MatrixXi gauss(Eigen::MatrixXi& A, std::vector<int> &pivotCols) {
      int n = A.rows();
@@ -96,50 +87,6 @@ private:
     
      return A;
 
-  }
-
-  void reduced_row_echelon_form(const Eigen::MatrixXd &A, Eigen::MatrixXd &B,
-                                std::vector<int> &pivotCols) {
-    unsigned row = A.rows(), col = A.cols();
-    unsigned index = 0, i, j, k;
-    B = A;
-
-    for (i = 0; i < col; i++) {
-      if (index == row)
-        break;
-
-      k = pivot(B, index, i);
-      if (k == row)
-        continue;
-      if (k != index) {
-        B.row(k).swap(B.row(index));
-      }
-
-      B.row(index) *= 1.0 / B(index, i);
-    //   for (int m = 0; m < B.cols(); m++) B.row(index)(m) = (int) B.row(index)(m) % 2;
-
-      for (j = 0; j < row; j++) {
-        if (j == index)
-          continue;
-
-        B.row(j) += (-1.0 * B(j, i)) * B.row(index);
-        // for (int m = 0; m < B.cols(); m++) B.row(j)(m) = (int) B.row(j)(m) % 2;
-      }
-
-      Eigen::MatrixXi tmp = B.cast<int>();
-      B = B.cast<int>().unaryExpr([](const int x) { return x%2; }).cast<double>();
-      
-      index++;
-    }
-
-    unsigned row2 = 0;
-    for (unsigned col = 0; col < B.cols() && row2 < B.rows(); col++) {
-      if (std::fabs(B(row2, col)) < 1e-12)
-        continue;
-
-      pivotCols.push_back(col);
-      row2++;
-    }
   }
 };
 } // namespace vqe
