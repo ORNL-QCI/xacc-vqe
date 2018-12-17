@@ -4,12 +4,21 @@ import xaccvqe
 import ast
 import time
 import os
-import numpy as np 
+import numpy as np
 
+#
+#    VQEBase is an abstract class that implements the VQE algorithm using XACC.
+#    VQE and VQEEnergy are iPOPO bundles that inherit from this class to execute the algorithm and analyze results.
+#
+#    Methods:
+#        bind_dicts - Required for using iPOPO service registry
+#        unbind_dicts - Required for using iPOPO service registry
+#        execute - executes the VQE algorithm according to input configurations
+#        analyze - analyzes the AcceleratorBuffer produced from execute()
 class VQEBase(Algorithm):
-    
+
     def __init__(self):
-        self.molecule_generators = {}
+        self.hamiltonian_generators = {}
         self.ansatz_generators = {}
         self.vqe_options_dict = {}
         self.n_qubits = 0
@@ -17,26 +26,53 @@ class VQEBase(Algorithm):
         self.ansatz = None
         self.op = None
         self.qpu = None
-        
+
     def bind_dicts(self, field, service, svc_ref):
-        if svc_ref.get_property('molecule_generator'):
-            generator = svc_ref.get_property('molecule_generator')
-            self.molecule_generators[generator] = service
+        """
+        This method is intended to be inherited by iPOPO bundle subclasses.
+        Binds the service references of the available molecule and ansatz generators.
+        """
+        if svc_ref.get_property('hamiltonian_generator'):
+            generator = svc_ref.get_property('hamiltonian_generator')
+            self.hamiltonian_generators[generator] = service
         elif svc_ref.get_property('ansatz_generator'):
             generator = svc_ref.get_property('ansatz_generator')
             self.ansatz_generators[generator] = service
 
-    def unbind_dicts(self, field, service, svc_ref):    
-        if svc_ref.get_property('molecule_generator'):
-            generator = svc_ref.get_property('molecule_generator')
-            del self.molecule_generators[generator]
+    def unbind_dicts(self, field, service, svc_ref):
+        """
+            This method is intended to be inherited by iPOPO bundle subclasses.
+            Unbinds the service references of the available molecule and ansatz generators when the instance is killed
+        """
+        if svc_ref.get_property('hamiltonian_generator'):
+            generator = svc_ref.get_property('hamiltonian_generator')
+            del self.hamiltonian_generators[generator]
         elif svc_ref.get_property('ansatz_generator'):
             generator = svc_ref.get_property('ansatz_generator')
             del self.ansatz_generators[generator]
-    
+
     def execute(self, inputParams):
+        """
+        This method is intended to be inherited by vqe and vqe_energy subclasses to allow algorithm-specific implementation.
+        This superclass method adds extra information to the buffer and allows XACC settings options to be set before executing VQE.
+
+        Parameters:
+        inputParams : dictionary
+                    a dictionary of input parameters obtained from .ini file
+
+        return QPU Accelerator buffer
+
+        Options used (obtained from inputParams):
+            'qubit-map': map of logical qubits to physical qubits
+            'n-execs': number of sampler executions of measurements
+            'initial-parameters': list of initial parameters for the VQE algorithm
+
+            'restart-from-file': AcceleratorDecorator option to allow restart of VQE algorithm
+            'readout-error': AcceleratorDecorator option for readout-error mitigation
+
+        """
         self.qpu = xacc.getAccelerator(inputParams['accelerator'])
-        xaccOp = self.molecule_generators[inputParams['molecule-generator']].generate(
+        xaccOp = self.hamiltonian_generators[inputParams['hamiltonian-generator']].generate(
             inputParams)
         self.ansatz = self.ansatz_generators[inputParams['name']].generate(
             inputParams, xaccOp.nQubits())
@@ -46,7 +82,7 @@ class VQEBase(Algorithm):
                 xaccOp, self.ansatz, qubit_map)
         else:
             n_qubits = xaccOp.nQubits()
-            
+
         self.op = xaccOp
         self.n_qubits = n_qubits
         self.buffer = self.qpu.createBuffer('q', n_qubits)
@@ -54,7 +90,7 @@ class VQEBase(Algorithm):
         self.buffer.addExtraInfo('ansatz-qasm', self.ansatz.toString('q').replace('\\n', '\\\\n'))
         pycompiler = xacc.getCompiler('xacc-py')
         self.buffer.addExtraInfo('ansatz-qasm-py', '\n'.join(pycompiler.translate('q',self.ansatz).split('\n')[1:]))
-        
+
         if 'n-execs' in inputParams:
             xacc.setOption('sampler-n-execs', inputParams['n-execs'])
             self.qpu = xacc.getAcceleratorDecorator('improved-sampling', self.qpu)
@@ -63,18 +99,34 @@ class VQEBase(Algorithm):
             xacc.setOption('vqe-restart-file', inputParams['restart-from-file'])
             self.qpu = xacc.getAcceleratorDecorator('vqe-restart',self.qpu)
             self.qpu.initialize()
-                        
+
         if 'readout-error' in inputParams and inputParams['readout-error']:
-            self.qpu = xacc.getAcceleratorDecorator('ro-error',self.qpu) 
-            
+            self.qpu = xacc.getAcceleratorDecorator('ro-error',self.qpu)
+
         self.vqe_options_dict = {'accelerator': self.qpu, 'ansatz': self.ansatz}
-        
+
         if 'initial-parameters' in inputParams:
             self.vqe_options_dict['vqe-params'] = ','.join([str(x) for x in ast.literal_eval(inputParams['initial-parameters'])])
-            
-        xacc.setOptions(inputParams)            
-    
+
+        xacc.setOptions(inputParams)
+
     def analyze(self, buffer, inputParams):
+        """
+        This method is also to be inherited by vqe and vqe_energy subclasses to allow for algorithm-specific implementation.
+
+        This superclass method always generates a .csv file with measured expectation values for each kernel and calculated energy of each iteration.
+
+        Parameters:
+        inputParams : dictionary
+                    a dictionary of input parameters obtained from .ini file
+        buffer : XACC AcceleratorBuffer
+                AcceleratorBuffer containing VQE results to be analyzed
+
+        Options used (in inputParams):
+            'readout-error': generate .csv file with readout-error corrected expectation values and calculated energy for each kernel and iteration.
+            'richardson-extrapolation': run Richardson-Extrapolation on the resulting Accelerator buffer (generating 4 more .csv files of expectation values and energies)
+            'rich-extra-iter': the number of iterations of Richardson-Extrapolation
+        """
         ps = buffer.getAllUnique('parameters')
         timestr = time.strftime("%Y%m%d-%H%M%S")
         exp_csv_name = "%s_%s_%s_%s" % (os.path.splitext(buffer.getInformation('file-name'))[0],
@@ -105,7 +157,7 @@ class VQEBase(Algorithm):
                     f.write(str(exp)+',')
                 f.write(str(energy)+'\n')
             f.close()
-            
+
         if 'richardson-extrapolation' in inputParams and inputParams['richardson-extrapolation']:
             angles = buffer.getInformation('vqe-angles')
             qpu = self.vqe_options_dict['accelerator']
@@ -116,20 +168,20 @@ class VQEBase(Algorithm):
             fileNames = {r:"%s_%s_%s_%s" % (os.path.splitext(buffer.getInformation('file-name'))[0],
                             buffer.getInformation('accelerator'),
                             'rich_extrap_'+str(r), timestr)+'.csv' for r in [1,3,5,7]}
-                            
+
             nRE_Execs = 2 if not 'rich-extrap-iter' in inputParams else int(inputParams['rich-extrap-iter'])
             if nRE_Execs < 2:
                 print('Richardson Extrapolation needs more than 1 execution. Setting to 2.')
-                nRE_execs = 2  
-            
+                nRE_execs = 2
+
             for r in [1,3,5,7]:
                 f = open(fileNames[r], 'w')
                 xacc.setOption('rich-extrap-r',r)
-                
+
                 for i in range(nRE_Execs):
                     richardson_buffer = qpu.createBuffer('q', self.n_qubits)
                     results = xaccvqe.execute(xaccOp, richardson_buffer, **self.vqe_options_dict)
-                
+
                     ps = richardson_buffer.getAllUnique('parameters')
                     for p in ps:
                         f.write(str(p).replace('[', '').replace(']', ''))
@@ -147,7 +199,7 @@ class VQEBase(Algorithm):
             kernelNames = [c.getInformation('kernel') for c in buffer.getChildren('parameters',ps[0])]
             columns += kernelNames
             columns.append('E')
-            
+
             dat = [np.genfromtxt(fileNames[1], delimiter=',', names=columns),
                 np.genfromtxt(fileNames[3], delimiter=',', names=columns),
                 np.genfromtxt(fileNames[5], delimiter=',', names=columns),
@@ -173,21 +225,21 @@ class VQEBase(Algorithm):
 
             def linear(x, a, b):
                 return a*x+b
-    
+
             def exp(x, a,b):
                 return a*np.exp(b*x)# + b
 
-            from scipy.optimize import curve_fit
-            res = curve_fit(linear, xVals, energies, [1,energies[0]], sigma=evars)
+            def quad(x, a, b, c):
+                return a*x*x + b*x + c
 
-            print(res)
-            print('\nnoisy energy: ', energies[0])
+            from scipy.optimize import curve_fit
+            print('\nnoisy energy: ', energies[0], '+-', evars[0])
+
+            res = curve_fit(linear, xVals, energies, [1,energies[0]], sigma=evars)
             print('\nrich linear extrap: ', res[0][1],'+- ', np.sqrt(np.diag(res[1])[1]))
 
             res_exp = curve_fit(exp, xVals, energies, [0,0], sigma=evars)
-
             print('\nrich exp extrap: ', exp(0,res_exp[0][0],res_exp[0][1]), '+-', np.sqrt(np.diag(res_exp[1])[1]))
 
-            print('\n')
-            print('E(r): ', energies)
-            print('a*exp(b*r):', [exp(x,res_exp[0][0],res_exp[0][1]) for x in xVals])
+            res_q = curve_fit(quad, xVals, energies, [0,0,0], sigma=evars)
+            print("\nrich quad extrap: ", quad(0, res_q[0][0], res_q[0][1], res_q[0][2]), "+-", np.sqrt(np.diag(res_q[1])[2]))
