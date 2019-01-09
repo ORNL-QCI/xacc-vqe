@@ -17,33 +17,57 @@ from vqe_base import VQEBase
 @Property("_algorithm", "algorithm", "vqe")
 @Property("_name", "name", "vqe")
 @Requires("_ansatz_generator", "ansatz_generator_service", aggregate=True)
-@Requires("_molecule_generator", "molecule_generator_service", aggregate=True)
+@Requires("_hamiltonian_generator", "hamiltonian_generator_service", aggregate=True)
 @Instantiate("vqe_algorithm_instance")
 class VQE(VQEBase):
-
+    """
+        Algorithm class inherited from VQEBase to execute the VQE algorithm
+    """
     def __init__(self):
         super().__init__()
-        
+
     @Validate
     def validate(self, context):
+        """
+            iPOPO method that is called when all of the class dependencies have been injected and the class is registered to the framework
+        """
         print("VQE Algorithm Validated")
 
     @Invalidate
     def invalidate(self, context):
+        """
+            iPOPO method that is called when the class is removed from the framework or one of its dependencies has been removed
+        """
         print("VQE Algorithm Invalidated")
 
     @BindField('_ansatz_generator')
-    @BindField('_molecule_generator')
+    @BindField('_hamiltonian_generator')
     def bind_dicts(self, field, service, svc_ref):
+        """
+            iPOPO method to bind ansatz and hamiltonian generator dependencies for use by the Algorithm bundle
+        """
         super().bind_dicts(field, service, svc_ref)
 
     @UnbindField('_ansatz_generator')
-    @UnbindField('_molecule_generator')
+    @UnbindField('_hamiltonian_generator')
     def unbind_dicts(self, field, service, svc_ref):
+        """
+            iPOPO method to unbind ansatz and hamiltonian generator dependencies for use by the Algorithm bundle
+
+            Called when the bundle is invalidated
+        """
         super().unbind_dicts(field, service, svc_ref)
-    
+
     def execute(self, inputParams):
-        super().execute(inputParams)  
+        """
+            Inherited method with algorithm-specific implementation
+
+            Parameters:
+                inputParams - a dictionary of input parameters obtained from .ini file
+            Adds options:
+            - 'scipy-[METHOD]': uses scipy.optimize instead of default nelder-mead to optimize the parameters
+        """
+        super().execute(inputParams)
         self.vqe_options_dict['task'] = 'vqe'
         if (inputParams['optimizer'] != 'nelder-mead'):
             if 'scipy' in inputParams['optimizer']:
