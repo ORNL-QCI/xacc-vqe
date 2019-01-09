@@ -116,6 +116,8 @@ public:
 		return "";
 	}
 
+    const int nRequiredBits() const override {return 0;}
+
 	void mapBits(std::vector<int> bitMap) override {
 	}
 
