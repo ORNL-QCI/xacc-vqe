@@ -28,7 +28,6 @@ class WrappedVQEF(xacc.decoratorFunction):
         if len(ars) > 0:
             arStr = getParams(ars)
             execParams['vqe-params'] = arStr
-
         if 'optimizer' in self.kwargs:
             optimizer = self.kwargs['optimizer']
             if 'scipy-' in optimizer:
@@ -47,7 +46,7 @@ class WrappedVQEF(xacc.decoratorFunction):
                     import random
                     pi = 3.141592653
                     ars = [
-                        random.uniform(-pi, pi) for _ in range(compiledKernel.getIRFunction().nParameters())]
+                        random.uniform(-pi, pi) for _ in range(self.compiledKernel.getIRFunction().nParameters())]
                 optargs = {'method': optimizer, 'options': {'disp': True}}
                 if 'options' in self.kwargs:
                     optargs['options'] = self.kwargs['options']

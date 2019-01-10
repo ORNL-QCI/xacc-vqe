@@ -254,13 +254,13 @@ VQETaskResult execute(PauliOperator &op,
       std::make_shared<VQEProgram>(accelerator, op, statePrep, world);
   program->build();
   program->setGlobalBuffer(buffer);
-
   auto parameters = VQEParameterGenerator::generateParameters(
       program->getNParameters(), world);
   auto vqeTask = xacc::getService<VQETask>(task);
   vqeTask->setVQEProgram(program);
   auto result = vqeTask->execute(parameters);
-  //	xacc::clearOptions();
+
+  xacc::clearOptions();
   return result;
 }
 
@@ -400,8 +400,7 @@ VQETaskResult execute(py::object &fermionOperator,
   vqeTask->setVQEProgram(program);
 
   auto result = vqeTask->execute(parameters);
-
-  //	xacc::clearOptions();
+  xacc::clearOptions();
   return result;
 }
 
