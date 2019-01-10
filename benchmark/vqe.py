@@ -13,7 +13,7 @@ from xacc import Algorithm
 from vqe_base import VQEBase
 
 @ComponentFactory("vqe_algorithm_factory")
-@Provides("xacc_algorithm_service")
+@Provides("benchmark_algorithm_service")
 @Property("_algorithm", "algorithm", "vqe")
 @Property("_name", "name", "vqe")
 @Requires("_ansatz_generator", "ansatz_generator_service", aggregate=True)

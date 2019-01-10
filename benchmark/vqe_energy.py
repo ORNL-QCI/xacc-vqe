@@ -13,7 +13,7 @@ from vqe_base import VQEBase
 from scipy.optimize import curve_fit
 
 @ComponentFactory("VQE_energy_algorithm_factory")
-@Provides("xacc_algorithm_service")
+@Provides("benchmark_algorithm_service")
 @Property("_algorithm", "algorithm", "vqe-energy")
 @Property("_name", "name", "vqe-energy")
 @Requires("_hamiltonian_generator", "hamiltonian_generator_service", aggregate=True)
