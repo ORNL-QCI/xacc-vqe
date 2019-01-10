@@ -10,7 +10,7 @@ from _pyxaccvqe import *
 @Property("_algorithm", "algorithm", "energy")
 @Property("_name", "name", "energy")
 @Instantiate("wrapped_energy_instance")
-class WrappedEnergyF(xacc.decoratorFunction):
+class WrappedEnergyF(xacc.DecoratorFunction):
 
     def __call__(self, *args, **kwargs):
         super().__call__(*args, **kwargs)

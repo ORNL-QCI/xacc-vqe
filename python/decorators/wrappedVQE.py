@@ -9,7 +9,7 @@ from _pyxaccvqe import *
 @Property("_algorithm", "algorithm", "vqe")
 @Property("_name", "name", "vqe")
 @Instantiate("wrapped_vqe_instance")
-class WrappedVQEF(xacc.decoratorFunction):
+class WrappedVQEF(xacc.DecoratorFunction):
 
     def __call__(self, *args, **kwargs):
         super().__call__(*args, **kwargs)

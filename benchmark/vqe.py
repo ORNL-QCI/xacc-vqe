@@ -9,7 +9,7 @@ from scipy.optimize import minimize
 import numpy as np
 import time
 import os
-from xacc import Algorithm
+from xacc import BenchmarkAlgorithm
 from vqe_base import VQEBase
 
 @ComponentFactory("vqe_algorithm_factory")

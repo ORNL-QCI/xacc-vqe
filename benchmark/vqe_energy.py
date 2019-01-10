@@ -8,7 +8,7 @@ import xacc, numpy as np
 import xaccvqe
 import time
 import os
-from xacc import Algorithm
+from xacc import BenchmarkAlgorithm
 from vqe_base import VQEBase
 from scipy.optimize import curve_fit
 
