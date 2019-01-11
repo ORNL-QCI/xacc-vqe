@@ -260,7 +260,7 @@ VQETaskResult execute(PauliOperator &op,
   vqeTask->setVQEProgram(program);
   auto result = vqeTask->execute(parameters);
 
-  xacc::clearOptions();
+//   xacc::clearOptions();
   return result;
 }
 
@@ -400,7 +400,7 @@ VQETaskResult execute(py::object &fermionOperator,
   vqeTask->setVQEProgram(program);
 
   auto result = vqeTask->execute(parameters);
-  xacc::clearOptions();
+//   xacc::clearOptions();
   return result;
 }
 
