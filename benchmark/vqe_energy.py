@@ -8,7 +8,7 @@ import xacc, numpy as np
 import xaccvqe
 import time
 import os
-from xacc import Algorithm
+from xacc import BenchmarkAlgorithm
 from vqe_base import VQEBase
 from scipy.optimize import curve_fit
 
@@ -25,20 +25,6 @@ class VQEEnergy(VQEBase):
     """
     def __init__(self):
         super().__init__()
-
-    @Validate
-    def validate(self, context):
-        """
-            iPOPO method that is called when all of the class dependencies have been injected and the class is registered to the framework
-        """
-        print("VQEEnergy Algorithm Validated")
-
-    @Invalidate
-    def invalidate(self, context):
-        """
-            iPOPO method that is called when the class is removed from the framework or one of its dependencies has been removed
-        """
-        print("VQEEnergy Algorithm Invalidated")
 
     @BindField('_ansatz_generator')
     @BindField('_hamiltonian_generator')

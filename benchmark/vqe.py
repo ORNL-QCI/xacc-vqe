@@ -9,7 +9,7 @@ from scipy.optimize import minimize
 import numpy as np
 import time
 import os
-from xacc import Algorithm
+from xacc import BenchmarkAlgorithm
 from vqe_base import VQEBase
 
 @ComponentFactory("vqe_algorithm_factory")
@@ -25,20 +25,6 @@ class VQE(VQEBase):
     """
     def __init__(self):
         super().__init__()
-
-    @Validate
-    def validate(self, context):
-        """
-            iPOPO method that is called when all of the class dependencies have been injected and the class is registered to the framework
-        """
-        print("VQE Algorithm Validated")
-
-    @Invalidate
-    def invalidate(self, context):
-        """
-            iPOPO method that is called when the class is removed from the framework or one of its dependencies has been removed
-        """
-        print("VQE Algorithm Invalidated")
 
     @BindField('_ansatz_generator')
     @BindField('_hamiltonian_generator')

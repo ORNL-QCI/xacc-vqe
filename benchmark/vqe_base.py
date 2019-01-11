@@ -1,4 +1,4 @@
-from xacc import Algorithm
+from xacc import BenchmarkAlgorithm
 import xacc
 import xaccvqe
 import ast
@@ -15,7 +15,7 @@ import numpy as np
 #        unbind_dicts - Required for using iPOPO service registry
 #        execute - executes the VQE algorithm according to input configurations
 #        analyze - analyzes the AcceleratorBuffer produced from execute()
-class VQEBase(Algorithm):
+class VQEBase(BenchmarkAlgorithm):
 
     def __init__(self):
         self.hamiltonian_generators = {}
