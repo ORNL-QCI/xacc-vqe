@@ -448,6 +448,7 @@ PYBIND11_MODULE(_pyxaccvqe, m) {
       .def("commutes", &PauliOperator::commutes)
       .def("__len__", &PauliOperator::nTerms)
       .def("nQubits", &PauliOperator::nQubits)
+      .def("computeActionOnKet", &PauliOperator::computeActionOnKet)
       .def("__iter__",
            [](PauliOperator &op) {
              return py::make_iterator(op.begin(), op.end());
