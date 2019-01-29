@@ -29,7 +29,11 @@ def XACC2QubitOperator(pauli_op):
 
     qop = QubitOperator()
     for o in pauli_op:
-        qop += QubitOperator(tuple(o[1].ops().items()), o[1].coeff())
+        term = tuple(o[1].ops().items())
+        if term[0][1] == 'I':
+            qop += QubitOperator((), o[1].coeff())
+        else:
+            qop += QubitOperator(tuple(o[1].ops().items()), o[1].coeff())
     return qop
 
 def mapToPhysicalQubits(op, ansatz, logical2PhysicalMap):
