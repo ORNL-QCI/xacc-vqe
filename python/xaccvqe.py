@@ -30,7 +30,7 @@ def XACC2QubitOperator(pauli_op):
     qop = QubitOperator()
     for o in pauli_op:
         term = tuple(o[1].ops().items())
-        if term[0][1] == 'I':
+        if term == () or term[0][1] == 'I':
             qop += QubitOperator((), o[1].coeff())
         else:
             qop += QubitOperator(tuple(o[1].ops().items()), o[1].coeff())
