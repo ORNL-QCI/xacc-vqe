@@ -9,6 +9,7 @@ import xaccvqe
 import time
 import os
 from xacc import BenchmarkAlgorithm
+from vqe_base import VQEBase
 
 @ComponentFactory("VQE_energy_algorithm_factory")
 @Provides("benchmark_algorithm_service")
