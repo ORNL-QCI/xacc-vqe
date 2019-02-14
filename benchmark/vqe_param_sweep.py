@@ -4,7 +4,7 @@ from pelix.ipopo.decorators import (ComponentFactory, Property, Requires,
 
 import ast
 import configparser
-import xacc, numpy as np
+import xacc
 import xaccvqe
 import time
 import os
@@ -44,6 +44,12 @@ class ParamSweep(VQEBase):
         """
         super().unbind_dicts(field, service, svc_ref)
 
+    def linspace(a, b, n=100):
+        if n < 2:
+            return b
+        diff = (float(b) - a)/(n - 1)
+        return [diff * i + a  for i in range(n)]
+
     def execute(self, inputParams):
         """
             Inherited method with algorithm-specific implementation
@@ -55,21 +61,22 @@ class ParamSweep(VQEBase):
             - executes a parameter-sweep
         """
         super().execute(inputParams)
+        pi = 3.141592653589793
         self.vqe_options_dict['task'] = 'compute-energy'
-        
+
         if inputParams['upper-bound'] == 'pi':
-            up_bound = np.pi
+            up_bound = pi
         else:
             up_bound = ast.literal_eval(inputParams['upper-bound'])
 
         if inputParams['lower-bound'] == '-pi':
-            low_bound = -np.pi
+            low_bound = -pi
         else:
-            low_bound = ast.literal_eval(inputParams['lower-bound']) 
-        
+            low_bound = ast.literal_eval(inputParams['lower-bound'])
+
         num_params = ast.literal_eval(inputParams['num-params'])
-        
-        for param in np.linspace(low_bound, up_bound, num_params):
+
+        for param in linspace(low_bound, up_bound, num_params):
             self.vqe_options_dict['vqe-params'] = str(param)
             results = execute(self.op, self.buffer, **self.vqe_options_dict)
         return self.buffer
