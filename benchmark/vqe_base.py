@@ -4,7 +4,6 @@ import xaccvqe
 import ast
 import time
 import os
-import numpy as np
 
 #
 #    VQEBase is an abstract class that implements the VQE algorithm using XACC.
@@ -159,6 +158,9 @@ class VQEBase(BenchmarkAlgorithm):
             f.close()
 
         if 'richardson-extrapolation' in inputParams and inputParams['richardson-extrapolation']:
+            from scipy.optimize import curve_fit
+            import numpy as np
+
             angles = buffer.getInformation('vqe-angles')
             qpu = self.vqe_options_dict['accelerator']
             self.vqe_options_dict['accelerator'] = xacc.getAcceleratorDecorator('rich-extrap',qpu)
@@ -232,7 +234,6 @@ class VQEBase(BenchmarkAlgorithm):
             def quad(x, a, b, c):
                 return a*x*x + b*x + c
 
-            from scipy.optimize import curve_fit
             print('\nnoisy energy: ', energies[0], '+-', evars[0])
 
             res = curve_fit(linear, xVals, energies, [1,energies[0]], sigma=evars)
