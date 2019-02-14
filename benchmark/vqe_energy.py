@@ -4,13 +4,11 @@ from pelix.ipopo.decorators import (ComponentFactory, Property, Requires,
 
 import ast
 import configparser
-import xacc, numpy as np
+import xacc
 import xaccvqe
 import time
 import os
 from xacc import BenchmarkAlgorithm
-from vqe_base import VQEBase
-from scipy.optimize import curve_fit
 
 @ComponentFactory("VQE_energy_algorithm_factory")
 @Provides("benchmark_algorithm_service")
