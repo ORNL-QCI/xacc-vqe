@@ -52,6 +52,45 @@ def mapToPhysicalQubits(op, ansatz, logical2PhysicalMap):
     xacc.unsetOption('qubit-map')
     return ham, ansatz, n_qubits
 
+def getObservableEnergies(buffer, readout=False):
+    energies = []
+    if readout:
+        readout_energies = []
+    ps = buffer.getAllUnique('parameters')
+    for p in ps:
+        energy = 0.0
+        readout_energy = 0.0
+        for c in buffer.getChildren('parameters', p):
+            coeff = c.getInformation('coefficient')
+            exp = c.getInformation("exp-val-z")
+            e = coeff * exp
+            energy += e
+            if readout:
+                readout_exp = c.getInformation('ro-fixed-exp-val-z')
+                ro_e = coeff * readout_exp
+                readout_energy += ro_e
+        energies.append(energy)
+        if readout:
+            readout_energies.append(readout_energy)
+    if readout:
+        return energies, readout_energies
+    else:
+        return energies
+
+def generateCSV(buffer, file_name, readout=False):
+    ps = buffer.getAllUnique('parameters')
+    f = open(file_name+".csv", 'w')
+    exp_columns = [c.getInformation('kernel') for c in buffer.getChildren('parameters',ps[0])] + ['<E>']
+    f.write(str(exp_columns).replace('[','').replace(']','') + '\n')
+    for p in ps:
+        energy = 0.0
+        for c in buffer.getChildren('parameters', p):
+            exp = c.getInformation('ro-fixed-exp-val-z') if readout else c.getInformation('exp-val-z')
+            energy += exp * c.getInformation('coefficient')
+            f.write(str(exp)+',')
+        f.write(str(energy)+'\n')
+    f.close()
+
 def main(argv=None):
     return
 
