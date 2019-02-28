@@ -73,6 +73,7 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
     xacc::setOption("tnqvm-reset-visitor", "true");
   } else { // NOT TNQVM
 
+    double identityCoeff = 0.0;
     // Create an empty KernelList to be filled
     // with non-trivial kernels
     KernelList<> kernels(qpu);
@@ -85,12 +86,15 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
       } else { // IF IS IDENTITY TERM
         // if it is identity, add its coeff to the energy sum
         if (rank == 0) {
-          sum += getCoeff(k);
+          
+          identityCoeff = getCoeff(k);
+            
+          sum +=identityCoeff;
 
           auto ibuff = qpu->createBuffer("I", globalBuffer->size());
           ibuff->addExtraInfo("kernel", ExtraInfo("I"));
           ibuff->addExtraInfo("exp-val-z", ExtraInfo(1.0));
-          ibuff->addExtraInfo("coefficient", ExtraInfo(getCoeff(k)));
+          ibuff->addExtraInfo("coefficient", ExtraInfo(identityCoeff));
           ibuff->addExtraInfo("parameters", paramsInfo);
           ibuff->addExtraInfo("ro-fixed-exp-val-z", ExtraInfo(1.0));
 
@@ -121,6 +125,7 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
     } else { // THIS IS NOT TNQVM AND NOT MPI
 
       // Execute all nontrivial kernels!
+      globalBuffer->addExtraInfo("identity-coeff", ExtraInfo(identityCoeff) );
       auto results = kernels.execute(globalBuffer);
       totalQpuCalls += qpu->isRemote() ? 1 : kernels.size();
 

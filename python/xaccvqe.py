@@ -91,6 +91,16 @@ def generateCSV(buffer, file_name, readout=False):
         f.write(str(energy)+'\n')
     f.close()
 
+def getPurifiedEnergies(buffer):
+    ps = buffer.getAllUnique('parameters')
+    p_es = []
+    for p in ps:
+        for c in buffer.getChildren('parameters', p):
+            if c.name() == 'I':
+                continue
+            pure_energy = c.getInformation('purified-energy')
+        p_es.append(pure_energy)
+    return p_es
 def main(argv=None):
     return
 

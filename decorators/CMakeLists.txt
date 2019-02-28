@@ -3,7 +3,7 @@ set (PACKAGE_DESCIPTION "XACC Variational Quantum Eigensolver Decorators")
 
 set (LIBRARY_NAME xacc-vqe-decorators)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
+include_directories(${CMAKE_SOURCE_DIR}/ir/algorithms/uccsd)
 file (GLOB_RECURSE HEADERS *.hpp)
 file (GLOB SRC *.cpp)
 
