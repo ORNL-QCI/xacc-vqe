@@ -31,6 +31,7 @@
 #include "SymVerificationDecorator.hpp"
 #include "VQERestartDecorator.hpp"
 #include "PurificationDecorator.hpp"
+#include "RDMPurificationDecorator.hpp"
 
 #include "cppmicroservices/BundleActivator.h"
 #include "cppmicroservices/BundleContext.h"
@@ -58,15 +59,19 @@ public:
 		auto c = std::make_shared<xacc::vqe::SymVerificationDecorator>();
 		auto c2 = std::make_shared<xacc::vqe::VQERestartDecorator>();
 		auto c3 = std::make_shared<xacc::vqe::PurificationDecorator>();
+		auto c4 = std::make_shared<xacc::vqe::RDMPurificationDecorator>();
 
 		context.RegisterService<xacc::AcceleratorDecorator>(c);
         context.RegisterService<xacc::Accelerator>(c);
 
         context.RegisterService<xacc::AcceleratorDecorator>(c2);
         context.RegisterService<xacc::Accelerator>(c2);
-        
+
         context.RegisterService<xacc::AcceleratorDecorator>(c3);
         context.RegisterService<xacc::Accelerator>(c3);
+
+        context.RegisterService<xacc::AcceleratorDecorator>(c4);
+        context.RegisterService<xacc::Accelerator>(c4);
 
 	}
 

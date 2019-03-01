@@ -264,6 +264,27 @@ VQETaskResult execute(PauliOperator &op,
   return result;
 }
 
+std::string get_fermion_compiler_source(py::object &fermionOperator) {
+  auto terms = fermionOperator.attr("terms").cast<py::dict>();
+
+  std::stringstream s;
+  s << "__qpu__ openfermion_kernel() {\n";
+  for (auto &kv : terms) {
+
+    auto fTerm = kv.first.cast<py::tuple>();
+    auto coeff = kv.second.cast<std::complex<double>>();
+    s << std::real(coeff) << " ";
+    for (auto t : fTerm) {
+      auto ct = t.cast<py::tuple>();
+      s << ct[0].cast<int>() << " " << ct[1].cast<int>() << " ";
+    }
+    s << "\n";
+  }
+  s << "}";
+
+  return s.str();
+}
+
 VQETaskResult execute(py::object &fermionOperator,
                       std::shared_ptr<AcceleratorBuffer> buffer,
                       py::kwargs kwargs) {
@@ -449,6 +470,7 @@ PYBIND11_MODULE(_pyxaccvqe, m) {
       .def("__len__", &PauliOperator::nTerms)
       .def("nQubits", &PauliOperator::nQubits)
       .def("computeActionOnKet", &PauliOperator::computeActionOnKet)
+      .def("computeActionOnBra", &PauliOperator::computeActionOnBra)
       .def("__iter__",
            [](PauliOperator &op) {
              return py::make_iterator(op.begin(), op.end());
@@ -468,6 +490,13 @@ PYBIND11_MODULE(_pyxaccvqe, m) {
         (VQETaskResult(*)(py::object & op, std::shared_ptr<AcceleratorBuffer> b,
                           py::kwargs kwargs)) &
             execute,
+        py::call_guard<py::scoped_ostream_redirect,
+                       py::scoped_estream_redirect>(),
+        "");
+
+  m.def("get_fermion_compiler_source",
+        (std::string(*)(py::object & op)) &
+            get_fermion_compiler_source,
         py::call_guard<py::scoped_ostream_redirect,
                        py::scoped_estream_redirect>(),
         "");
