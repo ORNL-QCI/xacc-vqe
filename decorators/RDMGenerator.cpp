@@ -9,7 +9,6 @@ void RDMGenerator::generate(std::shared_ptr<Function> ansatz) {
   // Reset
   rho_pq.setZero();
   rho_pqrs.setZero();
-
   // Get the Accelerator we're running on, the
   // number of orbitals/qubits in the problem,
   // the MPIProvider Communicator reference, and the
@@ -30,42 +29,42 @@ void RDMGenerator::generate(std::shared_ptr<Function> ansatz) {
   rho_pqrs_Sym.addAntiSymmetry(2, 3);
 
   // Compute the 1 body reduced density matrix
-  for (int m = 0; m < nQubits; m++) {
-    for (int n = m; n < nQubits; n++) {
-      xacc::info("Computing 1-rdm " + std::to_string(m) + ", " + std::to_string(n));
-      // Generate the XACC kernel source code and compile it
-      std::stringstream ss;
-      ss << "__qpu__ k(){\n0.5 " << m << " 1 " << n << " 0\n"
-         << "0.5 " << n << " 1 " << m << " 0\n}";
-      double sum_pq = 0.0;
-      auto hpq_ir = fermionCompiler->compile(ss.str(), qpu);
+//   for (int m = 0; m < nQubits; m++) {
+//     for (int n = m; n < nQubits; n++) {
+//       xacc::info("Computing 1-rdm " + std::to_string(m) + ", " + std::to_string(n));
+//       // Generate the XACC kernel source code and compile it
+//       std::stringstream ss;
+//       ss << "__qpu__ k(){\n0.5 " << m << " 1 " << n << " 0\n"
+//          << "0.5 " << n << " 1 " << m << " 0\n}";
+//       double sum_pq = 0.0;
+//       auto hpq_ir = fermionCompiler->compile(ss.str(), qpu);
 
-      // Loop over our compiled kernels and execute them
-      // computing the weight*expVal sum
-      for (auto &kernel : hpq_ir->getKernels()) {
-        double localExpVal = 1.0;
-        auto t = std::real(
-            boost::get<std::complex<double>>(kernel->getParameter(0)));
-        if (kernel->nInstructions() > 0) {
+//       // Loop over our compiled kernels and execute them
+//       // computing the weight*expVal sum
+//       for (auto &kernel : hpq_ir->getKernels()) {
+//         double localExpVal = 1.0;
+//         auto t = std::real(
+//             boost::get<std::complex<double>>(kernel->getParameter(0)));
+//         if (kernel->nInstructions() > 0) {
 
-          kernel->insertInstruction(0, ansatz);
+//           kernel->insertInstruction(0, ansatz);
 
-          auto buffer = qpu->createBuffer("q", nQubits);
-          qpu->execute(buffer, kernel);
-          localExpVal = buffer->getExpectationValueZ();
-          nExecs++;
-        }
-        sum_pq += t * localExpVal;
-      }
+//           auto buffer = qpu->createBuffer("q", nQubits);
+//           qpu->execute(buffer, kernel);
+//           localExpVal = buffer->getExpectationValueZ();
+//           nExecs++;
+//         }
+//         sum_pq += t * localExpVal;
+//       }
 
-      if (std::fabs(sum_pq) > 1e-12)
-        rho_pq_Sym(rho_pq, m, n) = sum_pq;
-    }
-  }
+//       if (std::fabs(sum_pq) > 1e-12)
+//         rho_pq_Sym(rho_pq, m, n) = sum_pq;
+//     }
+//   }
 
-  double trace = 0.0;
-  for (int i = 0; i < nQubits; i++)
-    trace += std::real(rho_pq(i, i));
+//   double trace = 0.0;
+//   for (int i = 0; i < nQubits; i++)
+//     trace += std::real(rho_pq(i, i));
 
   // std::cout << "Trace for 1 RDM: " << trace << "\n";
 
