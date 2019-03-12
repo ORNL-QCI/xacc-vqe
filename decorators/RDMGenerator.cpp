@@ -5,6 +5,21 @@
 namespace xacc {
 namespace vqe {
 
+template <class Iterator>
+std::map<typename Iterator::value_type, int> count(Iterator begin,
+                                                   Iterator end) {
+  std::map<typename Iterator::value_type, int> counts;
+  for (Iterator i = begin; i != end; ++i)
+    counts[*i]++;
+  return counts;
+}
+
+// Sequence interface
+template <class Sequence>
+inline std::map<typename Sequence::value_type, int> count(Sequence seq) {
+  return count(seq.begin(), seq.end());
+}
+
 void RDMGenerator::generate(std::shared_ptr<Function> ansatz) {
   // Reset
   rho_pq.setZero();
@@ -28,10 +43,16 @@ void RDMGenerator::generate(std::shared_ptr<Function> ansatz) {
   rho_pqrs_Sym.addAntiSymmetry(0, 1);
   rho_pqrs_Sym.addAntiSymmetry(2, 3);
 
-  std::vector<std::shared_ptr<Function>> nontrivial_functions;
-  std::vector<double> coefficients;
-  std::vector<std::vector<int>> rho_elements;
+  // Map p,q,r,s indices to a coefficient for all
+  // identity terms encountered
   std::map<std::vector<int>, double> rho_element_2_identity_coeff;
+
+  // Map function names to the actual function and all
+  // p,q,r,s and coefficients that contribute to that element
+  std::map<std::string,
+           std::pair<std::shared_ptr<Function>,
+                     std::vector<std::pair<std::vector<int>, double>>>>
+      functions;
 
   // Generate the 2-RDM circuits for executiong
   for (int m = 0; m < nQubits; m++) {
@@ -56,10 +77,13 @@ void RDMGenerator::generate(std::shared_ptr<Function> ansatz) {
                 boost::get<std::complex<double>>(kernel->getParameter(0)));
             if (kernel->nInstructions() > 0) {
               kernel->insertInstruction(0, ansatz);
-              nontrivial_functions.push_back(kernel);
-              coefficients.push_back(t);
-              rho_elements.push_back({m, n, v, w});
-              //   xacc::info(kernel->toString() + "\n");
+              auto name = kernel->name();
+              if (functions.count(name)) {
+                functions[name].second.push_back({{m, n, v, w}, t});
+              } else {
+                functions.insert({name, {kernel, {{{m, n, v, w}, t}}}});
+              }
+
             } else {
               rho_element_2_identity_coeff.insert({{m, n, v, w}, t});
             }
@@ -69,22 +93,31 @@ void RDMGenerator::generate(std::shared_ptr<Function> ansatz) {
     }
   }
 
+  std::vector<std::shared_ptr<Function>> fsToExecute;
+  for (auto &kv : functions) {
+    fsToExecute.push_back(kv.second.first);
+  }
+
   // Execute all nontrivial circuits
-  xacc::info("Executing " + std::to_string(nontrivial_functions.size()) +
+  xacc::info("Executing " + std::to_string(fsToExecute.size()) +
              " circuits to compute rho_pqrs.");
   auto buffer = qpu->createBuffer("q", nQubits);
-  auto buffers = qpu->execute(buffer, nontrivial_functions);
+  auto buffers = qpu->execute(buffer, fsToExecute);
 
   // Create a mapping of rho_pqrs elements to summed expectation values for
   // each circuit contributing to it
   std::map<std::vector<int>, double> sumMap;
   for (int i = 0; i < buffers.size(); i++) {
-    auto elements = rho_elements[i];
-    auto value = coefficients[i] * buffers[i]->getExpectationValueZ();
-    if (!sumMap.count(elements)) {
-      sumMap.insert({elements, value});
-    } else {
-      sumMap[elements] += value;
+    auto fName = fsToExecute[i]->name();
+    auto p = functions[fName];
+    for (auto &l : p.second) {
+      auto elements = l.first;
+      auto value = l.second * buffers[i]->getExpectationValueZ();
+      if (!sumMap.count(elements)) {
+        sumMap.insert({elements, value});
+      } else {
+        sumMap[elements] += value;
+      }
     }
   }
 

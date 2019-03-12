@@ -147,7 +147,8 @@ RDMPurificationDecorator::execute(
 
     std::stringstream sss;
     sss << std::setprecision(8) << tr_diff_sq;
-    xacc::info("Iter: " + std::to_string(count) + ", diffsq_pqrs trace: " + sss.str());
+    xacc::info("Iter: " + std::to_string(count) +
+               ", diffsq_pqrs trace: " + sss.str());
     count++;
   }
 
@@ -178,7 +179,7 @@ RDMPurificationDecorator::execute(
       }
     }
   }
-//   xacc::info("Energy after 2-rdm: " + std::to_string(energy));
+  //   xacc::info("Energy after 2-rdm: " + std::to_string(energy));
 
   for (int p = 0; p < nQubits; p++) {
     for (int q = 0; q < nQubits; q++) {

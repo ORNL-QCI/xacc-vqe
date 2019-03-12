@@ -71,6 +71,26 @@ const std::string src = R"src(__qpu__ kernel() {
 0.34814578469185886 3 1 2 1 2 0 3 0
 })src";
 
+const std::string rucc = R"rucc(def f(buffer, theta):
+    X(0)
+    X(1)
+    Rx(1.5707,0)
+    H(1)
+    H(2)
+    H(3)
+    CNOT(0,1)
+    CNOT(1,2)
+    CNOT(2,3)
+    Rz(theta,3)
+    CNOT(2,3)
+    CNOT(1,2)
+    CNOT(0,1)
+    Rx(-1.5707,0)
+    H(1)
+    H(2)
+    H(3)
+    )rucc";
+
 TEST(RDMGeneratorTester, checkGround) {
 
   if (xacc::hasAccelerator("tnqvm")) {
@@ -94,16 +114,18 @@ TEST(RDMGeneratorTester, checkGround) {
 
     // Create the UCCSD ansatz and evaluate
     // at the known optimal angles
-    Eigen::VectorXd parameters(2);
-    parameters << 0.0, -0.0571335;
-    auto uccsdgen = xacc::getService<IRGenerator>("uccsd");
-    auto uccsd = uccsdgen->generate(std::vector<InstructionParameter>{
-        InstructionParameter(2), InstructionParameter(4)});
-    uccsd = (*uccsd.get())(parameters);
+    auto compiler = xacc::getService<xacc::Compiler>("xacc-py");
+
+    auto ir2 = compiler->compile(rucc, accelerator);
+    auto ruccsd = ir2->getKernel("f");
+
+    Eigen::VectorXd parameters(1);
+    parameters << .22984;
+    ruccsd = (*ruccsd.get())(parameters);
 
     // Create the 2-RDM
     RDMGenerator generator(nQubits, accelerator, hpq, hpqrs);
-    generator.generate(uccsd);
+    generator.generate(ruccsd);
 
     // Get the 1 rdm from the 2 rdm
     Eigen::array<int, 2> cc2({1, 3});
@@ -122,7 +144,7 @@ TEST(RDMGeneratorTester, checkGround) {
         }
       }
     }
-    std::cout << "2rdm e = " << energy << "\n";
+    std::cout << "2rdm e = " << std::setprecision(12) << energy << "\n";
 
     // Compute the 1 rdm contribution to the energy
     for (int p = 0; p < nQubits; p++) {
