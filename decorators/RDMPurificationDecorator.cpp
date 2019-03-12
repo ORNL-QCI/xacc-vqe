@@ -58,86 +58,57 @@ RDMPurificationDecorator::execute(
   Eigen::DynamicSGroup rho_pqrs_Sym;
   rho_pqrs_Sym.addAntiSymmetry(0, 1);
   rho_pqrs_Sym.addAntiSymmetry(2, 3);
+    
   xacc::info("Filtering 2-RDM");
   Eigen::Tensor<std::complex<double>, 4> filtered_rhopqrs(nQubits, nQubits, nQubits, nQubits);
-  filtered_rhopqrs.setZero();
-  for (int p = 0; p < (nQubits / 2); p++){
-      for (int q = 2; q < nQubits; q++){
-          for (int r = 0; r < (nQubits / 2); r++){
-              for (int s = 2; s < nQubits; s++){
-              filtered_rhopqrs(p, q, r, s) = rho_pqrs(p, q, r, s);
-//               xacc::info(std::to_string(p) + ", " + std::to_string(q) + ", " + std::to_string(r) + ", " + std::to_string(s)); 
-              }
-          }     
-      }
-  }
-  filtered_rhopqrs(0, 3, 0, 2) = 0.0;
-  filtered_rhopqrs(1, 2, 0, 2) = 0.0;
-  filtered_rhopqrs(1, 2, 0, 3) = 0.0;
-  filtered_rhopqrs(1, 3, 0, 2) = 0.0;
-  filtered_rhopqrs(1, 3, 0, 3) = 0.0;
-  filtered_rhopqrs(1, 3, 1, 2) = 0.0;
-  
-//   for (int p = 0; p < nQubits; p++){
-//       for (int q = 0; q < nQubits; q++){
-//           for (int r = 0; r < nQubits; r++){
-//               for (int s = 0; s < nQubits; s++){
-//                   if ( (p < q) && (r < s) ){
-//                       filtered_rhopqrs(p, q, r, s) = rho_pqrs(p, q, r, s);
-// //                       rho_pqrs_Sym(filtered_rhopqrs, p, q, r, s) = rho_pqrs(p, q, r, s);
-// //                       rho_pqrs_Sym(filtered_rhopqrs, r, s, p, q) = rho_pqrs(p, q, r, s);
-//                   }
-//                   if ( (p == q) && (r == s) ){
-//                       filtered_rhopqrs(p, q, r, s) = rho_pqrs(p, q, r, s);
-// //                       rho_pqrs_Sym(filtered_rhopqrs, p, q, r, s) = rho_pqrs(p, q, r, s);
-// //                       rho_pqrs_Sym(filtered_rhopqrs, r, s, p, q) = rho_pqrs(p, q, r, s);
-//                   }
-//               }
-//           }
-//       }
-//   }
-    
-//   Eigen::array<Eigen::IndexPair<int>, 2> rank4_dims = { Eigen::IndexPair<int>(2, 3), Eigen::IndexPair<int>(0, 1) };
-    
-  // PURIFY these...     
-//   Eigen::Tensor<std::complex<double>, 4> rhopqrs_sq = filtered_rhopqrs.contract(filtered_rhopqrs, rank4_dims); 
-//   Eigen::Tensor<std::complex<double>, 4> diff_pqrs = rhopqrs_sq - filtered_rhopqrs;
-//   Eigen::Tensor<std::complex<double>, 4> diffsq_pqrs = diff_pqrs.contract(diff_pqrs, rank4_dims);
-    
-  Eigen::Tensor<std::complex<double>, 4> rhopqrs_sq = filtered_rhopqrs * filtered_rhopqrs; 
-  Eigen::Tensor<std::complex<double>, 4> diff_pqrs = rhopqrs_sq - filtered_rhopqrs;
-  Eigen::Tensor<std::complex<double>, 4> diffsq_pqrs = diff_pqrs * diff_pqrs;
-  //
-  // checking trace of 1-rdm
-  Eigen::Tensor<std::complex<double>, 2>  rhopq_tensor = rho_pqrs.trace(cc2);
-  Eigen::Tensor<std::complex<double>, 0> rhopq_trace_tensor = rhopq_tensor.trace();
-  auto rhopq_trace = std::real(rhopq_trace_tensor(0));
-  xacc::info("Trace of 1-rdm after filter: " + std::to_string(rhopq_trace));
-  // end checking trace
-    
-  Eigen::Tensor<std::complex<double>, 0> begin_trace_tensor2 = diffsq_pqrs.trace();
-  auto tr_pqrs = std::real(begin_trace_tensor2(0));
-      
+  filtered_rhopqrs.setZero(); 
   for (int p = 0; p < nQubits; p++){
       for (int q = 0; q < nQubits; q++){
           for (int r = 0; r < nQubits; r++){
               for (int s = 0; s < nQubits; s++){
-                  if (std::fabs(std::real(filtered_rhopqrs(p, q, r, s))) > 0.0){
-                      xacc::info(std::to_string(p) + ", " + std::to_string(q) + ", " + std::to_string(r) + ", " + std::to_string(s) + ", " + std::to_string(std::real(filtered_rhopqrs(p, q, r, s))));
+                  if ( (p <= q) && (r <= s) ){
+                      filtered_rhopqrs(p, q, r, s) = rho_pqrs(p, q, r, s);
                   }
               }
           }
       }
   }
-  auto tmp_val = 0.0;
+        
+//   PURIFY these...     
+  Eigen::Tensor<std::complex<double>, 4> rhopqrs_sq = filtered_rhopqrs * filtered_rhopqrs; 
+  Eigen::Tensor<std::complex<double>, 4> diff_pqrs = rhopqrs_sq - filtered_rhopqrs;
+  Eigen::Tensor<std::complex<double>, 4> diffsq_pqrs = diff_pqrs * diff_pqrs;
+  //
+  // checking trace of 1-rdm
+  Eigen::Tensor<std::complex<double>, 2>  rhopq_tensor = filtered_rhopqrs.trace(cc2);
+  Eigen::Tensor<std::complex<double>, 0> rhopq_trace_tensor = rhopq_tensor.trace();
+  auto rhopq_trace = std::real(rhopq_trace_tensor(0));
+  xacc::info("Trace of 1-rdm after filter: " + std::to_string(rhopq_trace));
+  // end checking trace
+    
+//   Eigen::Tensor<std::complex<double>, 0> begin_trace_tensor2 = diffsq_pqrs.trace();
+//   auto tr_pqrs = std::real(begin_trace_tensor2(0));
+      
+//   for (int p = 0; p < nQubits; p++){
+//       for (int q = 0; q < nQubits; q++){
+//           for (int r = 0; r < nQubits; r++){
+//               for (int s = 0; s < nQubits; s++){
+//                       xacc::info(std::to_string(p) + ", " + std::to_string(q) + ", " + std::to_string(r) + ", " + std::to_string(s) + ", " + std::to_string(std::real(filtered_rhopqrs(p, q, r, s))));
+//               }
+//           }
+//       }
+//   }
+    
+  auto tr_pqrs = 0.0;
   for (int p = 0; p < nQubits; p++){
       for (int q = 0; q < nQubits; q++){
-          tmp_val += std::real(filtered_rhopqrs(p, q, p, q));
+          tr_pqrs += std::real(filtered_rhopqrs(p, q, p, q));
       }
   }
-  xacc::info("value of sum(rho_pqpq) before purification: " + std::to_string(tmp_val));
+  xacc::info("value of sum(rho_pqpq) before purification: " + std::to_string(tr_pqrs));
     
   xacc::info("Purifying 2-rdm");
+    
   // Purify rho_pqrs
   int count = 0;
   while (count < 10) {
@@ -145,13 +116,13 @@ RDMPurificationDecorator::execute(
     filtered_rhopqrs = (3 * rhopqrs_sq) - (2 * filtered_rhopqrs * rhopqrs_sq);
 //     filtered_rhopqrs = (3 * rhopqrs_sq) - (2 * filtered_rhopqrs.contract(rhopqrs_sq, rank4_dims)); //rhopqrs_sq.contract(filtered_rhopqrs, rank4_dims));
       
-    auto tmp_val2 = 0.0;
-    for (int p = 0; p < nQubits; p++){
-      for (int q = 0; q < nQubits; q++){
-          tmp_val2 += std::real(filtered_rhopqrs(p, q, p, q));
-        }
-    }
-    xacc::info("value of sum(rho_pqpq) during purification:" + std::to_string(tmp_val2));
+//     auto tmp_val2 = 0.0;
+//     for (int p = 0; p < nQubits; p++){
+//       for (int q = 0; q < nQubits; q++){
+//           tmp_val2 += std::real(filtered_rhopqrs(p, q, p, q));
+//         }
+//     }
+//     xacc::info("value of sum(rho_pqpq) during purification:" + std::to_string(tmp_val2));
       
 //     Eigen::Tensor<std::complex<double>, 0> tmp_trace_tensor = filtered_rhopqrs.trace();
 //     auto tmp_trace = std::real(tmp_trace_tensor(0));
@@ -160,10 +131,8 @@ RDMPurificationDecorator::execute(
 //     filtered_rhopqrs = (1.0 / tmp_val2) * filtered_rhopqrs;
       
     rhopqrs_sq = filtered_rhopqrs * filtered_rhopqrs;
-//     rhopqrs_sq = filtered_rhopqrs.contract(filtered_rhopqrs, rank4_dims);
     diff_pqrs = rhopqrs_sq - filtered_rhopqrs;
     diffsq_pqrs = diff_pqrs * diff_pqrs;
-//     diffsq_pqrs = diff_pqrs.contract(diff_pqrs, rank4_dims);
       
     Eigen::Tensor<std::complex<double>, 0>  trace_tensor = diffsq_pqrs.trace();
     tr_pqrs = std::real(trace_tensor(0));
@@ -186,15 +155,6 @@ RDMPurificationDecorator::execute(
       }
   }
     
-//   for (int p = 0; p < nQubits; p++){
-//       for (int q = 0; q < nQubits; q++){
-//           for (int r = 0; r < nQubits; r++){
-//               for (int s = 0; s < nQubits; s++){
-//                  xacc::info(std::to_string(p) + ", " + std::to_string(q) + ", " + std::to_string(r) + ", " + std::to_string(s) + ", " + std::to_string(std::real(filtered_rhopqrs(p, q, r, s))));
-//               }
-//           }
-//       }
-//   }
    auto filtered_trace = 0.0;
     for (int p = 0; p < nQubits; p++){
       for (int q = 0; q < nQubits; q++){
