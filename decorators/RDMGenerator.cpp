@@ -1,6 +1,6 @@
 #include "RDMGenerator.hpp"
-#include <unsupported/Eigen/CXX11/TensorSymmetry>
 #include "XACC.hpp"
+#include <unsupported/Eigen/CXX11/TensorSymmetry>
 
 namespace xacc {
 namespace vqe {
@@ -28,53 +28,16 @@ void RDMGenerator::generate(std::shared_ptr<Function> ansatz) {
   rho_pqrs_Sym.addAntiSymmetry(0, 1);
   rho_pqrs_Sym.addAntiSymmetry(2, 3);
 
-  // Compute the 1 body reduced density matrix
-//   for (int m = 0; m < nQubits; m++) {
-//     for (int n = m; n < nQubits; n++) {
-//       xacc::info("Computing 1-rdm " + std::to_string(m) + ", " + std::to_string(n));
-//       // Generate the XACC kernel source code and compile it
-//       std::stringstream ss;
-//       ss << "__qpu__ k(){\n0.5 " << m << " 1 " << n << " 0\n"
-//          << "0.5 " << n << " 1 " << m << " 0\n}";
-//       double sum_pq = 0.0;
-//       auto hpq_ir = fermionCompiler->compile(ss.str(), qpu);
+  std::vector<std::shared_ptr<Function>> nontrivial_functions;
+  std::vector<double> coefficients;
+  std::vector<std::vector<int>> rho_elements;
+  std::map<std::vector<int>, double> rho_element_2_identity_coeff;
 
-//       // Loop over our compiled kernels and execute them
-//       // computing the weight*expVal sum
-//       for (auto &kernel : hpq_ir->getKernels()) {
-//         double localExpVal = 1.0;
-//         auto t = std::real(
-//             boost::get<std::complex<double>>(kernel->getParameter(0)));
-//         if (kernel->nInstructions() > 0) {
-
-//           kernel->insertInstruction(0, ansatz);
-
-//           auto buffer = qpu->createBuffer("q", nQubits);
-//           qpu->execute(buffer, kernel);
-//           localExpVal = buffer->getExpectationValueZ();
-//           nExecs++;
-//         }
-//         sum_pq += t * localExpVal;
-//       }
-
-//       if (std::fabs(sum_pq) > 1e-12)
-//         rho_pq_Sym(rho_pq, m, n) = sum_pq;
-//     }
-//   }
-
-//   double trace = 0.0;
-//   for (int i = 0; i < nQubits; i++)
-//     trace += std::real(rho_pq(i, i));
-
-  // std::cout << "Trace for 1 RDM: " << trace << "\n";
-
-  // Generate the 2-RDM
+  // Generate the 2-RDM circuits for executiong
   for (int m = 0; m < nQubits; m++) {
     for (int n = m + 1; n < nQubits; n++) {
       for (int v = m; v < nQubits; v++) {
         for (int w = v + 1; w < nQubits; w++) {
-      xacc::info("Computing 2-rdm " + std::to_string(m) + ", " + std::to_string(n) + ", " + std::to_string(v) +", " + std::to_string(w));
-
           // Create the source code XACC kernel and compile it
           std::stringstream xx;
           xx << "__qpu__ k(){\n0.5 " << m << " 1 " << n << " 1 " << w << " 0 "
@@ -87,72 +50,58 @@ void RDMGenerator::generate(std::shared_ptr<Function> ansatz) {
           // the weight * expVal sum
           double sum_pqrs = 0.0;
           for (auto &kernel : hpqrs_ir->getKernels()) {
+
             double localExpVal = 1.0;
             auto t = std::real(
                 boost::get<std::complex<double>>(kernel->getParameter(0)));
             if (kernel->nInstructions() > 0) {
               kernel->insertInstruction(0, ansatz);
-              auto buffer = qpu->createBuffer("q", nQubits);
-              qpu->execute(buffer, kernel);
-              localExpVal = buffer->getExpectationValueZ();
-              nExecs++;
+              nontrivial_functions.push_back(kernel);
+              coefficients.push_back(t);
+              rho_elements.push_back({m, n, v, w});
+            } else {
+              rho_element_2_identity_coeff.insert({{m, n, v, w}, t});
             }
-
-            sum_pqrs += t * localExpVal;
-          }
-
-          // Set the 2-RDM elements and update the energy.
-          if (std::fabs(sum_pqrs) > 1e-12) {
-            rho_pqrs_Sym(rho_pqrs, m, n, v, w) = sum_pqrs;
-            rho_pqrs_Sym(rho_pqrs, v, w, m, n) = sum_pqrs;
           }
         }
       }
     }
   }
 
-//   trace = 0;
-//   for (int i = 0; i < nQubits; i++) {
-//     for (int j = 0; j < nQubits; j++) {
-//       trace += std::real(rho_pqrs(i, j, i, j));
-//     }
-//   }
+  // Execute all nontrivial circuits
+  xacc::info("Executing " + std::to_string(nontrivial_functions.size()) +
+             " circuits to compute rho_pqrs.");
+  auto buffer = qpu->createBuffer("q", nQubits);
+  auto buffers = qpu->execute(buffer, nontrivial_functions);
 
-//   // std::cout << "2 body trace = " << trace << "\n";
-//   for (int m = 0; m < nQubits; m++) {
-//     for (int n = 0; n < nQubits; n++) {
-//       _energy += 0.5 * std::real(hpq(m, n) * (rho_pq(m, n) + rho_pq(n, m)));
-//     }
-//   }
+  // Create a mapping of rho_pqrs elements to summed expectation values for
+  // each circuit contributing to it
+  std::map<std::vector<int>, double> sumMap;
+  for (int i = 0; i < buffers.size(); i++) {
+    auto elements = rho_elements[i];
+    auto value = coefficients[i] * buffers[i]->getExpectationValueZ();
+    if (!sumMap.count(elements)) {
+      sumMap.insert({elements, value});
+    } else {
+      sumMap[elements] += value;
+    }
+  }
 
-//   for (int m = 0; m < nQubits; m++) {
-//     for (int n = 0; n < nQubits; n++) {
-//       for (int v = 0; v < nQubits; v++) {
-//         for (int w = 0; w < nQubits; w++) {
-//           _energy +=
-//               0.5 * std::real(hpqrs(m, n, v, w) *
-//                               (rho_pqrs(m, n, w, v) + rho_pqrs(v, w, n, m)));
-//         }
-//       }
-//     }
-//   }
-  // std::cout << "RHOPQ:\n" << rho_pq << "\n";
+  // Add all identity terms, we don't execute them
+  // but we still have to add their contribution
+  for (auto &kv : rho_element_2_identity_coeff) {
+    sumMap[kv.first] += kv.second;
+  }
 
-  // for (int m = 0; m < nQubits; m++) {
-  // 	for (int n = 0; n < nQubits; n++) {
-  // 		for (int v = 0; v < nQubits; v++) {
-  // 			for (int w = 0; w < nQubits; w++) {
-  //                 if (std::fabs(rho_pqrs(m,n,v,w)) > 1e-12) std::cout <<
-  //                 "2RDM: " << m << ", " << n << ", " << v << ", " << w << ":
-  //                 " << rho_pqrs(m,n,v,w) << "\n";
-  //             }
-  //         }
-  //     }
-  // }
-
-  // xacc::info("Number of QPU Executions = " + std::to_string(nExecs));
-  // xacc::info("RDM generation complete.");
-
+  // Set rho_pqrs. This is all we need
+  // to get rho_pq as well
+  for (auto &kv : sumMap) {
+    auto elements = kv.first;
+    rho_pqrs_Sym(rho_pqrs, elements[0], elements[1], elements[2], elements[3]) =
+        kv.second;
+    rho_pqrs_Sym(rho_pqrs, elements[2], elements[3], elements[0], elements[1]) =
+        kv.second;
+  }
 }
 
 const double RDMGenerator::energy() { return _energy; }

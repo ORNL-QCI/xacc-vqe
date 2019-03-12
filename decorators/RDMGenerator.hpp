@@ -53,8 +53,9 @@ public:
    *
    * @param p
    */
-  RDMGenerator(const int nQubits, std::shared_ptr<Accelerator> acc, Eigen::Tensor<std::complex<double>, 2> &hpq_,
-               Eigen::Tensor<std::complex<double>, 4>& hpqrs_)
+  RDMGenerator(const int nQubits, std::shared_ptr<Accelerator> acc,
+               Eigen::Tensor<std::complex<double>, 2> &hpq_,
+               Eigen::Tensor<std::complex<double>, 4> &hpqrs_)
       : _nQubits(nQubits), rho_pq(nQubits, nQubits), qpu(acc),
         rho_pqrs(nQubits, nQubits, nQubits, nQubits), hpq(hpq_), hpqrs(hpqrs_) {
   }

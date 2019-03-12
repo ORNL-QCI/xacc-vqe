@@ -33,8 +33,7 @@ public:
 
   std::shared_ptr<options_description> getOptions() override {
     auto desc = std::make_shared<options_description>();
-    desc->add_options()("rdm-source", value<std::string>(),
-                        "");
+    desc->add_options()("rdm-source", value<std::string>(), "");
     return desc;
   }
   ~RDMPurificationDecorator() override {}
