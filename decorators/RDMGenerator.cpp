@@ -5,21 +5,6 @@
 namespace xacc {
 namespace vqe {
 
-template <class Iterator>
-std::map<typename Iterator::value_type, int> count(Iterator begin,
-                                                   Iterator end) {
-  std::map<typename Iterator::value_type, int> counts;
-  for (Iterator i = begin; i != end; ++i)
-    counts[*i]++;
-  return counts;
-}
-
-// Sequence interface
-template <class Sequence>
-inline std::map<typename Sequence::value_type, int> count(Sequence seq) {
-  return count(seq.begin(), seq.end());
-}
-
 void RDMGenerator::generate(std::shared_ptr<Function> ansatz) {
   // Reset
   rho_pq.setZero();
