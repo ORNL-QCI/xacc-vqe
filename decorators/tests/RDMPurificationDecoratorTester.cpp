@@ -28,14 +28,15 @@
  *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
+#include "AcceleratorDecorator.hpp"
 #include "FermionInstruction.hpp"
 #include "FermionKernel.hpp"
+#include "GateFunction.hpp"
 #include "IRGenerator.hpp"
 #include "Instruction.hpp"
 #include "RDMGenerator.hpp"
 #include "XACC.hpp"
 #include <gtest/gtest.h>
-
 using namespace xacc::vqe;
 using namespace xacc;
 
@@ -71,69 +72,69 @@ const std::string src = R"src(__qpu__ kernel() {
 0.34814578469185886 3 1 2 1 2 0 3 0
 })src";
 
-TEST(RDMGeneratorTester, checkGround) {
+const std::string rucc = R"rucc(def f(buffer, theta):
+    X(0)
+    X(1)
+    Rx(1.5707,0)
+    H(1)
+    H(2)
+    H(3)
+    CNOT(0,1)
+    CNOT(1,2)
+    CNOT(2,3)
+    Rz(theta,3)
+    CNOT(2,3)
+    CNOT(1,2)
+    CNOT(0,1)
+    Rx(-1.5707,0)
+    H(1)
+    H(2)
+    H(3)
+    )rucc";
 
-  if (xacc::hasAccelerator("tnqvm")) {
+TEST(RDMPurificationDecoratorTester, checkGround) {
+
+  if (xacc::hasAccelerator("local-ibm")) {
+    xacc::setOption("ibm-shots", "1024");
+    xacc::setOption("u-p-depol", ".025");
+    xacc::setOption("cx-p-depol", ".03");
+
     // Get the user-specified Accelerator,
     // or TNQVM if none specified
-    auto accelerator = xacc::getAccelerator("tnqvm");
+    auto accelerator = xacc::getAccelerator("local-ibm");
     int nQubits = 4;
 
-    // Compile the above source code to get hpq and hpqrs,
-    // and the nuclear energy
-    xacc::setOption("fermion-compiler-silent", "");
-    xacc::setOption("no-fermion-transformation", "");
-    auto c = xacc::getCompiler("fermion");
-    auto ir = c->compile(src, accelerator);
-    auto fermionKernel =
-        std::dynamic_pointer_cast<FermionKernel>(ir->getKernels()[0]);
-    xacc::unsetOption("no-fermion-transformation");
-    auto energy = fermionKernel->E_nuc();
-    auto hpq = fermionKernel->hpq(nQubits);
-    auto hpqrs = fermionKernel->hpqrs(nQubits);
+    auto accd = xacc::getService<AcceleratorDecorator>("rdm-purification");
+    accd->setDecorated(accelerator);
+
+    auto buffer = accd->createBuffer("q", 4);
+
+    xacc::setOption("rdm-source", src);
 
     // Create the UCCSD ansatz and evaluate
     // at the known optimal angles
-    Eigen::VectorXd parameters(2);
-    parameters << 0.0, -0.0571335;
-    auto uccsdgen = xacc::getService<IRGenerator>("uccsd");
-    auto uccsd = uccsdgen->generate(std::vector<InstructionParameter>{
-        InstructionParameter(2), InstructionParameter(4)});
-    uccsd = (*uccsd.get())(parameters);
 
-    // Create the 2-RDM
-    RDMGenerator generator(nQubits, accelerator, hpq, hpqrs);
-    generator.generate(uccsd);
+    auto compiler = xacc::getService<xacc::Compiler>("xacc-py");
 
-    // Get the 1 rdm from the 2 rdm
-    Eigen::array<int, 2> cc2({1, 3});
-    auto rho_pqrs = generator.rho_pqrs;
-    Eigen::Tensor<std::complex<double>, 2> rho_pq = rho_pqrs.trace(cc2);
+    auto ir = compiler->compile(rucc, accelerator);
+    auto ruccsd = ir->getKernel("f");
 
-    // Compute the 2 rdm contribution to the energy
-    for (int p = 0; p < nQubits; p++) {
-      for (int q = 0; q < nQubits; q++) {
-        for (int r = 0; r < nQubits; r++) {
-          for (int s = 0; s < nQubits; s++) {
-            energy +=
-                0.5 * std::real(hpqrs(p, q, r, s) *
-                                (rho_pqrs(p, q, s, r) + rho_pqrs(r, s, q, p)));
-          }
-        }
-      }
-    }
-    std::cout << "2rdm e = " << energy << "\n";
+    Eigen::VectorXd parameters(1);
+    parameters << .22984;
+    ruccsd = (*ruccsd.get())(parameters);
 
-    // Compute the 1 rdm contribution to the energy
-    for (int p = 0; p < nQubits; p++) {
-      for (int q = 0; q < nQubits; q++) {
-        energy += 0.5 * std::real(hpq(p, q) * (rho_pq(p, q) + rho_pq(q, p)));
-      }
-    }
-    std::cout << "ENERGY: " << energy << "\n";
+    auto function = std::make_shared<xacc::quantum::GateFunction>("f");
+    function->addInstruction(ruccsd);
 
-    // auto energy = rhoGen.energy();
-    EXPECT_NEAR(energy, -1.1371, 1e-4);
+    auto buffers =
+        accd->execute(buffer, std::vector<std::shared_ptr<Function>>{function});
+
+    std::cout << "Purification Energy: "
+              << boost::get<double>(
+                     buffers[0]->getInformation("purified-energy"))
+              << "\n";
+
+    // EXPECT_NEAR(energy, -1.1371, 1e-4);
   }
 }
 

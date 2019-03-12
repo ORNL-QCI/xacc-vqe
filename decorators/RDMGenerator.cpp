@@ -59,6 +59,7 @@ void RDMGenerator::generate(std::shared_ptr<Function> ansatz) {
               nontrivial_functions.push_back(kernel);
               coefficients.push_back(t);
               rho_elements.push_back({m, n, v, w});
+              //   xacc::info(kernel->toString() + "\n");
             } else {
               rho_element_2_identity_coeff.insert({{m, n, v, w}, t});
             }
