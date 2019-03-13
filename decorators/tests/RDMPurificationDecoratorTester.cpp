@@ -134,6 +134,8 @@ TEST(RDMPurificationDecoratorTester, checkGround) {
                      buffers[0]->getInformation("purified-energy"))
               << "\n";
 
+    buffers[0]->print(std::cout);
+
     // EXPECT_NEAR(energy, -1.1371, 1e-4);
   }
 }

@@ -125,8 +125,10 @@ TEST(RDMGeneratorTester, checkGround) {
 
     // Create the 2-RDM
     RDMGenerator generator(nQubits, accelerator, hpq, hpqrs);
-    generator.generate(ruccsd);
+    auto buffers = generator.generate(ruccsd);
 
+    EXPECT_EQ(buffers.size(), 54);
+    
     // Get the 1 rdm from the 2 rdm
     Eigen::array<int, 2> cc2({1, 3});
     auto rho_pqrs = generator.rho_pqrs;

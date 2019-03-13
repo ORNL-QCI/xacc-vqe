@@ -5,7 +5,7 @@
 namespace xacc {
 namespace vqe {
 
-void RDMGenerator::generate(std::shared_ptr<Function> ansatz) {
+std::vector<std::shared_ptr<AcceleratorBuffer>> RDMGenerator::generate(std::shared_ptr<Function> ansatz) {
   // Reset
   rho_pq.setZero();
   rho_pqrs.setZero();
@@ -95,15 +95,24 @@ void RDMGenerator::generate(std::shared_ptr<Function> ansatz) {
   for (int i = 0; i < buffers.size(); i++) {
     auto fName = fsToExecute[i]->name();
     auto p = functions[fName];
+    std::vector<std::string> contributingIndices;
+    std::vector<double> contributingCoeffs;
     for (auto &l : p.second) {
       auto elements = l.first;
+      std::stringstream s;
+      s << elements[0] << "," << elements[1] << "," << elements[2] << "," << elements[3];
+      contributingIndices.push_back(s.str());
       auto value = l.second * buffers[i]->getExpectationValueZ();
+      contributingCoeffs.push_back(value);
       if (!sumMap.count(elements)) {
         sumMap.insert({elements, value});
       } else {
         sumMap[elements] += value;
       }
     }
+
+    buffers[i]->addExtraInfo("contributing_rho_pqrs", ExtraInfo(contributingIndices));
+    buffers[i]->addExtraInfo("contributing_coeffs", ExtraInfo(contributingCoeffs));
   }
 
   // Add all identity terms, we don't execute them
@@ -121,6 +130,8 @@ void RDMGenerator::generate(std::shared_ptr<Function> ansatz) {
     rho_pqrs_Sym(rho_pqrs, elements[2], elements[3], elements[0], elements[1]) =
         kv.second;
   }
+
+  return buffers;
 }
 
 const double RDMGenerator::energy() { return _energy; }

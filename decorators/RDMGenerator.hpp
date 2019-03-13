@@ -62,7 +62,7 @@ public:
 
   const int nQubits() { return _nQubits; }
 
-  void generate(std::shared_ptr<Function> ansatz);
+  std::vector<std::shared_ptr<AcceleratorBuffer>> generate(std::shared_ptr<Function> ansatz);
 
   /**
    * Return the computed hamiltonian energy.

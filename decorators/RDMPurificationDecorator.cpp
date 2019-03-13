@@ -56,10 +56,13 @@ RDMPurificationDecorator::execute(
   auto hpqrs = fermionKernel->hpqrs(nQubits);
   RDMGenerator generator(buffer->size(), decoratedAccelerator, hpq, hpqrs);
 
-  generator.generate(ansatz);
+  buffers = generator.generate(ansatz);
 
   //   auto rho_pq = generator.rho_pq;
-  auto rho_pqrs = generator.rho_pqrs;
+  T4 rho_pqrs = generator.rho_pqrs;
+  Eigen::Tensor<double,4> realt = rho_pqrs.real();
+  auto real = realt.data();
+  std::vector<double> rho_pqrs_data(real, real + rho_pqrs.size());
 
   double bad_energy = energy;
   for (int p = 0; p < nQubits; p++) {
@@ -164,6 +167,10 @@ RDMPurificationDecorator::execute(
     }
   }
 
+  realt = rdm.real();
+  real = realt.data();
+  std::vector<double> fixed_rho_pqrs_data(real, real + rho_pqrs.size());
+
   T2 rhopq_tensor = rdm.trace(cc2);
   tmp = rhopq_tensor.trace();
   auto rhopq_trace = std::real(tmp(0));
@@ -189,15 +196,15 @@ RDMPurificationDecorator::execute(
   }
   xacc::info("Purified energy " + std::to_string(energy));
 
-  std::vector<std::shared_ptr<AcceleratorBuffer>> retBuffers;
-  for (auto &f : functions) {
-    auto b = decoratedAccelerator->createBuffer(f->name(), buffer->size());
+  for (auto &b : buffers) {
     b->addExtraInfo("purified-energy", ExtraInfo(energy));
     b->addExtraInfo("non-purified-energy", ExtraInfo(bad_energy));
-    retBuffers.push_back(b);
   }
 
-  return retBuffers;
+  buffers[0]->addExtraInfo("noisy-rdm", ExtraInfo(rho_pqrs_data));
+  buffers[0]->addExtraInfo("fixed-rdm", ExtraInfo(fixed_rho_pqrs_data));
+
+  return buffers;
 }
 
 } // namespace vqe
