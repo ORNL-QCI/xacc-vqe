@@ -225,6 +225,7 @@ RDMPurificationDecorator::execute(
   buffers[0]->addExtraInfo("noisy-rdm", ExtraInfo(rho_pqrs_data));
   buffers[0]->addExtraInfo("fixed-rdm", ExtraInfo(fixed_rho_pqrs_data));
 
+  xacc::info("Made it here, returning");
   return buffers;
 }
 

@@ -86,9 +86,9 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
       } else { // IF IS IDENTITY TERM
         // if it is identity, add its coeff to the energy sum
         if (rank == 0) {
-          
+
           identityCoeff = getCoeff(k);
-            
+
           sum +=identityCoeff;
 
           auto ibuff = qpu->createBuffer("I", globalBuffer->size());
@@ -131,9 +131,8 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
 
       // Compute the energy
       for (int i = 0; i < results.size(); ++i) {
-        auto k = kernels[i];
         double exp = 0.0;
-        if (xacc::optionExists("converge-ro-error") && 
+        if (xacc::optionExists("converge-ro-error") &&
             results[i]->hasExtraInfoKey("ro-fixed-exp-val-z")) {
           exp = boost::get<double>(
               results[i]->getInformation("ro-fixed-exp-val-z"));
@@ -144,14 +143,22 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
           results[i]->addExtraInfo("exp-val-z", ExtraInfo(exp));
         }
 
+        results[i]->addExtraInfo("parameters", paramsInfo);
+
+        if (results.size() == kernels.size()) {
+        auto k = kernels[i];
         auto t = getCoeff(k);
         sum += exp * t;
-        results[i]->addExtraInfo("parameters", paramsInfo);
         results[i]->addExtraInfo("kernel", ExtraInfo(k.getName()));
         results[i]->addExtraInfo("coefficient", ExtraInfo(t));
-
         globalBuffer->appendChild(k.getName(), results[i]);
         expVals.insert({k.getName(), exp});
+
+        } else {
+        auto fname = boost::get<std::string>(results[i]->getInformation("kernel"));
+        globalBuffer->appendChild(fname, results[i]);
+        expVals.insert({fname, exp});
+        }
       }
 
       // Clean up by removing the state prep
@@ -174,11 +181,11 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
   auto added = globalBuffer->addExtraInfo(
       "vqe-energy", ExtraInfo(sum),
       [&](ExtraInfo &i) -> bool { return sum < boost::get<double>(i); });
-      
+
   if (added) {
     globalBuffer->addExtraInfo("vqe-angles", paramsInfo);
   }
-  
+
   globalBuffer->addExtraInfo("vqe-nQPU-calls", ExtraInfo(totalQpuCalls));
 
   // See if the user requested data persisitence

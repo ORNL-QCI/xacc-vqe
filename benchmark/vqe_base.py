@@ -104,7 +104,7 @@ class VQEBase(BenchmarkAlgorithm):
 
         if 'rdm-purification' in inputParams and inputParams['rdm-purification']:
             self.qpu = xacc.getAcceleratorDecorator('rdm-purification', self.qpu)
-            
+
         self.vqe_options_dict = {'accelerator': self.qpu, 'ansatz': self.ansatz}
 
         if 'initial-parameters' in inputParams:
@@ -141,7 +141,7 @@ class VQEBase(BenchmarkAlgorithm):
             energy = 0.0
             for c in buffer.getChildren('parameters', p):
                 exp = c.getInformation('exp-val-z')
-                energy += exp * c.getInformation('coefficient')
+                energy += exp * c.getInformation('coefficient') if c.hasExtraInfoKey('coefficient') else 0.0
                 f.write(str(exp)+',')
             f.write(str(energy)+'\n')
         f.close()
@@ -155,7 +155,7 @@ class VQEBase(BenchmarkAlgorithm):
                 energy = 0.0
                 for c in buffer.getChildren('parameters', p):
                     exp = c.getInformation('ro-fixed-exp-val-z')
-                    energy += exp * c.getInformation('coefficient')
+                    energy += exp * c.getInformation('coefficient') if c.hasExtraInfoKey('coefficient') else 0.0
                     f.write(str(exp)+',')
                 f.write(str(energy)+'\n')
             f.close()

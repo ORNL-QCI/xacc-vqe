@@ -110,7 +110,7 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> RDMGenerator::generate(std::shar
         sumMap[elements] += value;
       }
     }
-
+    buffers[i]->addExtraInfo("kernel", ExtraInfo(fName));
     buffers[i]->addExtraInfo("contributing_rho_pqrs", ExtraInfo(contributingIndices));
     buffers[i]->addExtraInfo("contributing_coeffs", ExtraInfo(contributingCoeffs));
   }

@@ -44,7 +44,7 @@ class ParamSweep(VQEBase):
         """
         super().unbind_dicts(field, service, svc_ref)
 
-    def linspace(a, b, n=100):
+    def linspace(self, a, b, n=100):
         if n < 2:
             return b
         diff = (float(b) - a)/(n - 1)
@@ -76,7 +76,7 @@ class ParamSweep(VQEBase):
 
         num_params = ast.literal_eval(inputParams['num-params'])
 
-        for param in linspace(low_bound, up_bound, num_params):
+        for param in self.linspace(low_bound, up_bound, num_params):
             self.vqe_options_dict['vqe-params'] = str(param)
             results = execute(self.op, self.buffer, **self.vqe_options_dict)
         return self.buffer
