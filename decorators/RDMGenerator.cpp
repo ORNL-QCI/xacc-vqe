@@ -84,10 +84,12 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> RDMGenerator::generate(std::shar
     fsToExecute.push_back(kv.second.first);
   }
 
+  int nPhysicalQubits = *std::max_element(qubitMap.begin(), qubitMap.end()) + 1;
+
   // Execute all nontrivial circuits
-  xacc::info("Executing " + std::to_string(fsToExecute.size()) +
+  xacc::info(std::to_string(nPhysicalQubits) +", Executing " + std::to_string(fsToExecute.size()) +
              " circuits to compute rho_pqrs.");
-  auto buffer = qpu->createBuffer("q", nQubits);
+  auto buffer = qpu->createBuffer("q", nPhysicalQubits);
   auto buffers = qpu->execute(buffer, fsToExecute);
 
   // Create a mapping of rho_pqrs elements to summed expectation values for

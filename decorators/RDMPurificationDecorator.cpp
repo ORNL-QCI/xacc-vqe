@@ -48,6 +48,7 @@ RDMPurificationDecorator::execute(
   // optionally map the ansatz to a
   // different set of physical qubits
   if (xacc::optionExists("rdm-qubit-map")) {
+    auto provider = xacc::getService<IRProvider>("gate");
     auto mapStr = xacc::getOption("rdm-qubit-map");
 
     std::vector<std::string> split;
@@ -58,8 +59,14 @@ RDMPurificationDecorator::execute(
       auto idx = std::stoi(s);
       qubitMap.push_back(idx);
     }
-    ansatz = ansatz->enabledView();
-    ansatz->mapBits(qubitMap);
+    // ansatz = ansatz->enabledView();
+    auto tmp = provider->createFunction(ansatz->name(), ansatz->bits());
+    for (auto& i : ansatz->getInstructions()) {
+        auto cloned = provider->createInstruction(i->name(), i->bits(), i->getParameters());
+        tmp->addInstruction(cloned);
+    }
+    tmp->mapBits(qubitMap);
+    ansatz = tmp;
   }
 
   auto src = xacc::getOption("rdm-source");
