@@ -48,12 +48,12 @@ RDMPurificationDecorator::execute(
   // optionally map the ansatz to a
   // different set of physical qubits
   if (xacc::optionExists("rdm-qubit-map")) {
-    std::vector<int> qubitMap;
     auto mapStr = xacc::getOption("rdm-qubit-map");
 
     std::vector<std::string> split;
     boost::split(split, mapStr, boost::is_any_of(","));
 
+    qubitMap.clear();
     for (auto s : split) {
       auto idx = std::stoi(s);
       qubitMap.push_back(idx);

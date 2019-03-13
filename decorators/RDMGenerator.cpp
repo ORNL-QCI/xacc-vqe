@@ -61,6 +61,7 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> RDMGenerator::generate(std::shar
             auto t = std::real(
                 boost::get<std::complex<double>>(kernel->getParameter(0)));
             if (kernel->nInstructions() > 0) {
+            //   xacc::info("kernel " + kernel->name() + ":\n" + kernel->toString());
               kernel->insertInstruction(0, ansatz);
               auto name = kernel->name();
               if (functions.count(name)) {

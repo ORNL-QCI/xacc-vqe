@@ -125,7 +125,7 @@ TEST(RDMGeneratorTester, checkGround) {
 
     // Create the 2-RDM
     std::vector<int> qubitMap(4);
-    std::iota (std::begin(qubitMap), std::end(qubitMap), 0);
+    std::iota (std::begin(qubitMap), std::end(qubitMap), 2);
     RDMGenerator generator(nQubits, accelerator, hpq, hpqrs);
     auto buffers = generator.generate(ruccsd, qubitMap);
 
