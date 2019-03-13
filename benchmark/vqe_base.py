@@ -102,6 +102,9 @@ class VQEBase(BenchmarkAlgorithm):
         if 'readout-error' in inputParams and inputParams['readout-error']:
             self.qpu = xacc.getAcceleratorDecorator('ro-error',self.qpu)
 
+        if 'rdm-purification' in inputParams and inputParams['rdm-purification']:
+            self.qpu = xacc.getAcceleratorDecorator('rdm-purification', self.qpu)
+            
         self.vqe_options_dict = {'accelerator': self.qpu, 'ansatz': self.ansatz}
 
         if 'initial-parameters' in inputParams:

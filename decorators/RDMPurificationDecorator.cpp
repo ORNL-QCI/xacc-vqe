@@ -41,22 +41,43 @@ RDMPurificationDecorator::execute(
   if (!ansatz)
     xacc::error("RDMPurificationDecorator - Ansatz was null.");
 
-  auto src = xacc::getOption("rdm-source");
   auto nQubits = buffer->size();
+  std::vector<int> qubitMap(nQubits) ;
+  std::iota (std::begin(qubitMap), std::end(qubitMap), 0);
+
+  // optionally map the ansatz to a
+  // different set of physical qubits
+  if (xacc::optionExists("rdm-qubit-map")) {
+    std::vector<int> qubitMap;
+    auto mapStr = xacc::getOption("rdm-qubit-map");
+
+    std::vector<std::string> split;
+    boost::split(split, mapStr, boost::is_any_of(","));
+
+    for (auto s : split) {
+      auto idx = std::stoi(s);
+      qubitMap.push_back(idx);
+    }
+    ansatz = ansatz->enabledView();
+    ansatz->mapBits(qubitMap);
+  }
+
+  auto src = xacc::getOption("rdm-source");
+
   // Get hpq, hpqrs
   xacc::setOption("no-fermion-transformation", "");
   auto c = xacc::getCompiler("fermion");
   auto ir = c->compile(src, decoratedAccelerator);
-  auto fermionKernel =
+  auto fk =
       std::dynamic_pointer_cast<FermionKernel>(ir->getKernels()[0]);
   xacc::unsetOption("no-fermion-transformation");
 
-  auto energy = fermionKernel->E_nuc();
-  auto hpq = fermionKernel->hpq(nQubits);
-  auto hpqrs = fermionKernel->hpqrs(nQubits);
+  auto energy = fk->E_nuc();
+  auto hpq = fk->hpq(nQubits);
+  auto hpqrs = fk->hpqrs(nQubits);
   RDMGenerator generator(buffer->size(), decoratedAccelerator, hpq, hpqrs);
 
-  buffers = generator.generate(ansatz);
+  buffers = generator.generate(ansatz, qubitMap);
 
   //   auto rho_pq = generator.rho_pq;
   T4 rho_pqrs = generator.rho_pqrs;
