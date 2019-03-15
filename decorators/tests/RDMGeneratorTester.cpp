@@ -124,8 +124,8 @@ TEST(RDMGeneratorTester, checkGround) {
     ruccsd = (*ruccsd.get())(parameters);
 
     // Create the 2-RDM
-    std::vector<int> qubitMap(4);
-    std::iota (std::begin(qubitMap), std::end(qubitMap), 2);
+    std::vector<int> qubitMap {1,3,5,7}; // map to physical qubits
+    ruccsd->mapBits(qubitMap);
     RDMGenerator generator(nQubits, accelerator, hpq, hpqrs);
     auto buffers = generator.generate(ruccsd, qubitMap);
 

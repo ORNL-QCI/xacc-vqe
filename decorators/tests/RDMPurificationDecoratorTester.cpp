@@ -110,6 +110,7 @@ TEST(RDMPurificationDecoratorTester, checkGround) {
     auto buffer = accd->createBuffer("q", 4);
 
     xacc::setOption("rdm-source", src);
+    xacc::setOption("rdm-qubit-map", "1,3,4,5");
 
     // Create the UCCSD ansatz and evaluate
     // at the known optimal angles
@@ -134,7 +135,7 @@ TEST(RDMPurificationDecoratorTester, checkGround) {
                      buffers[0]->getInformation("purified-energy"))
               << "\n";
 
-    buffers[0]->print(std::cout);
+    // buffers[0]->print(std::cout);
 
     // EXPECT_NEAR(energy, -1.1371, 1e-4);
   }
