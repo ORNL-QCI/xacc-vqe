@@ -46,9 +46,9 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> RDMGenerator::generate(std::shar
         for (int w = v + 1; w < nQubits; w++) {
           // Create the source code XACC kernel and compile it
           std::stringstream xx;
-          xx << "__qpu__ k(){\n0.5 " << qubitMap[m] << " 1 " << qubitMap[n] << " 1 " << qubitMap[w] << " 0 "
-             << qubitMap[v] << " 0\n"
-             << "0.5 " << qubitMap[w] << " 1 " << qubitMap[v] << " 1 " << qubitMap[m] << " 0 " << qubitMap[n]
+          xx << "__qpu__ k(){\n0.5 " << m << " 1 " << n << " 1 " << w << " 0 "
+             << v << " 0\n"
+             << "0.5 " << w << " 1 " << v << " 1 " << m << " 0 " << n
              << " 0\n}";
           auto hpqrs_ir = fermionCompiler->compile(xx.str(), qpu);
 
@@ -61,7 +61,13 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> RDMGenerator::generate(std::shar
             auto t = std::real(
                 boost::get<std::complex<double>>(kernel->getParameter(0)));
             if (kernel->nInstructions() > 0) {
-            //   xacc::info("kernel " + kernel->name() + ":\n" + kernel->toString());
+              kernel->mapBits(qubitMap);
+              for (auto& inst : kernel->getInstructions()) {
+                  if (inst->name() == "Measure") {
+                      InstructionParameter p(inst->bits()[0]);
+                      inst->setParameter(0,p);
+                  }
+              }
               kernel->insertInstruction(0, ansatz);
               auto name = kernel->name();
               if (functions.count(name)) {
