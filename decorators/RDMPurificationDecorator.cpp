@@ -86,6 +86,14 @@ RDMPurificationDecorator::execute(
 
   buffers = generator.generate(ansatz, qubitMap);
 
+  Eigen::Tensor<double,4> realpqrs = hpqrs.real();
+  auto pqrstmp = realpqrs.data();
+  std::vector<double> hpqrs_vec(pqrstmp, pqrstmp + hpqrs.size());
+
+  Eigen::Tensor<double,2> realpq = hpq.real();
+  auto pqtmp = realpq.data();
+  std::vector<double> hpq_vec(pqtmp, pqtmp + hpq.size());
+
   //   auto rho_pq = generator.rho_pq;
   T4 rho_pqrs = generator.rho_pqrs;
   Eigen::Tensor<double,4> realt = rho_pqrs.real();
@@ -120,7 +128,7 @@ RDMPurificationDecorator::execute(
 
   xacc::info("Non-purified Energy: " + std::to_string(bad_energy));
 
-  xacc::info("Filtering 2-RDM");
+//   xacc::info("Filtering 2-RDM");
   Eigen::Tensor<std::complex<double>, 4> filtered_rhopqrs(nQubits, nQubits,
                                                           nQubits, nQubits);
   filtered_rhopqrs.setZero();
@@ -139,13 +147,11 @@ RDMPurificationDecorator::execute(
   }
 
   T4 rdm = filtered_rhopqrs;
+  Eigen::array<IP,2> sq_indices{IP(2,0), IP(3,1)};
 
-  T4 rdmSq = rdm.contract(rdm, Eigen::array<IP, 2>{IP(2, 0), IP(3, 1)});
+  T4 rdmSq = rdm.contract(rdm, sq_indices);
   T4 diff = rdmSq - rdm;
-  T4 diffSq = diff.contract(diff, Eigen::array<IP, 2>{IP(2, 0), IP(3, 1)});
-
-  T0 tmp = diffSq.trace();
-  //   double tr_diff_sq = std::real(tmp(0));
+  T4 diffSq = diff.contract(diff, sq_indices);
 
   double tr_diff_sq = 0.0;
   for (int p = 0; p < nQubits; p++) {
@@ -154,20 +160,28 @@ RDMPurificationDecorator::execute(
     }
   }
 
-  std::stringstream ss;
-  ss << std::setprecision(8) << tr_diff_sq;
-  xacc::info("diffsq_pqrs trace: " + ss.str());
-
   int count = 0;
   while (tr_diff_sq > 1e-8) {
+    auto tr_rdm = 0.0;
+    for (int p = 0; p < nQubits; p++) {
+        for (int q = 0; q < nQubits; q++) {
+            tr_rdm += std::real(rdm(p,q,p,q));
+        }
+    }
+
+    std::stringstream sss;
+    sss << "diffsq_tr: " << std::setprecision(8) << tr_diff_sq << ", rdm_tr: " << tr_rdm;
+    xacc::info("Iter: " + std::to_string(count) +
+               ", diffsq_tr: " + sss.str());
+    rdm = rdm * rdm.constant(1./tr_rdm);
+
+    rdmSq = rdm.contract(rdm, sq_indices);
+    diff = rdmSq - rdm;
+    diffSq = diff.contract(diff, sq_indices);
+
     rdm = rdm.constant(3.) * rdmSq -
           rdm.constant(2.) *
-              rdm.contract(rdmSq, Eigen::array<IP, 2>{IP(2, 0), IP(3, 1)});
-
-    // Update
-    rdmSq = rdm.contract(rdm, Eigen::array<IP, 2>{IP(2, 0), IP(3, 1)});
-    diff = rdmSq - rdm;
-    diffSq = diff.contract(diff, Eigen::array<IP, 2>{IP(2, 0), IP(3, 1)});
+              rdm.contract(rdmSq, sq_indices);
 
     tr_diff_sq = 0.0;
     for (int p = 0; p < nQubits; p++) {
@@ -176,10 +190,6 @@ RDMPurificationDecorator::execute(
       }
     }
 
-    std::stringstream sss;
-    sss << std::setprecision(8) << tr_diff_sq;
-    xacc::info("Iter: " + std::to_string(count) +
-               ", diffsq_pqrs trace: " + sss.str());
     count++;
   }
 
@@ -200,10 +210,10 @@ RDMPurificationDecorator::execute(
   std::vector<double> fixed_rho_pqrs_data(real, real + rho_pqrs.size());
 
   T2 rhopq_tensor = rdm.trace(cc2);
-  tmp = rhopq_tensor.trace();
+  T0 tmp = rhopq_tensor.trace();
   auto rhopq_trace = std::real(tmp(0));
-
   xacc::info("Tr(rhopq): " + std::to_string(rhopq_trace));
+
   for (int p = 0; p < nQubits; p++) {
     for (int q = 0; q < nQubits; q++) {
       for (int r = 0; r < nQubits; r++) {
@@ -222,17 +232,20 @@ RDMPurificationDecorator::execute(
                                 (rhopq_tensor(p, q) + rhopq_tensor(q, p)));
     }
   }
+
   xacc::info("Purified energy " + std::to_string(energy));
 
   for (auto &b : buffers) {
     b->addExtraInfo("purified-energy", ExtraInfo(energy));
     b->addExtraInfo("non-purified-energy", ExtraInfo(bad_energy));
+    b->addExtraInfo("exp-val-z", ExtraInfo(b->getExpectationValueZ()));
   }
 
   buffers[0]->addExtraInfo("noisy-rdm", ExtraInfo(rho_pqrs_data));
   buffers[0]->addExtraInfo("fixed-rdm", ExtraInfo(fixed_rho_pqrs_data));
+  buffers[0]->addExtraInfo("hpqrs", ExtraInfo(hpqrs_vec));
+  buffers[0]->addExtraInfo("hpq", ExtraInfo(hpq_vec));
 
-  xacc::info("Made it here, returning");
   return buffers;
 }
 
