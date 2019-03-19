@@ -74,6 +74,11 @@ class VQE(VQEBase):
                                                            'ansatz': self.ansatz,
                                                            'vqe-params':paramStr,
                                                            'accelerator': self.qpu}).energy
+                    if 'rdm-purification' == self.qpu.name():
+                        children = self.buffer.getChildren('parameters',p)
+                        e = children[1].getInformation('purified-energy')
+                        xacc.info('setting energy to purified energy: ' + str(e))
+
                     energies.append(e)
                     paramStrings.append(paramStr)
                     fileName = ".persisted_buffer_%s" % (inputParams['accelerator'])
