@@ -146,7 +146,7 @@ const std::string rucc = R"rucc(def f(buffer, theta):
 
 TEST(RDMPurificationDecoratorTester, checkGround) {
 
-  if (xacc::hasAccelerator("local-ibm")) {
+  if (xacc::hasAccelerator("tnqvm")) {
     xacc::setOption("ibm-shots", "1024");
     xacc::setOption("u-p-depol", ".025");
     xacc::setOption("cx-p-depol", ".03");
@@ -172,19 +172,19 @@ TEST(RDMPurificationDecoratorTester, checkGround) {
     auto ir = compiler->compile(rucc, accelerator);
     auto ruccsd = ir->getKernel("f");
 
-    Eigen::VectorXd parameters(1);
-    parameters << -1.15;
+    std::vector<double> parameters{-1.15};
     ruccsd = (*ruccsd.get())(parameters);
 
     auto function = std::make_shared<xacc::quantum::GateFunction>("f");
     function->addInstruction(ruccsd);
 
+    std::cout << "executing\n";
     auto buffers =
         accd->execute(buffer, std::vector<std::shared_ptr<Function>>{function});
 
+    std::cout << "Made it here\n";
     std::cout << "Purification Energy: "
-              << boost::get<double>(
-                     buffers[0]->getInformation("purified-energy"))
+              << mpark::get<double>(buffers[0]->getInformation("purified-energy"))
               << "\n";
 
     buffers[0]->print(std::cout);

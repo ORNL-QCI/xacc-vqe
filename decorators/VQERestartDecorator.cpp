@@ -2,6 +2,7 @@
 #include "IRProvider.hpp"
 #include "PauliOperator.hpp"
 #include "XACC.hpp"
+#include <fstream>
 
 namespace xacc {
 namespace vqe {
@@ -22,16 +23,16 @@ void VQERestartDecorator::initialize() {
   std::ifstream t(fileStr);
   std::string restartABFile((std::istreambuf_iterator<char>(t)),
                    std::istreambuf_iterator<char>());
-  
+
   std::istringstream is(restartABFile);
   loadedBuffer = std::make_shared<AcceleratorBuffer>();
   loadedBuffer->load(is);
 
-  // So now we have a buffer that has N parameters, 
+  // So now we have a buffer that has N parameters,
   // and each set of parameters has M kernel children.
-  // We should add each list of M into a queue, each time execute is 
+  // We should add each list of M into a queue, each time execute is
   // called we pop the list of children off the queue and return them
-  // once the queue is empty, we just delegate execution 
+  // once the queue is empty, we just delegate execution
 
   // These should be given in the order they were produced
   auto params = loadedBuffer->getAllUnique("parameters");
@@ -39,7 +40,7 @@ void VQERestartDecorator::initialize() {
       std::vector<std::shared_ptr<AcceleratorBuffer>> toAdd;
       auto children = loadedBuffer->getChildren("parameters",p);
       for (auto& c : children) {
-          if ("I" != boost::get<std::string>(c->getInformation("kernel"))) {
+          if ("I" != mpark::get<std::string>(c->getInformation("kernel"))) {
               toAdd.push_back(c);
           }
       }
@@ -53,8 +54,8 @@ VQERestartDecorator::execute(
     const std::vector<std::shared_ptr<Function>> functions) {
 
   std::vector<std::shared_ptr<AcceleratorBuffer>> buffers;
-  
-  // Must initialize here since we overrode (is that a word?) 
+
+  // Must initialize here since we overrode (is that a word?)
   // initialize() and did not have a set decorated accelerator
 //   if (decoratedAccelerator && !initialized) {
 //       decoratedAccelerator->initialize();
@@ -68,7 +69,7 @@ VQERestartDecorator::execute(
       return buffers;
   } else {
       if (!initialized) decoratedAccelerator->initialize();
-      
+
       return decoratedAccelerator->execute(buffer, functions);
   }
 }

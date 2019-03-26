@@ -24,13 +24,11 @@ public:
     return "Reduce number of qubits required by exploiting Z2 symmetries.";
   }
 
-  virtual bool handleOptions(variables_map &map) { return false; }
-  virtual std::shared_ptr<options_description> getOptions() {
-    auto desc = std::make_shared<options_description>("QubitTapering Options");
-    desc->add_options()("phase-sector", value<std::string>(),
-                        "Provide the +-1 vector.")(
+  virtual OptionPairs getOptions() {
+    OptionPairs desc {{"phase-sector",
+                        "Provide the +-1 vector."},{
         "qubit-tapering-show",
-        "Create and display reduced hamiltonian, but then exit.");
+        "Create and display reduced hamiltonian, but then exit."}};
     return desc;
   }
 
@@ -41,7 +39,7 @@ private:
                              [](std::vector<int> &tmp) { return; });
   int binaryVectorInnerProduct(std::vector<int> &bv1, std::vector<int> &bv2);
   const double computeGroundStateEnergy(PauliOperator &op, const int n);
-  
+
   Eigen::MatrixXi gauss(Eigen::MatrixXi& A, std::vector<int> &pivotCols) {
      int n = A.rows();
      int m = A.cols();
@@ -54,7 +52,7 @@ private:
          for (int k = ip; k < n; k++) {
              if (A(k,i) == 1) {
                  found_row = true;
-                 
+
                  if (k > ip) {
                      for (int j = i; j < m; j++) {
                          auto tmp = A(k,j);
@@ -84,7 +82,7 @@ private:
       pivotCols.push_back(col);
       row2++;
     }
-    
+
      return A;
 
   }

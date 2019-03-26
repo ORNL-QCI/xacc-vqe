@@ -39,15 +39,9 @@ public:
 	 * Return an empty options_description, this is for
 	 * subclasses to implement.
 	 */
-	virtual std::shared_ptr<options_description> getOptions() {
-		auto desc = std::make_shared<options_description>(
-				"Generate OpenFermion Eigenspectrum Script");
-		desc->add_options()("vqe-openfermion-eigenspectrum-script-name", value<std::string>(), "The name of the file to save.");
+	virtual OptionPairs getOptions() {
+		OptionPairs desc {{"vqe-openfermion-eigenspectrum-script-name", "The name of the file to save."}};
 		return desc;
-	}
-
-	virtual bool handleOptions(variables_map& map) {
-		return false;
 	}
 
 };

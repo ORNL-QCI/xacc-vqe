@@ -74,19 +74,17 @@ public:
 	 *
 	 * @return options Description of command line options.
 	 */
-	virtual std::shared_ptr<options_description> getOptions() {
-		auto desc = std::make_shared<options_description>(
-				"XACC Fermion Compiler Options");
-		desc->add_options()("fermion-transformation,T", value<std::string>(),
-				"Provide the name of Creation/Annihilation to Spin Transformation. Default is Jordan-Wigner.")(
+	virtual OptionPairs getOptions() {
+		OptionPairs desc {{ "T,fermion-transformation",
+				"Provide the name of Creation/Annihilation to Spin Transformation. Default is Jordan-Wigner."},{
 				"fermion-list-transformations",
-				"List all available fermion-to-spin transformations.")
-				("no-fermion-transformation", "Skip JW/BK transformation step.")
-				("fermion-compiler-silent","Turn off print statements.");
+				"List all available fermion-to-spin transformations."},{
+				"no-fermion-transformation", "Skip JW/BK transformation step."},{
+				"fermion-compiler-silent","Turn off print statements."}};
 		return desc;
 	}
 
-	virtual bool handleOptions(variables_map& args) {
+	virtual bool handleOptions(const std::map<std::string, std::string> & args) {
 		if (args.count("fermion-list-transformations")) {
 			auto ids = xacc::getRegisteredIds<
 					IRTransformation>();

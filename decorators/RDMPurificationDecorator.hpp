@@ -31,10 +31,9 @@ public:
   const std::string name() const override { return "rdm-purification"; }
   const std::string description() const override { return ""; }
 
-  std::shared_ptr<options_description> getOptions() override {
-    auto desc = std::make_shared<options_description>();
-    desc->add_options()("rdm-source", value<std::string>(), "")
-    ("rdm-qubit-map",value<std::string>(), "");
+  OptionPairs getOptions() override {
+    OptionPairs desc {{"rdm-source", ""},{
+    "rdm-qubit-map", ""}};
     return desc;
   }
   ~RDMPurificationDecorator() override {}

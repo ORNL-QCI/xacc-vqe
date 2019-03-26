@@ -25,10 +25,10 @@ std::shared_ptr<IR> EfficientJW::transform(
 
 		auto f = instVec[z];
 
-		auto coeff = boost::get<std::complex<double>>(
-				f->getParameter(f->nParameters() - 2));
+		auto coeff =
+				f->getParameter(f->nParameters() - 2).as<std::complex<double>>();
 
-		auto fermionVar = boost::get<std::string>(f->getParameter(f->nParameters() - 1));
+		auto fermionVar = f->getParameter(f->nParameters() - 1).as<std::string>();
 
 		// Get the creation or annihilation sites
 		auto termSites = f->bits();

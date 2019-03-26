@@ -29,9 +29,11 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
   auto nQubits = program->getNQubits();
   auto qpu = program->getAccelerator();
 
+  std::vector<double> vparameters(parameters.data(), parameters.data()+parameters.size());
+
   // Evaluate our variable parameterized State Prep circuite
   // to produce a state prep circuit with actual rotations
-  auto evaluatedStatePrep = statePrep->operator()(parameters);
+  auto evaluatedStatePrep = statePrep->operator()(vparameters);
   auto optPrep = evaluatedStatePrep->enabledView();
 
   globalBuffer->addExtraInfo("circuit-depth", optPrep->depth());
@@ -42,7 +44,7 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
 
   auto getCoeff = [](Kernel<> &k) -> double {
     return std::real(
-        boost::get<std::complex<double>>(k.getIRFunction()->getParameter(0)));
+        k.getIRFunction()->getParameter(0).as<std::complex<double>>());
   };
 
   if (qpu->name() == "tnqvm" && !xacc::optionExists("vqe-use-mpi")) {
@@ -59,7 +61,7 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
     for (auto &b : tmpBuffers) {
       auto kernel = ks[count];
       auto t =
-          std::real(boost::get<std::complex<double>>(kernel->getParameter(0)));
+          std::real(kernel->getParameter(0).as<std::complex<double>>());
       auto expval = b->getExpectationValueZ();
       sum += t * expval;
       b->addExtraInfo("parameters", paramsInfo);
@@ -134,8 +136,8 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
         double exp = 0.0;
         if (xacc::optionExists("converge-ro-error") &&
             results[i]->hasExtraInfoKey("ro-fixed-exp-val-z")) {
-          exp = boost::get<double>(
-              results[i]->getInformation("ro-fixed-exp-val-z"));
+          exp =
+              mpark::get<double>(results[i]->getInformation("ro-fixed-exp-val-z"));
           results[i]->addExtraInfo(
               "exp-val-z", ExtraInfo(results[i]->getExpectationValueZ()));
         } else { // GET THE REGULAR EXP VALUE, NOT RO-FIXED
@@ -155,7 +157,7 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
         expVals.insert({k.getName(), exp});
 
         } else {
-        auto fname = boost::get<std::string>(results[i]->getInformation("kernel"));
+        auto fname = mpark::get<std::string>(results[i]->getInformation("kernel"));
         globalBuffer->appendChild(fname, results[i]);
         expVals.insert({fname, exp});
         }
@@ -180,7 +182,7 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
 
   auto added = globalBuffer->addExtraInfo(
       "vqe-energy", ExtraInfo(sum),
-      [&](ExtraInfo &i) -> bool { return sum < boost::get<double>(i); });
+      [&](ExtraInfo &i) -> bool { return sum < mpark::get<double>(i); });
 
   if (added) {
     globalBuffer->addExtraInfo("vqe-angles", paramsInfo);

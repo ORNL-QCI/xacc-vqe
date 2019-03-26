@@ -92,11 +92,11 @@ SymVerificationDecorator::execute(
   auto tmpBuffers = decoratedAccelerator->execute(buffer, notConstFunctions);
 
   bool useROEMExps = xacc::optionExists("sym-use-ro-error");
-  
+
   // Create buffer name to expectation value map
   std::map<std::string, double> bufferMap;
   for (auto &b : tmpBuffers) {
-    auto expval = (useROEMExps ? boost::get<double>(b->getInformation("fixed-ro-error-exp-z")) : b->getExpectationValueZ());
+    auto expval = (useROEMExps ? mpark::get<double>(b->getInformation("fixed-ro-error-exp-z")) : b->getExpectationValueZ());
     bufferMap.insert({b->name(), expval});
     xacc::info("BufMap: " + b->name() + " = " + std::to_string(expval));
   }

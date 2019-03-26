@@ -2,7 +2,7 @@
 #include "GateFunction.hpp"
 #include "FermionToSpinTransformation.hpp"
 #include "CommutingSetGenerator.hpp"
-#include <boost/math/constants/constants.hpp>
+// #include <boost/math/constants/constants.hpp>
 
 using namespace xacc::quantum;
 
@@ -44,12 +44,13 @@ std::shared_ptr<Function> UCCSD::generate(
 
     if (parameters.size() > 2) {
         for (auto& kv : parameters) {
-            if (!boost::contains(kv.first, "electrons") && !boost::contains(kv.first, "qubits")) {
+            if(kv.first.find("electrons") == std::string::npos && kv.first.find("qubits") == std::string::npos) {
+            // if (!boost::contains(kv.first, "electrons") && !boost::contains(kv.first, "qubits")) {
                 params.push_back(kv.second);
             }
         }
     }
-    
+
     return generate(nullptr, params);
 }
 
@@ -79,23 +80,23 @@ std::shared_ptr<Function> UCCSD::generate(
     } else {
         if (parameters.size() < 2) xacc::error("Invalid input parameters for UCCSD generator.");
 
-        nElectrons = boost::get<int>(parameters[0]);
-        nQubits = boost::get<int>(parameters[1]);
+        nElectrons = parameters[0].as<int>();
+        nQubits = parameters[1].as<int>();
 
         if (parameters.size() > 2) {
             for (int i = 2; i < parameters.size(); i++) {
                 variables.push_back(parameters[i]);
             }
         }
-    } 
-    
+    }
+
     xacc::info("UCCSD Generator (nqubits,nelectrons) = " + std::to_string(nQubits)+", " + std::to_string(nElectrons) +".");
 
 	// Compute the number of parameters
 	auto _nOccupied = (int) std::ceil(nElectrons / 2.0);
 	auto _nVirtual = nQubits / 2 - _nOccupied;
 	auto nSingle = _nOccupied * _nVirtual;
-	auto nDouble = nSingle * (nSingle+1) / 2; 
+	auto nDouble = nSingle * (nSingle+1) / 2;
 	auto _nParameters = nSingle + nDouble;
 
 	std::vector<std::string> params;
@@ -107,7 +108,7 @@ std::shared_ptr<Function> UCCSD::generate(
         }
 	} else {
         for (int i = 0; i < _nParameters; i++) {
-		    params.push_back(boost::get<std::string>(variables[i]));
+		    params.push_back(variables[i].as<std::string>());
 	    }
     }
 
@@ -129,7 +130,7 @@ std::shared_ptr<Function> UCCSD::generate(
     auto doubleParams1 = slice(params, nSingle, 2*nSingle);
     auto doubleParams2 = slice(params, 2*nSingle);
     std::vector<std::function<int(int)>> fs{[](int i) {return 2*i;}, [](int i) {return 2*i+1;}};
-    
+
     using OpType = std::vector<std::pair<int,int>>;
 	auto kernel = std::make_shared<FermionKernel>("fermiUCCSD");
     int count = 0;
@@ -144,13 +145,13 @@ std::shared_ptr<Function> UCCSD::generate(
                 auto vo = oi(vs);
                 auto ot = ti(os);
                 auto oo = oi(os);
-                
+
                 OpType op1{{vt,1},{ot,0}}, op2{{ot,1},{vt,0}};
                 auto i1 = std::make_shared<FermionInstruction>(op1, singleParams[count]);
                 auto i2 = std::make_shared<FermionInstruction>(op2, singleParams[count], std::complex<double>(-1.,0.));
                 kernel->addInstruction(i1);
                 kernel->addInstruction(i2);
-                
+
                 OpType op3{{vt,1},{ot,0}, {vo,1},{oo,0}}, op4{{oo,1}, {vo,0}, {ot,1},{vt,0}};
                 auto i3 = std::make_shared<FermionInstruction>(op3, doubleParams1[count], std::complex<double>(-1.,0.));
                 auto i4 = std::make_shared<FermionInstruction>(op4, doubleParams1[count]);
@@ -204,7 +205,7 @@ std::shared_ptr<Function> UCCSD::generate(
                 auto o1a = ia(os1);
                 auto v2b = ib(vs2);
                 auto o2b = ib(os2);
-                
+
                 OpType op5{{v1a,1},{o1a,0},{v2b,1},{o2b,0}}, op6{{o2b,1},{o1a,0},{v2b,1},{o2b,0}};
                 auto i5 = std::make_shared<FermionInstruction>(op5, doubleParams2[count], std::complex<double>(-1.,0.));
                 auto i6 = std::make_shared<FermionInstruction>(op6, doubleParams2[count]);
@@ -215,7 +216,7 @@ std::shared_ptr<Function> UCCSD::generate(
         }
         count++;
     }
-    
+
 	// std::cout << "KERNEL: \n" << kernel->toString("") << "\n";
 	// Create the FermionIR to pass to our transformation.
 	auto fermionir = std::make_shared<FermionIR>();
@@ -246,7 +247,7 @@ std::shared_ptr<Function> UCCSD::generate(
 
 	CommutingSetGenerator gen;
 	auto commutingSets = gen.getCommutingSet(compositeResult, nQubits);
-	auto pi = boost::math::constants::pi<double>();
+	auto pi = 3.14159265358979323; //boost::math::constants::pi<double>();
 	auto gateRegistry = xacc::getService<IRProvider>("gate");
 
 	auto uccsdGateFunction = gateRegistry->createFunction("uccsdPrep",{},

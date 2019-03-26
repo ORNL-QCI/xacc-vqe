@@ -42,7 +42,7 @@ RDMPurificationDecorator::execute(
     xacc::error("RDMPurificationDecorator - Ansatz was null.");
 
   auto nQubits = buffer->size();
-  std::vector<int> qubitMap(nQubits) ;
+  std::vector<int> qubitMap(nQubits);
   std::iota (std::begin(qubitMap), std::end(qubitMap), 0);
 
   // optionally map the ansatz to a
@@ -51,8 +51,8 @@ RDMPurificationDecorator::execute(
     auto provider = xacc::getService<IRProvider>("gate");
     auto mapStr = xacc::getOption("rdm-qubit-map");
 
-    std::vector<std::string> split;
-    boost::split(split, mapStr, boost::is_any_of(","));
+    std::vector<std::string> split = xacc::split(mapStr, ',');
+    // boost::split(split, mapStr, boost::is_any_of(","));
 
     qubitMap.clear();
     for (auto s : split) {
@@ -83,7 +83,6 @@ RDMPurificationDecorator::execute(
   auto hpq = fk->hpq(nQubits);
   auto hpqrs = fk->hpqrs(nQubits);
   RDMGenerator generator(buffer->size(), decoratedAccelerator, hpq, hpqrs);
-
   buffers = generator.generate(ansatz, qubitMap);
 
   Eigen::Tensor<double,4> realpqrs = hpqrs.real();

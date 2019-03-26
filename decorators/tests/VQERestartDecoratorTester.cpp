@@ -14,6 +14,7 @@
 #include "XACC.hpp"
 #include "VQERestartDecorator.hpp"
 #include "PauliOperator.hpp"
+#include <fstream>
 
 using namespace xacc::vqe;
 
@@ -1145,33 +1146,33 @@ TEST(VQERestartDecoratorTester, checkSimple) {
     auto loaded = std::make_shared<xacc::AcceleratorBuffer>();
     std::istringstream is(restartFile);
     loaded->load(is);
-    
+
     auto compiler = xacc::getService<xacc::Compiler>("xacc-py");
-    const std::string src = boost::get<std::string>(loaded->getInformation("ansatz-qasm-py"));
-    
+    const std::string src = mpark::get<std::string>(loaded->getInformation("ansatz-qasm-py"));
+
     auto f = compiler->compile(src, acc)->getKernel("foo");
-    f = f->operator()(Eigen::VectorXd::Zero(16));
+    f = f->operator()(std::vector<double>(16));
 
     PauliOperator h;
-    h.fromString(boost::get<std::string>(loaded->getInformation("hamiltonian")));
+    h.fromString(mpark::get<std::string>(loaded->getInformation("hamiltonian")));
     auto measureKernels = h.toXACCIR()->getKernels();
-    
+
     for (auto& m : measureKernels) m->insertInstruction(0,f);
-    
+
     std::ofstream out("tmp_test.ab");
     out << restartFile;
     out.close();
     xacc::setOption("vqe-restart-file", "tmp_test.ab");
-    
+
     VQERestartDecorator decorator;
     decorator.setDecorated(acc);
     decorator.initialize();
     std::remove("tmp_test.ab");
 
     auto buffers = decorator.execute(buffer, measureKernels);
-    
+
     EXPECT_EQ(buffers.size(), 14); // 15 - 1 I term
-    
+
   }
 }
 

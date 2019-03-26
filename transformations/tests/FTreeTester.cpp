@@ -28,13 +28,10 @@
  *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
-#define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE FTreeTester
-
-#include <boost/test/included/unit_test.hpp>
+#include <gtest/gtest.h>
 #include "Fenwick.hpp"
 
-BOOST_AUTO_TEST_CASE(checkSimple) {
+TEST(FTreeTester, checkSimple) {
 
 
 	FenwickTree f(8);
@@ -57,7 +54,7 @@ BOOST_AUTO_TEST_CASE(checkSimple) {
 			ids.insert(node->index);
 		}
 
-		BOOST_VERIFY(ids == kv.second);
+		EXPECT_TRUE(ids == kv.second);
 	}
 
 	std::map<int, std::set<int>> expectedUpdate {
@@ -78,7 +75,7 @@ BOOST_AUTO_TEST_CASE(checkSimple) {
 			ids.insert(node->index);
 		}
 
-		BOOST_VERIFY(ids == kv.second);
+		EXPECT_TRUE(ids == kv.second);
 	}
 
 	std::map<int, std::set<int>> expectedChildren {
@@ -99,8 +96,13 @@ BOOST_AUTO_TEST_CASE(checkSimple) {
 			ids.insert(node->index);
 		}
 
-		BOOST_VERIFY(ids == kv.second);
+		EXPECT_TRUE(ids == kv.second);
 	}
 
+}
+int main(int argc, char **argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  auto ret = RUN_ALL_TESTS();
+  return ret;
 }
 

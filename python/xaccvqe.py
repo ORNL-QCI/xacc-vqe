@@ -91,16 +91,78 @@ def generateCSV(buffer, file_name, readout=False):
         f.write(str(energy)+'\n')
     f.close()
 
-def getPurifiedEnergies(buffer):
+def getPurifiedEnergies(buffer, raw=False):
     ps = buffer.getAllUnique('parameters')
     p_es = []
+    nonp_es = []
     for p in ps:
         for c in buffer.getChildren('parameters', p):
             if c.name() == 'I':
                 continue
             pure_energy = c.getInformation('purified-energy')
+            if raw:
+                nonpure_energy = c.getInformation('non-purified-energy')
         p_es.append(pure_energy)
-    return p_es
+        if raw:
+            nonp_es.append(nonpure_energy)
+    if raw:
+        return p_es, nonp_es
+    else:
+        return p_es
+
+def variance(singleChildBuffer, nPhysicalBits):
+    import numpy as np
+    c = 0.0
+    op = PauliOperator()
+    name = singleChildBuffer.name()
+    # FIXME, 2 is hardcoded, should be computed dynamically
+    bufAsString = " ".join(name[i:i+2] for i in range(0, len(name), 2))
+    op.fromString('(1,0) '+bufAsString)
+
+    data = singleChildBuffer.getMeasurementCounts()
+    exp = singleChildBuffer.getExpectationValueZ()
+    z,x = op.toBinaryVectors(nPhysicalBits)
+    pzorx = np.logical_or(z,x)
+
+    nshots = 0
+    for k, v in data.items():
+        bitstr = np.asarray(list(k))[::-1].astype(np.bool)
+        s = -1.0 if np.logical_xor.reduce(np.logical_and(bitstr, pzorx)) else 1.0
+        c += (s - exp ) * (s - exp ) * v
+        nshots += v
+    c /= (nshots - 1)
+    return c
+
+def covariance(singleChildBufferA, singleChildBufferB, nPhysicalBits):
+    import numpy as np
+    c = 0.0
+    opA = PauliOperator()
+    opB = PauliOperator()
+    nameA = singleChildBufferA.name()
+    nameB = singleChildBufferB.name()
+
+    bufAsStringA = " ".join(nameA[i:i+2] for i in range(0, len(nameA), 2))
+    opA.fromString('(1,0) '+bufAsStringA)
+    bufAsStringB = " ".join(nameB[i:i+2] for i in range(0, len(nameB), 2))
+    opB.fromString('(1,0) '+bufAsStringB)
+
+    data = singleChildBufferA.getMeasurementCounts()
+    exp = singleChildBufferA.getExpectationValueZ()
+    za,xa = opA.toBinaryVectors(nPhysicalBits)
+    pzorxa = np.logical_or(za,xa)
+    zb,xb = opB.toBinaryVectors(nPhysicalBits)
+    pzorxb = np.logical_or(zb,xb)
+
+    nshots = 0
+    for k, v in data.items():
+        bitstr = np.asarray(list(k))[::-1].astype(np.bool)
+        sa = -1.0 if np.logical_xor.reduce(np.logical_and(bitstr, pzorxa)) else 1.0
+        sb = -1.0 if np.logical_xor.reduce(np.logical_and(bitstr, pzorxb)) else 1.0
+        c += (sa - exp ) * (sb - exp ) * v
+        nshots += v
+    c /= (nshots - 1)
+    return c
+
 def main(argv=None):
     return
 

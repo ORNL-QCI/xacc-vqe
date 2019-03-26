@@ -58,8 +58,7 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> RDMGenerator::generate(std::shar
           for (auto &kernel : hpqrs_ir->getKernels()) {
 
             double localExpVal = 1.0;
-            auto t = std::real(
-                boost::get<std::complex<double>>(kernel->getParameter(0)));
+            auto t = std::real(kernel->getParameter(0).as<std::complex<double>>());
             if (kernel->nInstructions() > 0) {
               kernel->mapBits(qubitMap);
               for (auto& inst : kernel->getInstructions()) {
@@ -75,7 +74,6 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> RDMGenerator::generate(std::shar
               } else {
                 functions.insert({name, {kernel, {{{m, n, v, w}, t}}}});
               }
-
             } else {
               rho_element_2_identity_coeff.insert({{m, n, v, w}, t});
             }

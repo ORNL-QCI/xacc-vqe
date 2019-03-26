@@ -30,7 +30,7 @@
  **********************************************************************************/
 #include <gtest/gtest.h>
 #include "CommutingSetGenerator.hpp"
-
+#include <regex>
 using namespace xacc::vqe;
 
 TEST(CommutingSetGeneratorTester,checkCommutingSets) {
@@ -65,7 +65,8 @@ TEST(CommutingSetGeneratorTester,checkCommutingSets) {
 			+ inst11 + inst12;
 
 	auto str = composite.toString();
-	boost::replace_all(str, "+", "+\n");
+    str = std::regex_replace(str, std::regex("\\+"), "+\n");
+	// boost::replace_all(str, "+", "+\n");
 	std::cout << "OP:\n" << str << "\n";
 	CommutingSetGenerator gen;
 	auto sets = gen.getCommutingSet(composite, 4);

@@ -38,12 +38,14 @@ using namespace xacc::vqe;
 std::shared_ptr<FermionKernel> compileKernel(const std::string src) {
 	// First off, split the string into lines
 	std::vector<std::string> lines, fLineSpaces;
-	boost::split(lines, src, boost::is_any_of("\n"));
+    lines = xacc::split(src, '\n');
+	// boost::split(lines, src, boost::is_any_of("\n"));
 	auto functionLine = lines[0];
 //	std::cout << "HELLO WORLD: " << functionLine << "\n";
-	boost::split(fLineSpaces, functionLine, boost::is_any_of(" "));
+    fLineSpaces = xacc::split(functionLine, ' ');
+	// boost::split(fLineSpaces, functionLine, boost::is_any_of(" "));
 	auto fName = fLineSpaces[1];
-	boost::trim(fName);
+	xacc::trim(fName);
 	fName = fName.substr(0, fName.find_first_of("("));
 	auto firstCodeLine = lines.begin() + 1;
 	auto lastCodeLine = lines.end() - 1;
@@ -54,10 +56,10 @@ std::shared_ptr<FermionKernel> compileKernel(const std::string src) {
 	int _nQubits = 0;
 	// Loop over the lines to create DWQMI
 	for (auto termStr : fermionStrVec) {
-		boost::trim(termStr);
+		xacc::trim(termStr);
 		if (!termStr.empty() && (std::string::npos != termStr.find_first_of("0123456789"))) {
 			std::vector<std::string> splitOnSpaces;
-			boost::split(splitOnSpaces, termStr, boost::is_any_of(" "));
+			splitOnSpaces = xacc::split(termStr, ' ');
 
 			// We know first term is coefficient
 			// FIXME WHAT IF COMPLEX

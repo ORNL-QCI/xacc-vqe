@@ -268,13 +268,15 @@ public:
   computeActionOnBra(const std::string &bitString);
 
   const int nTerms();
-
+  std::pair<std::vector<int>, std::vector<int>> toBinaryVectors(const int nQubits) {
+      return getTerms().begin()->second.toBinaryVector(nQubits);
+  }
   const std::string toString();
   void fromString(const std::string str);
 
   bool contains(PauliOperator &op);
   bool commutes(PauliOperator &op);
-  
+
   void mapQubitSites(std::map<int,int>& siteMap) {
       PauliOperator op;
       for (auto& termKv : *this) {
@@ -294,7 +296,7 @@ public:
 
   std::vector<Triplet> getSparseMatrixElements();
   Eigen::MatrixXcd toDenseMatrix(const int nQubits);
-  
+
   std::shared_ptr<IR> toXACCIR();
   void fromXACCIR(std::shared_ptr<IR> ir);
   PauliOperator

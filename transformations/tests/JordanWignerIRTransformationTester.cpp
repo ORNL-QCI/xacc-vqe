@@ -32,20 +32,23 @@
 #include "JordanWignerIRTransformation.hpp"
 #include "XACC.hpp"
 #include "EfficientJW.cpp"
+#include <regex>
 
 using namespace xacc::vqe;
-
-using namespace boost;
 
 std::shared_ptr<FermionKernel> compileKernel(const std::string src) {
 	// First off, split the string into lines
 	std::vector<std::string> lines, fLineSpaces;
-	boost::split(lines, src, boost::is_any_of("\n"));
+	// boost::split(lines, src, boost::is_any_of("\n"));
+    lines = xacc::split(src, '\n');
+
 	auto functionLine = lines[0];
 //	std::cout << "HELLO WORLD: " << functionLine << "\n";
-	boost::split(fLineSpaces, functionLine, boost::is_any_of(" "));
+	// fLineSpaces = xacc::split(functionLine, ' ');
+    fLineSpaces = xacc::split(functionLine, ' ');
+
 	auto fName = fLineSpaces[1];
-	boost::trim(fName);
+	xacc::trim(fName);
 	fName = fName.substr(0, fName.find_first_of("("));
 	auto firstCodeLine = lines.begin() + 1;
 	auto lastCodeLine = lines.end() - 1;
@@ -56,11 +59,11 @@ std::shared_ptr<FermionKernel> compileKernel(const std::string src) {
 	int _nQubits = 0;
 	// Loop over the lines to create DWQMI
 	for (auto termStr : fermionStrVec) {
-		boost::trim(termStr);
+		xacc::trim(termStr);
 		if (!termStr.empty()
 				&& (std::string::npos != termStr.find_first_of("0123456789"))) {
-			std::vector<std::string> splitOnSpaces;
-			boost::split(splitOnSpaces, termStr, boost::is_any_of(" "));
+			std::vector<std::string> splitOnSpaces = xacc::split(termStr, ' ');
+			// boost::split(splitOnSpaces, termStr, boost::is_any_of(" "));
 
 			// We know first term is coefficient
 			// FIXME WHAT IF COMPLEX
@@ -93,16 +96,16 @@ TEST(JordanWignerTransformationTester,checkEasyTransform) {
 			R"code(__qpu__ kernel() {
 	   1.0 2 1 0 0
 	   -1.0 0 1 2 0
-       1 3 1 1 0 
+       1 3 1 1 0
        -1 1 1 3 0
 	   1 2 1 0 0 2 1 0 0
 	   -1 0 1 2 0 0 1 2 0
 	   1 2 1 0 0 3 1 1 0
 	   -1 1 1 3 0 0 1 2 0
 	   1 3 1 1 0 2 1 0 0
-	   -1 0 1 2 0 1 1 3 0 
+	   -1 0 1 2 0 1 1 3 0
 	   1 3 1 1 0 3 1 1 0
-	   -1 1 1 3 0 1 1 3 0 
+	   -1 1 1 3 0 1 1 3 0
 	})code";
 
 	auto fermionKernel = compileKernel(code);
@@ -120,7 +123,8 @@ TEST(JordanWignerTransformationTester,checkEasyTransform) {
 	JordanWignerIRTransformation t;
 	auto result = t.transform(*fermionKernel);
 	auto resultsStr = result.toString();
-	boost::replace_all(resultsStr, "+", "+\n");
+    resultsStr = std::regex_replace(resultsStr, std::regex("\\+"), "+\n");
+	// boost::replace_all(resultsStr, "+", "+\n");
 	std::cout << "Transformed Fermion to Spin:\nBEGIN\n" << resultsStr << "\nEND\n\n";
 }
 
@@ -165,7 +169,8 @@ TEST(JordanWignerTransformationTester,checkH2Transform) {
 	auto result = t.transform(*fermionKernel);
 
 	auto resultsStr = result.toString();
-	boost::replace_all(resultsStr, "+", "+\n");
+    resultsStr = std::regex_replace(resultsStr, std::regex("\\+"), "+\n");
+	// boost::replace_all(resultsStr, "+", "+\n");
 	std::cout << "Transformed Fermion to Spin:\nBEGIN\n" << resultsStr << "\nEND\n\n";
 
 	PauliOperator expected({{2,"Z"}, {3,"Z"}}, .174349);
@@ -185,7 +190,8 @@ TEST(JordanWignerTransformationTester,checkH2Transform) {
 	expected += PauliOperator({{0,"X"}, {1,"Y"}, {2,"Y"}, {3,"X"}}, 0.0453219);
 
     resultsStr = expected.toString();
-	boost::replace_all(resultsStr, "+", "+\n");
+    resultsStr = std::regex_replace(resultsStr, std::regex("\\+"), "+\n");
+	// boost::replace_all(resultsStr, "+", "+\n");
 	std::cout << "EXPECTED Fermion to Spin:\nBEGIN\n" << resultsStr << "\nEND\n\n";
 
 	EXPECT_TRUE(expected == result);

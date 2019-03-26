@@ -16,6 +16,8 @@
 
 #include "unsupported/Eigen/CXX11/Tensor"
 
+#include <fstream>
+
 namespace xacc {
 namespace vqe {
 
@@ -70,7 +72,7 @@ class VQEProgram: public xacc::Program, public OptionsProvider {
 public:
 
     VQEProgram(std::shared_ptr<Communicator> c) : Program(nullptr, ""), comm(c) {}
-    
+
 	VQEProgram(std::shared_ptr<Accelerator> acc, PauliOperator& op,
 			std::shared_ptr<xacc::Function> sprep,
 			std::shared_ptr<Communicator> c) :
@@ -95,31 +97,6 @@ public:
 			std::shared_ptr<Communicator> c) :
 			Program(acc, kernelSource), statePrepSource(statePrepSrc), nParameters(
 					0), comm(c) {
-	}
-
-	/**
-	 * Return a Boost options_description instance that
-	 * describes the options available for this
-	 * derived subclass.
-	 */
-	virtual std::shared_ptr<options_description> getOptions() {
-		auto desc = std::make_shared<options_description>(
-				"VQE Program Options");
-		desc->add_options()("correct-readout-errors", "Turn on readout-error correction.");
-		return desc;
-
-	}
-
-	/**
-	 * Given user-input command line options, perform
-	 * some operation. Returns true if runtime should exit,
-	 * false otherwise.
-	 *
-	 * @param map The mapping of options to values
-	 * @return exit True if exit, false otherwise
-	 */
-	virtual bool handleOptions(variables_map& map) {
-		return false;
 	}
 
 	std::shared_ptr<Communicator> getCommunicator() {
@@ -198,18 +175,19 @@ public:
 			kernels = getRuntimeKernels();
 
 			if (userProvidedKernels) {
-				if (boost::contains(src, "pragma")
-						&& boost::contains(src, "coefficient")) {
-					std::vector<std::string> lines;
-					boost::split(lines, src, boost::is_any_of("\n"));
+                if (src.find("pragma") != std::string::npos && src.find("coefficient") != std::string::npos) {
+				// if (boost::contains(src, "pragma")
+				// 		&& boost::contains(src, "coefficient")) {
+					std::vector<std::string> lines = xacc::split(src, '\n');
+					// boost::split(lines, src, boost::is_any_of("\n"));
 					int counter = 0;
 					for (int i = 0; i < lines.size(); ++i) {
 						auto line = lines[i];
-						if (boost::contains(line, "#pragma vqe-coefficient")) {
-							std::vector<std::string> splitspaces;
-							boost::split(splitspaces, line,
-									boost::is_any_of(" "));
-							boost::trim(splitspaces[2]);
+						if (line.find("#pragma vqe-coefficient") != std::string::npos) {
+							std::vector<std::string> splitspaces = xacc::split(line, ' ');
+							// boost::split(splitspaces, line,
+							// 		boost::is_any_of(" "));
+							xacc::trim(splitspaces[2]);
 							coeffs.push_back(std::stod(splitspaces[2]));
 							InstructionParameter p(
 									std::complex<double>(
@@ -275,7 +253,7 @@ public:
     void setPauliOperator(PauliOperator op) {
         pauli = op;
     }
-    
+
 	KernelList<> getVQEKernels() {
 		return kernels;
 	}
@@ -330,11 +308,11 @@ public:
     void setGlobalBuffer(std::shared_ptr<AcceleratorBuffer> b) {
         globalBuffer = b;
     }
-    
+
     std::shared_ptr<AcceleratorBuffer> getGlobalBuffer() {
         return globalBuffer;
     }
-    
+
 	virtual ~VQEProgram() {
 	}
 
@@ -351,7 +329,7 @@ protected:
 	std::shared_ptr<FermionKernel> fermionKernel;
 
     std::shared_ptr<AcceleratorBuffer> globalBuffer;
-    
+
 	/**
 	 * Reference to the state preparation circuit
 	 * represented as XACC IR.

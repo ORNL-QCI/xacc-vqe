@@ -19,6 +19,7 @@
 #include "QubitTapering.hpp"
 #include "Rz.hpp"
 #include <gtest/gtest.h>
+#include "Eigen/Dense"
 
 using namespace xacc::vqe;
 
@@ -65,7 +66,7 @@ TEST(QubitTaperingTester, checkH2) {
   QubitTapering tapering;
   auto newIR = tapering.transform(ir);
 
- 
+
   PauliOperator expected, actual, op;
   op.fromXACCIR(newIR);
   expected.fromString("(-0.335683,0) I + (-0.780643,0) Z0 + (0.181625,0) X0");
@@ -86,7 +87,7 @@ TEST(QubitTaperingTester, checkH2WithAnsatz) {
   if (xacc::hasAccelerator("local-ibm")) {
     auto acc = xacc::getAccelerator("local-ibm");
     auto b = acc->createBuffer("q",4);
-    
+
     auto compiler = xacc::getService<xacc::Compiler>("xacc-py");
     const std::string src2 = R"src(def f(buffer, t0, t1):
        Ry(t0,0)
@@ -95,9 +96,7 @@ TEST(QubitTaperingTester, checkH2WithAnsatz) {
 
     auto ir = compiler->compile(src2, acc);
 
-    Eigen::VectorXd p(2);
-    p(0) = -3.1415;
-    p(1) = 1.57;
+    std::vector<double> p{-3.1415,1.57};
     auto f = ir->getKernel("f")->operator()(p);
 
     auto c = xacc::getService<xacc::Compiler>("fermion");
@@ -123,7 +122,7 @@ TEST(QubitTaperingTester, checkH2WithAnsatz) {
     for (auto& k : newIR->getKernels()) {
         EXPECT_TRUE(k->getInstruction(0)->isComposite());
     }
-    
+
   }
 }
 
@@ -132,7 +131,7 @@ TEST(QubitTaperingTester, checkSixQubit) {
   if (xacc::hasAccelerator("local-ibm")) {
     auto acc = xacc::getAccelerator("local-ibm");
     auto b = acc->createBuffer("q",4);
-    
+
     auto compiler = xacc::getService<xacc::Compiler>("xacc-py");
     const std::string src2 = R"src(def f(buffer, t0, t1):
        Ry(t0,0)
@@ -141,15 +140,13 @@ TEST(QubitTaperingTester, checkSixQubit) {
 
     auto ir = compiler->compile(src2, acc);
 
-    Eigen::VectorXd p(2);
-    p(0) = -3.1415;
-    p(1) = 1.57;
+    std::vector<double> p{-3.1415,1.57};
     auto f = ir->getKernel("f")->operator()(p);
 
     PauliOperator op;
     op.fromString("(-0.00421023,0) Y3 Y4 Z5 + (0.0816923,0) Z3 Z5 + (-0.0140516,0) Y3 Y5 + (-0.00895403,0) Z3 Y4 Y5 + (-0.00369882,0) Z2 X4 X5 + (-0.00369882,0) Z2 Y4 Y5 + (-0.00944179,0) Z2 Y3 Z4 Y5 + (0.101934,0) Z2 Z3 + (-0.00369882,0) X1 X2 Z5 + (-0.00369882,0) Y1 Y2 Z5 + (0.0165034,0) X1 X2 X4 X5 + (0.0165034,0) Y1 Y2 X4 X5 + (0.0165034,0) Y1 Y2 Y4 Y5 + (-0.00895403,0) Z3 X4 X5 + (0.0138874,0) Z1 X4 X5 + (-0.00277645,0) X1 X2 X3 Z4 X5 + (-0.00421023,0) X3 X4 Z5 + (-0.00277645,0) X1 X2 Y3 Z4 Y5 + (-0.00277645,0) Y1 Y2 X3 Z4 X5 + (-0.00677708,0) X1 X2 X3 X4 + (-0.00677708,0) X1 X2 Y3 Y4 + (-0.00677708,0) Y1 Y2 X3 X4 + (-0.00677708,0) Y1 Y2 Y3 Y4 + (-0.0218996,0) Y1 Y2 Z3 + (-0.00421023,0) X0 X1 Z2 + (0.0129455,0) X0 X1 Y3 Z4 Y5 + (0.0112333,0) Y0 Y1 X3 X4 + (0.0821053,0) Z4 Z5 + (0.0254908,0) Y0 Y1 Z3 + (0.0709831,0) Z0 Z4 + (-0.0140516,0) X3 X5 + (-0.00677708,0) Y0 Y1 X4 X5 + (-0.00677708,0) X0 X1 Y4 Y5 + (0.0229208,0) Z0 Y3 Z4 Y5 + (-0.00895403,0) Z0 Y1 Y2 + (0.11747,0) Z2 Z5 + (0.0129455,0) Y0 Z1 Y2 Y3 Y4 + (0.0138874,0) X1 X2 Z4 + (-0.00677708,0) X0 X1 X4 X5 + (0.0254908,0) Z0 Y3 Y4 + (0.158901,0) Z0 Z3 + (-0.00421023,0) Y0 Y1 Z2 + (-0.00944179,0) Y0 Z1 Y2 Z5 + (0.110544,0) Z1 Z4 + (-0.00883391,0) Z1 Y3 Y4 + (0.0254908,0) Z0 X3 X4 + (-0.115794,0) Z0 + (-0.0140516,0) X0 X2 + (-0.00895403,0) Z0 X1 X2 + (0.0821053,0) Z1 Z2 + (0.0597498,0) Z0 Z1 + (0.0138874,0) Z1 Y4 Y5 + (-0.568532,0) Z5 + (-0.0410422,0) X4 X5 + (0.0536886,0) X0 Z1 X2 + (0.0816923,0) Z0 Z2 + (0.0399687,0) X3 X4 + (0.0536886,0) Y0 Z1 Y2 + (0.0597498,0) Z3 Z4 + (-158.749,0) + (0.0399687,0) X0 X1 + (0.0399687,0) Y0 Y1 + (0.0399687,0) Y3 Y4 + (-0.0410422,0) Y4 Y5 + (-0.00143379,0) Z2 Y3 Y4 + (-0.382003,0) Z1 + (-0.0410422,0) Y1 Y2 + (0.0229208,0) Z0 X3 Z4 X5 + (-0.115794,0) Z3 + (0.0112333,0) Y0 Y1 Y3 Y4 + (0.0536886,0) Y3 Z4 Y5 + (0.0165034,0) X1 X2 Y4 Y5 + (-0.00277645,0) Y1 Y2 Y3 Z4 Y5 + (-0.0140516,0) Y0 Y2 + (-0.568532,0) Z2 + (0.0112333,0) X0 X1 X3 X4 + (0.0986087,0) Z2 Z4 + (0.0536886,0) X3 Z4 X5 + (0.0129455,0) X0 X1 X3 Z4 X5 + (-0.382003,0) Z4 + (0.0112333,0) X0 X1 Y3 Y4 + (0.0129455,0) Y0 Y1 Y3 Z4 Y5 + (0.0202421,0) X0 Z1 X2 Y3 Z4 Y5 + (0.0129455,0) Y0 Y1 X3 Z4 X5 + (0.0229208,0) Y0 Z1 Y2 Z3 + (0.0709831,0) Z1 Z3 + (-0.0072745,0) Y0 Z1 Y2 Z4 + (0.0229208,0) X0 Z1 X2 Z3 + (-0.0218996,0) Z0 Y4 Y5 + (-0.00944179,0) Z2 X3 Z4 X5 + (0.0129455,0) Y0 Z1 Y2 X3 X4 + (0.0129455,0) X0 Z1 X2 Y3 Y4 + (0.0129455,0) X0 Z1 X2 X3 X4 + (0.0138874,0) Y1 Y2 Z4 + (-0.0072745,0) X0 Z1 X2 Z4 + (0.101934,0) Z0 Z5 + (0.0202421,0) Y0 Z1 Y2 X3 Z4 X5 + (0.0254908,0) X0 X1 Z3 + (0.0202421,0) X0 Z1 X2 X3 Z4 X5 + (-0.00143379,0) Y0 Y1 Z5 + (-0.0218996,0) X1 X2 Z3 + (-0.0072745,0) Z1 Y3 Z4 Y5 + (-0.00277645,0) Y0 Z1 Y2 Y4 Y5 + (-0.00883391,0) Y0 Y1 Z4 + (-0.00883391,0) X0 X1 Z4 + (-0.00143379,0) Z2 X3 X4 + (-0.0218996,0) Z0 X4 X5 + (-0.00677708,0) Y0 Y1 Y4 Y5 + (-0.00277645,0) Y0 Z1 Y2 X4 X5 + (-0.00277645,0) X0 Z1 X2 Y4 Y5 + (-0.00277645,0) X0 Z1 X2 X4 X5 + (0.0986087,0) Z1 Z5 + (-0.00143379,0) X0 X1 Z5 + (-0.0410422,0) X1 X2 + (0.0202421,0) Y0 Z1 Y2 Y3 Z4 Y5 + (-0.00944179,0) X0 Z1 X2 Z5 + (-0.00883391,0) Z1 X3 X4 + (-0.0072745,0) Z1 X3 Z4 X5");
     auto tir = op.toXACCIR();
-    
+
     QubitTapering tapering;
     auto newIR = tapering.transform(tir);
 
@@ -159,7 +156,7 @@ TEST(QubitTaperingTester, checkSixQubit) {
     actual.fromXACCIR(newIR);
 
     EXPECT_TRUE(4 == actual.nQubits());
-    
+
 
     auto A = op.toDenseMatrix(6);
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> es(A);
@@ -171,7 +168,7 @@ TEST(QubitTaperingTester, checkSixQubit) {
 
     EXPECT_NEAR(reducedEnergy, reducedEnergy2, 1e-5);
     std::cout << "SHOULD BE: " << std::setprecision(12) << reducedEnergy << "\n";
-    
+
   }
 }
 int main(int argc, char **argv) {

@@ -19,7 +19,7 @@ protected:
 public:
 	VQETaskResult() {}
     VQETaskResult(double e, Eigen::VectorXd a) :energy(e), angles(a) {}
-    
+
 	VQETaskResult(const std::string& fileName) :
 		_fileName(fileName) {}
 
@@ -78,14 +78,6 @@ public:
 
 	virtual void setVQEProgram(std::shared_ptr<VQEProgram> p) {
 		program = p;
-	}
-
-	virtual std::shared_ptr<options_description> getOptions() {
-		return std::make_shared<options_description>();
-	}
-
-	virtual bool handleOptions(variables_map& map) {
-		return false;
 	}
 
 	virtual ~VQETask() {}

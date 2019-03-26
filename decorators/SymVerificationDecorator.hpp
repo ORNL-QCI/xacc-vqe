@@ -31,10 +31,9 @@ public:
   const std::string name() const override { return "sym-verification"; }
   const std::string description() const override { return ""; }
 
-  std::shared_ptr<options_description> getOptions() override {
-    auto desc = std::make_shared<options_description>();
-    desc->add_options()("sym-op", value<std::string>(),
-                        "")("sym-s", value<std::string>(), "");
+  OptionPairs getOptions() override {
+    OptionPairs desc {{"sym-op",
+                        ""},{"sym-s",  ""}};
     return desc;
   }
   ~SymVerificationDecorator() override {}

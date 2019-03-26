@@ -1,6 +1,6 @@
 #include "HWE.hpp"
 #include "GateFunction.hpp"
-#include <boost/tokenizer.hpp>
+// #include <boost/tokenizer.hpp>
 
 using namespace xacc::quantum;
 
@@ -39,23 +39,26 @@ HWE::generate(std::shared_ptr<AcceleratorBuffer> buffer,
   int nQubits = 0, layers = 1;
   std::vector<std::pair<int, int>> connectivity;
   try {
-    nQubits = boost::get<int>(parameters[1]);
-    layers = boost::get<int>(parameters[0]);
-    auto cStr = boost::get<std::string>(parameters[2]);
+    nQubits = parameters[1].as<int>();
+    layers = parameters[0].as<int>();
+    auto cStr = parameters[2].as<std::string>();
+    cStr = std::regex_replace(cStr, std::regex("'"), "");
 
-    boost::replace_all(cStr, "'", "");
+    // boost::replace_all(cStr, "'", "");
 
     // xacc::info("CONNECTIVITY STRING: " + cStr);
     std::vector<int> ints;
-    boost::char_separator<char> sep(",");
-    boost::tokenizer<char_separator<char>> tokens(cStr, sep);
+    // boost::char_separator<char> sep(",");
+    // boost::tokenizer<char_separator<char>> tokens(cStr, sep);
+    auto tokens = xacc::split(cStr, ',');
     for (auto &t : tokens) {
       std::stringstream s;
       s << t;
       auto tmp = s.str();
-      boost::replace_all(tmp, "[", "");
-      boost::replace_all(tmp, "]", "");
-      boost::trim(tmp);
+      tmp = std::regex_replace(tmp, std::regex("\\["), "");
+      tmp = std::regex_replace(tmp, std::regex("\\]"), "");
+
+      xacc::trim(tmp);
       int value;
       if (std::stringstream(tmp) >> value)
         ints.push_back(value);
@@ -103,7 +106,7 @@ HWE::generate(std::shared_ptr<AcceleratorBuffer> buffer,
           "Rz", {q},
           {InstructionParameter("t" + std::to_string(angleCounter))});
       f->addInstruction(rz1);
-      
+
       auto rx = provider->createInstruction(
           "Rx", {q},
           {InstructionParameter("t" + std::to_string(angleCounter+1))});

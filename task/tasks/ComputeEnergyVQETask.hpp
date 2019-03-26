@@ -1,9 +1,7 @@
 #ifndef VQETASKS_COMPUTEENERGYVQETASK_HPP_
 #define VQETASKS_COMPUTEENERGYVQETASK_HPP_
 
-#include "StatePreparationEvaluator.hpp"
 #include "VQETask.hpp"
-#include <boost/filesystem.hpp>
 
 namespace xacc {
 namespace vqe {
@@ -36,25 +34,13 @@ public:
    * Return an empty options_description, this is for
    * subclasses to implement.
    */
-  virtual std::shared_ptr<options_description> getOptions() {
-    auto desc = std::make_shared<options_description>(
-        "Compute Energy VQE Task Options");
-    desc->add_options()("vqe-use-mpi", "Use MPI distributed execution.")(
-        "vqe-persist-data", value<std::string>(),
-        "Base file name for buffer data.")
-        ("converge-ro-error", value<std::string>(), "Use ro-fixed-exp-val-z to compute energy.");
+  virtual OptionPairs getOptions() {
+    OptionPairs desc {{"vqe-use-mpi", "Use MPI distributed execution."},{
+        "vqe-persist-data",
+        "Base file name for buffer data."},{
+        "converge-ro-error", "Use ro-fixed-exp-val-z to compute energy."}};
     return desc;
   }
-
-  /**
-   * Given user-input command line options, perform
-   * some operation. Returns true if runtime should exit,
-   * false otherwise.
-   *
-   * @param map The mapping of options to values
-   * @return exit True if exit, false otherwise
-   */
-  virtual bool handleOptions(variables_map &map) { return false; }
 
   int vqeIteration = 0;
   int totalQpuCalls = 0;

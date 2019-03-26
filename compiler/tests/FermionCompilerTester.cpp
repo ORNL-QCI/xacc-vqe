@@ -39,10 +39,6 @@ using namespace boost;
 class FakeAcc: public xacc::Accelerator {
 public:
 
-	virtual std::shared_ptr<xacc::AcceleratorGraph> getAcceleratorConnectivity() {
-		return std::make_shared<xacc::AcceleratorGraph>();
-	}
-
 	virtual xacc::AcceleratorType getType() {
 		return xacc::AcceleratorType::qpu_gate;
 	}

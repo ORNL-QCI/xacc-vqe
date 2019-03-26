@@ -29,7 +29,7 @@
  *
  **********************************************************************************/
 #include <regex>
-#include <boost/algorithm/string.hpp>
+// #include <boost/algorithm/string.hpp>
 #include "FermionCompiler.hpp"
 #include "RuntimeOptions.hpp"
 #include "ServiceRegistry.hpp"
@@ -61,11 +61,11 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 
 	// First off, split the string into lines
 	std::vector<std::string> lines, fLineSpaces;
-	boost::split(lines, src, boost::is_any_of("\n"));
+	lines = xacc::split(src,'\n');
 	auto functionLine = lines[0];
-	boost::split(fLineSpaces, functionLine, boost::is_any_of(" "));
+	fLineSpaces = xacc::split(functionLine, ' ');
 	auto fName = fLineSpaces[1];
-	boost::trim(fName);
+	xacc::trim(fName);
 	fName = fName.substr(0, fName.find_first_of("("));
 	auto firstCodeLine = lines.begin() + 1;
 	auto lastCodeLine = lines.end() - 1;
@@ -74,10 +74,10 @@ std::shared_ptr<IR> FermionCompiler::compile(const std::string& src,
 	fermionKernel = std::make_shared<FermionKernel>("fName");
 	nQubits = 0;
 	for (auto termStr : fermionStrVec) {
-		boost::trim(termStr);
+		xacc::trim(termStr);
 		if (!termStr.empty() && (std::string::npos != termStr.find_first_of("0123456789"))) {
 			std::vector<std::string> splitOnSpaces;
-			boost::split(splitOnSpaces, termStr, boost::is_any_of(" "));
+			splitOnSpaces = xacc::split(termStr, ' ');
 
 			// We know first term is coefficient
 			// FIXME WHAT IF COMPLEX

@@ -37,22 +37,23 @@ TEST(ImprovedSamplingDecoratorTester, checkMultiple) {
 
     auto ir = compiler->compile(src, acc);
 
-    Eigen::VectorXd p(1); p(0) = -3.1415;
+    std::vector<double> p{-3.1415};
     auto f = ir->getKernel("f")->operator()(p);
 
     PauliOperator op;
     op.fromString("(5.9067,0) I + (-2.1433,0) X0 X1 + (-2.1433,0) Y0 Y1 + (.21829,0) Z0 + (-6.125,0) Z1");
 
     // std::cout << "OP: " << op.toString() << "\n";
-    
+
     auto measureFunctions = op.toXACCIR()->getKernels();
     for (auto& m : measureFunctions) {
         m->insertInstruction(0,f);
     }
-    
+
     PurificationDecorator decorator;
     decorator.setDecorated(acc);
-    
+
+    buffer->addExtraInfo("identity-coeff", ExtraInfo(5.9067));
     auto buffers = decorator.execute(buffer, measureFunctions);
 
     for (auto& b : buffers) b->print();

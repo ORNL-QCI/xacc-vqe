@@ -27,8 +27,8 @@ install(FILES xaccvqe.py DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 file (GLOB PYTESTS tests/*.py)
 
-include(FindPythonInterp)
-if (PYTHONINTERP_FOUND)
+#include(FindPythonInterp)
+if (PYTHON_EXECUTABLE)
 	message(STATUS "FOUND ${PYTHON_EXECUTABLE}")
 	foreach (PYTEST ${PYTESTS})
 		get_filename_component(TESTNAME ${PYTEST} NAME_WE) # [CACHE])

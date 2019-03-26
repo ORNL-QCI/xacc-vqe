@@ -1,4 +1,5 @@
-add_xacc_test(FTree)
+#include_directories(${CMAKE_SOURCE_DIR}/transformations/bk)
+#add_xacc_test(FTree)
 add_xacc_test(JordanWignerIRTransformation)
 target_link_libraries(JordanWignerIRTransformationTester xacc-vqe-irtransformations)
 add_xacc_test(BravyiKitaevIRTransformation)

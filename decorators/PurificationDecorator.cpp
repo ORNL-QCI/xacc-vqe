@@ -29,7 +29,7 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> PurificationDecorator::execute(
   // Here I expect the ansatz to be functions[0]->getInstruction(0);
   auto ansatz =
       std::dynamic_pointer_cast<Function>(functions[0]->getInstruction(0));
-      
+
   if (!ansatz)
     xacc::error("ANSATZ IS NULL");
 
@@ -83,7 +83,7 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> PurificationDecorator::execute(
 
   for (auto &kv : opMap)
     std::cout << kv.first << ", " << kv.second.toString() << "\n";
-    
+
   std::cout << all.toString() << "\n";
   std::cout << Paulis.size() << " operators to measure\n";
 
@@ -153,19 +153,19 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> PurificationDecorator::execute(
 //   std::cout << "MADE IT HERE\n";
 //   std::cout << HOp.toString() << "\n";
 
-  auto identityCoeff = boost::get<double>(buffer->getInformation("identity-coeff"));
+  auto identityCoeff = mpark::get<double>(buffer->getInformation("identity-coeff"));
   xacc::info(std::to_string(identityCoeff));
-  auto ID = -1 * identityCoeff * Eigen::MatrixXcd::Identity(dim,dim);  
+  auto ID = -1 * identityCoeff * Eigen::MatrixXcd::Identity(dim,dim);
   Eigen::MatrixXcd H = HOp.toDenseMatrix(buffer->size()) - ID;
-  
+
 //   std::cout << "CONJ:\n" << (rho - rho.conjugate()) << "\n";
 //   std::cout << "IDEMP:\n" << (rho*rho - rho) << "\n";
 //   std::cout << "H:\n" << H << "\n";
 //   std::cout << "HI\n";
   std::cout << "Energy: " << std::real((rho * H).trace()) << "\n";
 
-  // Need to take new rho and compute <P> = Tr(P rho) for each of our 
-  // input functions 
+  // Need to take new rho and compute <P> = Tr(P rho) for each of our
+  // input functions
 
   std::vector<std::shared_ptr<AcceleratorBuffer>> retBuffers;
   for (auto& f : functions) {
@@ -174,17 +174,19 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> PurificationDecorator::execute(
 //       }
 //     auto tmp = xacc::getService<xacc::IRProvider>("gate")->createIR();
 //     tmp->addKernel(f);
-    
+
 //     xacc::vqe::PauliOperator o;
 //     o.fromXACCIR(tmp);
-    
+
 //     auto mat = o.toDenseMatrix(buffer->size());
 //     auto expVal = std::real((rho * mat).trace());
 
+    if (bufMap.count(f->name())) {
     auto b = bufMap[f->name()];
     b->addExtraInfo("purified-energy",ExtraInfo(std::real((rho*H).trace())));
 //     b->addExtraInfo("exp-val-z", ExtraInfo(expVal));
     retBuffers.push_back(b);
+    }
   }
 
   return retBuffers;

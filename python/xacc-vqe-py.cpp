@@ -461,6 +461,7 @@ PYBIND11_MODULE(_pyxaccvqe, m) {
       .def("__eq__", &PauliOperator::operator==)
       .def("__repr__", &PauliOperator::toString)
       .def("eval", &PauliOperator::eval)
+      .def("toBinaryVectors", &PauliOperator::toBinaryVectors)
       .def("toXACCIR", &PauliOperator::toXACCIR)
       .def("fromXACCIR", &PauliOperator::fromXACCIR)
       .def("fromString", &PauliOperator::fromString)

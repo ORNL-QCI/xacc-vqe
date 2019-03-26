@@ -3,7 +3,6 @@
 
 #include "XACC.hpp"
 #include <Eigen/Dense>
-#include <boost/math/constants/constants.hpp>
 
 namespace xacc {
 namespace vqe {
@@ -22,11 +21,12 @@ public:
 				// 50:-3.14,3.14 or
 				// -3.14,3.14
 				std::vector<std::string> split, colon;
-				boost::split(split, paramStr, boost::is_any_of(","));
+                split = xacc::split(paramStr, ',');
+				// boost::split(split, paramStr, boost::is_any_of(","));
 				int nSteps = 50;
 				std::string minVal;
-				if (boost::contains(paramStr, ":")) {
-					boost::split(colon, split[0], boost::is_any_of(":"));
+				if (paramStr.find(":") != std::string::npos) {
+					colon = xacc::split(split[0], ':');
 					nSteps = std::stoi(colon[0]);
 					minVal = colon[1];
 				} else {
@@ -38,7 +38,7 @@ public:
 			} else {
 				auto paramStr = xacc::getOption("vqe-parameters");
 				std::vector<std::string> split;
-				boost::split(split, paramStr, boost::is_any_of(","));
+				split = xacc::split( paramStr, ',');
 				Eigen::VectorXd params(nParameters);
 				for (int i = 0; i < split.size(); i++) {
 					params(i) = std::stod(split[i]);
@@ -48,7 +48,7 @@ public:
 			}
 		} else {
 			std::srand(time(0));
-			auto pi = boost::math::constants::pi<double>();
+			auto pi = 3.141592653589793238;
 			Eigen::VectorXd rand;
 
 			std::vector<double> data;

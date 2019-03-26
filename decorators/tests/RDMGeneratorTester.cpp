@@ -119,8 +119,7 @@ TEST(RDMGeneratorTester, checkGround) {
     auto ir2 = compiler->compile(rucc, accelerator);
     auto ruccsd = ir2->getKernel("f");
 
-    Eigen::VectorXd parameters(1);
-    parameters << .22984;
+    std::vector<double> parameters{.22984};
     ruccsd = (*ruccsd.get())(parameters);
 
     // Create the 2-RDM

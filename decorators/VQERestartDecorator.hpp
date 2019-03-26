@@ -22,7 +22,7 @@ namespace vqe {
 class VQERestartDecorator : public AcceleratorDecorator {
 public:
   void initialize() override;
-  
+
   void execute(std::shared_ptr<AcceleratorBuffer> buffer,
                const std::shared_ptr<Function> function) override;
 
@@ -33,10 +33,9 @@ public:
   const std::string name() const override { return "vqe-restart"; }
   const std::string description() const override { return ""; }
 
-  std::shared_ptr<options_description> getOptions() override {
-    auto desc = std::make_shared<options_description>();
-    desc->add_options()("vqe-restart-file", value<std::string>(),
-                        "");
+  OptionPairs getOptions() override {
+    OptionPairs desc {{"vqe-restart-file",
+                        ""}};
     return desc;
   }
   ~VQERestartDecorator() override {}

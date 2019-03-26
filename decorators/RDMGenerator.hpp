@@ -71,25 +71,6 @@ public:
    */
   const double energy();
 
-  /**
-   * Return a Boost options_description instance that
-   * describes the options available for this
-   * derived subclass.
-   */
-  virtual std::shared_ptr<options_description> getOptions() {
-    auto desc = std::make_shared<options_description>("RDM Generator Options");
-    return desc;
-  }
-
-  /**
-   * Given user-input command line options, perform
-   * some operation. Returns true if runtime should exit,
-   * false otherwise.
-   *
-   * @param map The mapping of options to values
-   * @return exit True if exit, false otherwise
-   */
-  virtual bool handleOptions(variables_map &map) { return false; }
 };
 } // namespace vqe
 } // namespace xacc

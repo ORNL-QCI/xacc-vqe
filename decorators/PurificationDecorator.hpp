@@ -31,10 +31,6 @@ public:
   const std::string name() const override { return "purification"; }
   const std::string description() const override { return ""; }
 
-  std::shared_ptr<options_description> getOptions() override {
-    auto desc = std::make_shared<options_description>();
-    return desc;
-  }
   ~PurificationDecorator() override {}
 };
 

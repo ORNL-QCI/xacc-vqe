@@ -168,11 +168,11 @@ public:
     const int depth() override {
         xacc::error("FermionKernel.depth() not implemented.");
     }
-    
+
     const std::string persistGraph() override {
         xacc::error("FermionKernel.persistGraph() not implemented.");
     }
-    
+
 	/**
 	 * Return the qubits this function acts on.
 	 * @return
@@ -194,7 +194,7 @@ public:
 			// Get the creation or annihilation sites
 			auto termSites = f->bits();
 			auto params = f->getParameters();
-			auto coeff = boost::get<std::complex<double>>(params[f->nParameters() - 2]);
+			auto coeff = params[f->nParameters()-2].as<std::complex<double>>();
 
 			if (termSites.empty()) {
 				e = std::real(coeff);
@@ -218,7 +218,7 @@ public:
 			// Get the creation or annihilation sites
 			auto termSites = f->bits();
 			auto params = f->getParameters();
-			auto coeff = boost::get<std::complex<double>>(params[f->nParameters() - 2]);
+			auto coeff = params[f->nParameters()-2].as<std::complex<double>>();
 
 			if (termSites.size() == 2) {
 				int p = termSites[0];
@@ -246,7 +246,7 @@ public:
 			// Get the creation or annihilation sites
 			auto termSites = f->bits();
 			auto params = f->getParameters();
-			auto coeff = boost::get<std::complex<double>>(params[f->nParameters() - 2]);
+			auto coeff = params[f->nParameters()-2].as<std::complex<double>>();
 
 			if (termSites.size() == 4) {
 				int p = termSites[0];
@@ -318,7 +318,7 @@ public:
 	void addParameter(InstructionParameter instParam) override {
 		xacc::error("FermionKernel does not contain runtime parameters.");
 	}
-    
+
 	/**
 	 * FermionKernel is not parameterized.
 	 */
@@ -341,7 +341,7 @@ public:
 	 * @param idx
 	 * @return
 	 */
-	std::shared_ptr<Function> operator()(const Eigen::VectorXd& params) override {
+	std::shared_ptr<Function> operator()(const std::vector<double>& params) override {
 		xacc::error("FermionKernel does not contain runtime parameters.");
 		return std::make_shared<FermionKernel>("");
 	}
@@ -355,8 +355,8 @@ public:
   }
 
   /**
-   * Return the number of physical qubits. 
-   * 
+   * Return the number of physical qubits.
+   *
    * @return nPhysical The number of physical qubits.
    */
   const int nPhysicalBits() override {
@@ -380,10 +380,10 @@ public:
    */
   void setOption(const std::string optName,
                  InstructionParameter option) override {
-      XACCLogger::instance()->error("setOption not implemented for FermionKernel."); 
-      return;              
+      XACCLogger::instance()->error("setOption not implemented for FermionKernel.");
+      return;
   }
-  
+
   /**
    * Get the value of an option with the given name.
    *
@@ -391,8 +391,8 @@ public:
    * @return option The value of the option.
    */
   InstructionParameter getOption(const std::string optName) override {
-       XACCLogger::instance()->error("getOption not implemented for FermionKernel.");  
-       return InstructionParameter(0);             
+       XACCLogger::instance()->error("getOption not implemented for FermionKernel.");
+       return InstructionParameter(0);
   }
 
   /**
@@ -401,8 +401,8 @@ public:
    * @return optMap The options map.
    */
   std::map<std::string, InstructionParameter> getOptions() override {
-       XACCLogger::instance()->error("getOptions not implemented for FermionKernel."); 
-       return std::map<std::string,InstructionParameter>();              
+       XACCLogger::instance()->error("getOptions not implemented for FermionKernel.");
+       return std::map<std::string,InstructionParameter>();
   }
 
 

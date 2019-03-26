@@ -35,7 +35,6 @@
 using namespace xacc;
 using namespace xacc::vqe;
 
-using namespace boost;
 
 TEST(UCCSDTester,checkUCCSD) {
 

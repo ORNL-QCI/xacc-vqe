@@ -3,6 +3,7 @@
 #include "VQEProgram.hpp"
 #include "FermionToSpinTransformation.hpp"
 #include "ProfileHamiltonianTask.hpp"
+#include <regex>
 
 namespace xacc {
 namespace vqe {
@@ -90,7 +91,9 @@ VQETaskResult ProfileHamiltonianTask::execute(
 		}
 
 		auto resultsStr = hamiltonianInstruction.toString();
-		boost::replace_all(resultsStr, "+", "+\n");
+		// boost::replace_all(resultsStr, "+", "+\n");
+        resultsStr = std::regex_replace(resultsStr, std::regex("\\+"), "+\n");
+
 		s << "\nHamiltonian:\n" << resultsStr << "\n";
 
 		out << s.str();

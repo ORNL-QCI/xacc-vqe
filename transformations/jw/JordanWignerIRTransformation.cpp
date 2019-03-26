@@ -28,13 +28,13 @@ PauliOperator JordanWignerIRTransformation::transform(FermionKernel& kernel) {
 		// Get the params indicating if termSite is creation or annihilation
 		auto params = f->getParameters();
 
-		auto coeff = boost::get<std::complex<double>>(params[f->nParameters() - 2]);
-		auto fermionVar = boost::get<std::string>(params[f->nParameters() - 1]);
+		auto coeff = params[f->nParameters() - 2].as<std::complex<double>>();
+		auto fermionVar = params[f->nParameters() - 1].as<std::string>();
 
 		PauliOperator current(coeff, fermionVar);
 		for (int i = 0; i < termSites.size(); i++) {
 			std::map<int, std::string> zs;
-			auto isCreation = boost::get<int>(params[i]);
+			auto isCreation = params[i].as<int>();
 
 			int index = termSites[i];
 

@@ -1,6 +1,6 @@
 #include "PauliOperator.hpp"
 #include "IRProvider.hpp"
-#include <boost/math/constants/constants.hpp>
+#include <regex>
 
 namespace xacc {
 namespace vqe {
@@ -239,7 +239,7 @@ const std::string PauliOperator::toString() {
   }
 
   auto r = s.str().substr(0, s.str().size() - 2);
-  boost::trim(r);
+  xacc::trim(r);
   return r;
 }
 
@@ -248,27 +248,43 @@ void PauliOperator::fromString(const std::string str) {
   // (-0.00944179,0) Z1 X2 X3 + (0.0816923,0) Z2 Z3 ..
   std::vector<std::string> splitPlus, splitSpace;
 
-  boost::split(splitPlus, str, boost::is_any_of("+"));
+  splitPlus = xacc::split(str, '+');
+//   boost::split(splitPlus, str, boost::is_any_of("+"));
 
   clear();
 
   for (auto &termStr : splitPlus) {
-    boost::trim(termStr);
-    boost::split(splitSpace, termStr, boost::is_any_of(" "));
+    xacc::trim(termStr);
+    std::cout << "HELLO: " << termStr << "\n";
+    splitSpace = xacc::split(termStr, ' ');
+    // boost::split(splitSpace, termStr, boost::is_any_of(" "));
     std::vector<std::string> splitComma;
     int startIdx = 0;
 
     std::complex<double> coeff(1, 0);
-    if (boost::contains(termStr, "(") && boost::contains(termStr, ")")) {
+    if (termStr.find("(") != std::string::npos && termStr.find(")") != std::string::npos) {
+    // if (boost::contains(termStr, "(") && boost::contains(termStr, ")")) {
       auto coeffStr = splitSpace[0];
-      boost::replace_all(coeffStr, "(", "");
-      boost::replace_all(coeffStr, ")", "");
-      boost::split(splitComma, coeffStr, boost::is_any_of(","));
+    //   std::cout << "coeff str " << coeffStr <<"\n";
+
+      auto fidx = coeffStr.find_first_of("(");
+      auto lidx = coeffStr.find_first_of(")");
+            // std::cout << "coeff str " << coeffStr << ", " << fidx << ", " << lidx <<"\n";
+
+      coeffStr = coeffStr.substr(fidx+1,lidx-fidx-1);
+                //   std::cout << "coeff str " << coeffStr << ", " << fidx << ", " << lidx <<"\n";
+
+    //   coeffStr = std::regex_replace(coeffStr, std::regex(")"), "");
+    //   coeffStr = std::regex_replace(coeffStr, std::regex("("), "");
+
+      splitComma = xacc::split(coeffStr, ',');
+    //   boost::split(splitComma, coeffStr, boost::is_any_of(","));
       coeff = std::complex<double>(std::stod(splitComma[0]),
                                    std::stod(splitComma[1]));
       startIdx = 1;
     }
 
+    // std::cout << "COMPLEX: " << coeff << "\n";
     std::map<int, std::string> terms;
     for (int i = startIdx; i < splitSpace.size(); i++) {
       std::string pauliOpStr = splitSpace[i];
@@ -557,7 +573,7 @@ std::shared_ptr<IR> PauliOperator::toXACCIR() {
   auto gateRegistry = xacc::getService<IRProvider>("gate");
   auto newIr = gateRegistry->createIR();
   int counter = 0;
-  auto pi = boost::math::constants::pi<double>();
+  auto pi = 3.141592653589793238;
 
   // Populate GateQIR now...
   for (auto &inst : terms) {
@@ -659,11 +675,11 @@ void PauliOperator::fromXACCIR(std::shared_ptr<IR> ir) {
     }
     std::complex<double> c(1, 0);
     if (kernel->nParameters() > 0) {
-      c = boost::get<std::complex<double>>(kernel->getParameter(0));
+      c = kernel->getParameter(0).as<std::complex<double>>();
     }
 
     if (pauliTerm.empty()) pauliTerm.insert({0,"I"});
-    
+
     Term t(c, pauliTerm);
     terms.insert({t.id(), t});
   }

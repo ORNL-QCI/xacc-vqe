@@ -36,14 +36,14 @@ TEST(SymVerificationDecoratorTester, checkSimple) {
        Rx(1.57079, 0)
        )src";
 
-    
+
     auto ir = compiler->compile(src, acc);
     auto f = ir->getKernel("f");
-    f = f->operator()(Eigen::VectorXd::Zero(1));
-    
+    f = f->operator()(std::vector<double>(1));
+
     SymVerificationDecorator decorator;
     decorator.setDecorated(acc);
-    
+
     PauliOperator op;
     op.fromString("Z0 Z1 + X0 X1 + Y0 Y1 + Z0 + Z1");
 
@@ -51,9 +51,9 @@ TEST(SymVerificationDecoratorTester, checkSimple) {
     for (auto& m : measureFunctions) {
         m->insertInstruction(0,f);
     }
-    
+
     xacc::setOption("sym-op", "Z0 Z1");
-    
+
     decorator.execute(buffer, measureFunctions);
   }
 }
