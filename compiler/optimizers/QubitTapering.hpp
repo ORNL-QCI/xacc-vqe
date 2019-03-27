@@ -3,6 +3,10 @@
 
 #include "IRTransformation.hpp"
 #include "PauliOperator.hpp"
+#include "OptionsProvider.hpp"
+#include <Eigen/Dense>
+
+using namespace xacc::quantum;
 
 namespace xacc {
 namespace vqe {

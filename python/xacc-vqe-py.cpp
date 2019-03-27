@@ -20,6 +20,7 @@ namespace py = pybind11;
 
 using namespace xacc;
 using namespace xacc::vqe;
+using namespace xacc::quantum;
 
 using GateFunctionPtr = std::shared_ptr<xacc::Function>;
 
@@ -437,46 +438,6 @@ PYBIND11_MODULE(_pyxaccvqe, m) {
       .def_readonly("vqeIterations", &VQETaskResult::vqeIterations)
       .def_readonly("energy", &VQETaskResult::energy)
       .def_readonly("ansatzQASM", &VQETaskResult::ansatzQASM);
-
-  py::class_<Term>(m, "Term").def("coeff", &Term::coeff).def("ops",&Term::ops);
-  py::class_<PauliOperator>(m, "PauliOperator")
-      .def(py::init<>())
-      .def(py::init<std::complex<double>>())
-      .def(py::init<double>())
-      .def(py::init<std::string>())
-      .def(py::init<std::map<int, std::string>>())
-      .def(py::init<std::map<int, std::string>, double>())
-      .def(py::init<std::map<int, std::string>, std::complex<double>>())
-      .def(py::init<std::map<int, std::string>, std::string>())
-      .def(py::init<std::map<int, std::string>, std::complex<double>,
-                    std::string>())
-      .def(py::self + py::self)
-      .def(py::self += py::self)
-      .def(py::self *= py::self)
-      .def(py::self *= double())
-      .def(py::self * py::self)
-      .def(py::self *= std::complex<double>())
-      .def(py::self -= py::self)
-      .def(py::self - py::self)
-      .def("__eq__", &PauliOperator::operator==)
-      .def("__repr__", &PauliOperator::toString)
-      .def("eval", &PauliOperator::eval)
-      .def("toBinaryVectors", &PauliOperator::toBinaryVectors)
-      .def("toXACCIR", &PauliOperator::toXACCIR)
-      .def("fromXACCIR", &PauliOperator::fromXACCIR)
-      .def("fromString", &PauliOperator::fromString)
-      .def("nTerms", &PauliOperator::nTerms)
-      .def("isClose", &PauliOperator::isClose)
-      .def("commutes", &PauliOperator::commutes)
-      .def("__len__", &PauliOperator::nTerms)
-      .def("nQubits", &PauliOperator::nQubits)
-      .def("computeActionOnKet", &PauliOperator::computeActionOnKet)
-      .def("computeActionOnBra", &PauliOperator::computeActionOnBra)
-      .def("__iter__",
-           [](PauliOperator &op) {
-             return py::make_iterator(op.begin(), op.end());
-           },
-           py::keep_alive<0, 1>());
 
   m.def("execute",
         (VQETaskResult(*)(PauliOperator & op,

@@ -43,6 +43,7 @@ usFunctionGetResourceSource(TARGET ${IR_LIBRARY_NAME} OUT SRC)
 usFunctionGenerateBundleInit(TARGET ${IR_LIBRARY_NAME} OUT SRC)
 
 include_directories(algorithms/hwe)
+include_directories(${XACC_INCLUDE_ROOT}/quantum/gate)
 
 add_library(${IR_LIBRARY_NAME} SHARED ${SRC})
 

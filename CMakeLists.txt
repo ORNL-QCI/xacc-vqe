@@ -31,7 +31,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CppMicroServicesConfig_DIR}")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/tpls/backward-cpp")
 
-include(tests)
 include(CppMicroServicesConfig)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)

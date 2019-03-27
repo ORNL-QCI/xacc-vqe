@@ -2,6 +2,7 @@
 #include "IRProvider.hpp"
 #include "PauliOperator.hpp"
 #include "XACC.hpp"
+using namespace xacc::quantum;
 
 namespace xacc {
 namespace vqe {

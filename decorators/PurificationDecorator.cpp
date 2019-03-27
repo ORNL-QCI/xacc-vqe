@@ -3,6 +3,9 @@
 #include "InstructionIterator.hpp"
 #include "PauliOperator.hpp"
 #include "XACC.hpp"
+#include <Eigen/Dense>
+
+using namespace xacc::quantum;
 
 namespace xacc {
 namespace vqe {
@@ -36,7 +39,7 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> PurificationDecorator::execute(
   // Generate all nQubit Pauli Strings
   std::vector<std::string> XYZ;
   std::set<std::string> temp, PauliStrings;
-  std::vector<xacc::vqe::PauliOperator> Paulis;
+  std::vector<PauliOperator> Paulis;
 
   for (int i = 0; i < buffer->size(); i++)
     XYZ.push_back("X" + std::to_string(i));
@@ -51,7 +54,7 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> PurificationDecorator::execute(
   y = [&](std::vector<std::string> &set, std::string prefix, const int n,
           const int k) {
     if (k == 0) {
-      xacc::vqe::PauliOperator op;
+      PauliOperator op;
       op.fromString(prefix);
       PauliStrings.insert(op.toString());
       return;
@@ -71,10 +74,10 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> PurificationDecorator::execute(
   // Get all Permutations of XYZ
   x(XYZ, buffer->size());
 
-  xacc::vqe::PauliOperator all;
-  std::map<std::string, xacc::vqe::PauliOperator> opMap;
+  PauliOperator all;
+  std::map<std::string, PauliOperator> opMap;
   for (auto &s : PauliStrings) {
-    xacc::vqe::PauliOperator op;
+    PauliOperator op;
     op.fromString(s);
     Paulis.push_back(op);
     all += op;
@@ -109,7 +112,8 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> PurificationDecorator::execute(
     bufMap.insert({id,b});
     auto op = opMap[id];
 
-    Eigen::MatrixXcd p = op.toDenseMatrix(buffer->size());
+    auto data = op.toDenseMatrix(buffer->size()).data();
+    Eigen::MatrixXcd p = Eigen::Map<Eigen::MatrixXcd>(data, dim,dim);
     rho += b->getExpectationValueZ() * p;
   }
 
@@ -143,7 +147,7 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> PurificationDecorator::execute(
 
   // new E = Tr(H*rho)
   // so get H
-  xacc::vqe::PauliOperator HOp;
+  PauliOperator HOp;
   auto ir = xacc::getService<xacc::IRProvider>("gate")->createIR();
   for (auto &f : functions) {
     ir->addKernel(f);
@@ -156,7 +160,8 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> PurificationDecorator::execute(
   auto identityCoeff = mpark::get<double>(buffer->getInformation("identity-coeff"));
   xacc::info(std::to_string(identityCoeff));
   auto ID = -1 * identityCoeff * Eigen::MatrixXcd::Identity(dim,dim);
-  Eigen::MatrixXcd H = HOp.toDenseMatrix(buffer->size()) - ID;
+  auto data = HOp.toDenseMatrix(buffer->size()).data();
+  Eigen::MatrixXcd H = Eigen::Map<Eigen::MatrixXcd>(data, dim,dim) - ID;
 
 //   std::cout << "CONJ:\n" << (rho - rho.conjugate()) << "\n";
 //   std::cout << "IDEMP:\n" << (rho*rho - rho) << "\n";
@@ -175,7 +180,7 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> PurificationDecorator::execute(
 //     auto tmp = xacc::getService<xacc::IRProvider>("gate")->createIR();
 //     tmp->addKernel(f);
 
-//     xacc::vqe::PauliOperator o;
+//     PauliOperator o;
 //     o.fromXACCIR(tmp);
 
 //     auto mat = o.toDenseMatrix(buffer->size());

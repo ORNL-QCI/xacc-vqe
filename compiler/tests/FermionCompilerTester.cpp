@@ -34,8 +34,6 @@
 
 using namespace xacc::vqe;
 
-using namespace boost;
-
 class FakeAcc: public xacc::Accelerator {
 public:
 

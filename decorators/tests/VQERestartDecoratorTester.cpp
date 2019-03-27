@@ -17,6 +17,7 @@
 #include <fstream>
 
 using namespace xacc::vqe;
+using namespace xacc::quantum;
 
 const std::string restartFile = R"restartFile({
     "AcceleratorBuffer": {

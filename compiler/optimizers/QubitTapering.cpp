@@ -4,6 +4,7 @@
 #include "DiagonalizeTask.hpp"
 
 #include <algorithm>
+#include <iomanip>
 
 namespace xacc {
 namespace vqe {
@@ -85,7 +86,7 @@ std::shared_ptr<IR> QubitTapering::transform(std::shared_ptr<IR> ir) {
 
   // Convert tableaux to rref
   Eigen::MatrixXi b = gauss(tableaux, pivotCols);
-  
+
   // Get linear independent vectors from rref
   int ker_dim = 2 * n - pivotCols.size();
   Eigen::MatrixXi linIndVecs(pivotCols.size(), 2 * n);
@@ -165,7 +166,7 @@ std::shared_ptr<IR> QubitTapering::transform(std::shared_ptr<IR> ir) {
     }
     taus.emplace_back(terms);
   }
-  
+
 //   for (auto t : taus) std::cout << "GEN: " << t.toString() << "\n";
 
   // Lambda to compute hermitian conjugate of PauliOperator
@@ -313,35 +314,11 @@ std::shared_ptr<IR> QubitTapering::transform(std::shared_ptr<IR> ir) {
 const double QubitTapering::computeGroundStateEnergy(PauliOperator &op,
                                                      const int n) {
 
-//   if (xacc::hasService<DiagonalizeBackend>("slepc")) {
-//       xacc::info("Diagonalizing with SLEPC");
-//     std::shared_ptr<MPIProvider> provider;
-//     std::shared_ptr<Communicator> world;
-//     if (xacc::hasService<MPIProvider>("boost-mpi")) {
-//       provider = xacc::getService<MPIProvider>("boost-mpi");
-//       provider->initialize(argc, argv);
-//       world = provider->getCommunicator();
-//       int rank = world->rank();
-//       xacc::setGlobalLoggerPredicate([&]() { return rank == 0; });
-//       xacc::info("Using Boost MPI for distributed computations.");
-//     } else {
-//       provider = xacc::getService<MPIProvider>("no-mpi");
-//       provider->initialize(argc, argv);
-//       world = provider->getCommunicator();
-//       xacc::info("XACC-VQE Built without MPI Support.");
-//     }
-
-//     auto prog = std::make_shared<VQEProgram>(world);
-//     prog->setPauliOperator(op);
-    
-//     auto diag = xacc::getService<DiagonalizeBackend>("slepc");
-//     return diag->diagonalize(prog);
-//   } else {
-    auto A = op.toDenseMatrix(n);
+    auto data = op.toDenseMatrix(n).data();
+    Eigen::MatrixXcd A = Eigen::Map<Eigen::MatrixXcd>(data, std::pow(2,n),std::pow(2,n));
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> es(A);
     auto reducedEnergy = es.eigenvalues()[0];
     return reducedEnergy;
-//   }
 }
 
 } // namespace vqe

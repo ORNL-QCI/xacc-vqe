@@ -2,7 +2,8 @@
 #include "IRProvider.hpp"
 #include "VQEProgram.hpp"
 #include "XACC.hpp"
-#include <boost/algorithm/string.hpp>
+#include <iomanip>
+#include <regex>
 
 namespace xacc {
 namespace vqe {
@@ -38,7 +39,7 @@ VQETaskResult ComputeEnergyVQETask::execute(Eigen::VectorXd parameters) {
 
   globalBuffer->addExtraInfo("circuit-depth", optPrep->depth());
   auto qasmStr = optPrep->toString("q");
-  boost::replace_all(qasmStr, "\\n", "\\\\n");
+  qasmStr = std::regex_replace(qasmStr, std::regex("\\n"),"\\\\n");
 
   globalBuffer->addExtraInfo("ansatz-qasm", qasmStr);
 

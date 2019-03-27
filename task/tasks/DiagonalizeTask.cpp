@@ -4,6 +4,7 @@
 
 #include "DiagonalizeTask.hpp"
 #include <Eigen/Sparse>
+#include <iomanip>
 
 namespace xacc {
 namespace vqe {

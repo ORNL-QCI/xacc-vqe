@@ -35,12 +35,10 @@
 #include "FermionKernel.hpp"
 #include "FermionIR.hpp"
 #include "PauliOperator.hpp"
-#include <boost/math/constants/constants.hpp>
 
-#include <boost/serialization/complex.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/utility.hpp>
 #include "XACC.hpp"
+
+using namespace xacc::quantum;
 
 namespace xacc {
 

@@ -6,6 +6,7 @@
 #include "RDMGenerator.hpp"
 #include "XACC.hpp"
 #include <unsupported/Eigen/CXX11/TensorSymmetry>
+#include <iomanip>
 
 namespace xacc {
 namespace vqe {

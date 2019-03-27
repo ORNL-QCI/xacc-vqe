@@ -17,6 +17,7 @@
 
 using namespace xacc::vqe;
 
+using namespace xacc::quantum;
 
 TEST(SymVerificationDecoratorTester, checkSimple) {
   if (xacc::hasAccelerator("local-ibm")) {

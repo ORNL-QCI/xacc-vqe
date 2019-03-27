@@ -12,6 +12,8 @@
 #include <Eigen/Core>
 #include <numeric>
 
+using namespace xacc::quantum;
+
 namespace xacc {
 
 namespace vqe {
