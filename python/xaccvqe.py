@@ -6,6 +6,7 @@ import sys
 import sysconfig
 import argparse
 import inspect
+from xacc import PauliOperator
 
 def QubitOperator2XACC(qubit_op):
     """
