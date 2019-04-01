@@ -1,5 +1,6 @@
 #include "HWE.hpp"
 #include "GateFunction.hpp"
+#include <regex>
 // #include <boost/tokenizer.hpp>
 
 using namespace xacc::quantum;
