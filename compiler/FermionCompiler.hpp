@@ -36,6 +36,7 @@
 #include "FermionToSpinTransformation.hpp"
 #include "FermionIR.hpp"
 #include "unsupported/Eigen/CXX11/Tensor"
+#include "xacc_service.hpp"
 
 namespace xacc {
 

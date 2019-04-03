@@ -14,6 +14,7 @@
 #include "XACC.hpp"
 #include "SymVerificationDecorator.hpp"
 #include "PauliOperator.hpp"
+#include "xacc_service.hpp"
 
 using namespace xacc::vqe;
 

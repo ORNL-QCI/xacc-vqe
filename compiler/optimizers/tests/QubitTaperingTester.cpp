@@ -20,6 +20,7 @@
 #include "Rz.hpp"
 #include <gtest/gtest.h>
 #include "Eigen/Dense"
+#include "xacc_service.hpp"
 
 using namespace xacc::vqe;
 

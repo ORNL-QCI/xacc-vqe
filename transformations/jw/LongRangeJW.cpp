@@ -1,6 +1,6 @@
 #include "LongRangeJW.hpp"
 #include "XACC.hpp"
-
+#include <ctime>
 
 namespace xacc {
 namespace vqe {

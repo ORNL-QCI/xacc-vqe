@@ -1,5 +1,6 @@
 #include "EfficientJW.hpp"
 #include "XACC.hpp"
+#include <ctime>
 
 
 namespace xacc {

@@ -15,6 +15,7 @@
 #include "VQERestartDecorator.hpp"
 #include "PauliOperator.hpp"
 #include <fstream>
+#include "xacc_service.hpp"
 
 using namespace xacc::vqe;
 using namespace xacc::quantum;

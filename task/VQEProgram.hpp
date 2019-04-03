@@ -15,6 +15,7 @@
 #include "IRProvider.hpp"
 
 #include "unsupported/Eigen/CXX11/Tensor"
+#include "xacc_service.hpp"
 
 #include <fstream>
 

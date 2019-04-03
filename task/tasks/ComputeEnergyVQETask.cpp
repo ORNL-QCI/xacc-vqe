@@ -4,6 +4,7 @@
 #include "XACC.hpp"
 #include <iomanip>
 #include <regex>
+#include "xacc_service.hpp"
 
 namespace xacc {
 namespace vqe {

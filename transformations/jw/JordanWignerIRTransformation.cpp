@@ -1,5 +1,6 @@
 #include "JordanWignerIRTransformation.hpp"
 #include "XACC.hpp"
+#include <ctime>
 
 namespace xacc {
 namespace vqe {

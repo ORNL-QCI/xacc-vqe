@@ -37,8 +37,8 @@ using namespace xacc::vqe;
 class FakeAcc: public xacc::Accelerator {
 public:
 
-	virtual xacc::AcceleratorType getType() {
-		return xacc::AcceleratorType::qpu_gate;
+	virtual xacc::Accelerator::AcceleratorType getType() {
+		return xacc::Accelerator::AcceleratorType::qpu_gate;
 	}
 
 	virtual bool isValidBufferSize(const int nBits) {

@@ -3,6 +3,7 @@
 #include "FermionToSpinTransformation.hpp"
 #include "CommutingSetGenerator.hpp"
 // #include <boost/math/constants/constants.hpp>
+#include "xacc_service.hpp"
 
 using namespace xacc::quantum;
 

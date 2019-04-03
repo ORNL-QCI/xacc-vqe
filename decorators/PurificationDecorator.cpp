@@ -4,6 +4,7 @@
 #include "PauliOperator.hpp"
 #include "XACC.hpp"
 #include <Eigen/Dense>
+#include "xacc_service.hpp"
 
 using namespace xacc::quantum;
 

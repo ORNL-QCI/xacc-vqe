@@ -1,6 +1,7 @@
 #include "BravyiKitaevIRTransformation.hpp"
 #include "XACC.hpp"
 #include "Fenwick.hpp"
+#include <ctime>
 
 namespace xacc {
 namespace vqe {

@@ -2,6 +2,8 @@
 #include "IRProvider.hpp"
 #include "PauliOperator.hpp"
 #include "XACC.hpp"
+#include "xacc_service.hpp"
+
 using namespace xacc::quantum;
 
 namespace xacc {

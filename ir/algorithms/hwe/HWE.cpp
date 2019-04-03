@@ -1,6 +1,7 @@
 #include "HWE.hpp"
 #include "GateFunction.hpp"
 // #include <boost/tokenizer.hpp>
+#include "xacc_service.hpp"
 
 using namespace xacc::quantum;
 

@@ -37,6 +37,8 @@
 #include "RDMGenerator.hpp"
 #include "XACC.hpp"
 #include <gtest/gtest.h>
+#include "xacc_service.hpp"
+
 using namespace xacc::vqe;
 using namespace xacc;
 

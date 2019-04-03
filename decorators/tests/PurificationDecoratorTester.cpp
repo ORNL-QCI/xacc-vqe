@@ -14,6 +14,7 @@
 #include "XACC.hpp"
 #include "PurificationDecorator.hpp"
 #include "PauliOperator.hpp"
+#include "xacc_service.hpp"
 
 using namespace xacc;
 using namespace xacc::quantum;

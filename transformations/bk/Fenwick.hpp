@@ -3,6 +3,7 @@
 #define VQE_TRANSFORMATION_BK_FENWICK_HPP_
 
 #include <vector>
+#include <set>
 
 /**
  * This class represents a Node in the Fenwick Tree. It keeps track
