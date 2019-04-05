@@ -2,6 +2,7 @@
 #include "GateFunction.hpp"
 // #include <boost/tokenizer.hpp>
 #include "xacc_service.hpp"
+#include <regex>
 
 using namespace xacc::quantum;
 

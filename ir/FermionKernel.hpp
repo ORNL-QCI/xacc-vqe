@@ -165,6 +165,9 @@ public:
 		return "";
 	}
 
+    std::shared_ptr<Graph> toGraph() override {
+        xacc::error("FermionKernel.toGraph not implemented");
+    }
     const int depth() override {
         xacc::error("FermionKernel.depth() not implemented.");
     }

@@ -139,11 +139,7 @@ public:
 				xacc::setCompiler("fermion");
 			}
 
-			addPreprocessor("fcidump-preprocessor");
-
-			if (xacc::optionExists("correct-readout-errors")) {
-				addIRPreprocessor("readout-error-preprocessor");
-			}
+			// addPreprocessor("fcidump-preprocessor");
 
 			// Start compilation
 			Program::build();
@@ -208,11 +204,6 @@ public:
 
 		} else {
 
-			if (xacc::optionExists("correct-readout-errors")) {
-				xacc::info("Adding Readout Error IR Preprocessor");
-				addIRPreprocessor("readout-error-preprocessor");
-			}
-
 			nQubits = std::stoi(xacc::getOption("n-qubits"));
 			auto tmpKernels = pauli.toXACCIR()->getKernels();
 			xaccIR = xacc::getService<IRProvider>("gate")->createIR();
@@ -224,10 +215,6 @@ public:
 			auto accTransforms = accelerator->getIRTransformations();
 			for (auto t : accTransforms) {
 				xaccIR = t->transform(xaccIR);
-			}
-
-			for (auto irp : irpreprocessors) {
-				// bufferPostprocessors.push_back(irp->process(*xaccIR));
 			}
 
 			kernels = getRuntimeKernels();
