@@ -44,21 +44,20 @@ class HWE: public xacc::IRGenerator {
 
 public:
 
-	virtual std::shared_ptr<Function> generate(
+	std::shared_ptr<Function> generate(
 			std::shared_ptr<AcceleratorBuffer> buffer,
 			std::vector<InstructionParameter> parameters = std::vector<
-					InstructionParameter> { });
+					InstructionParameter> { }) override;
 
-	virtual std::shared_ptr<Function> generate(
-			std::map<std::string, InstructionParameter> parameters = std::map<
-					std::string, InstructionParameter> { });
+	std::shared_ptr<Function> generate(
+			std::map<std::string, InstructionParameter>& parameters) override;
 
 
-	virtual const std::string name() const {
-		return "hwe";
+	const std::string name() const override {
+		return "ibm_hwe";
 	}
 
-	virtual const std::string description() const {
+	const std::string description() const override {
 		return "";
 	}
 };

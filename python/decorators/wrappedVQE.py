@@ -15,7 +15,7 @@ class WrappedVQEF(xacc.DecoratorFunction):
         super().__call__(*args, **kwargs)
 
         def getParams(params): return ','.join(map(str, params))
-        execParams = {'accelerator': self.qpu, 'ansatz': self.compiledKernel.getIRFunction(), 'task': 'vqe'}
+        execParams = {'accelerator': self.qpu, 'ansatz': self.compiledKernel, 'task': 'vqe'}
         obs = self.kwargs['observable']
         ars = list(args)
 
@@ -46,7 +46,7 @@ class WrappedVQEF(xacc.DecoratorFunction):
                     import random
                     pi = 3.141592653
                     ars = [
-                        random.uniform(-pi, pi) for _ in range(self.compiledKernel.getIRFunction().nParameters())]
+                        random.uniform(-pi, pi) for _ in range(self.compiledKernel.nParameters())]
                 optargs = {'method': optimizer, 'options': {'disp': True}}
                 if 'options' in self.kwargs:
                     optargs['options'] = self.kwargs['options']

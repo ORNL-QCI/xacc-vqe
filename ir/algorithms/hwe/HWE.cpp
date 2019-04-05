@@ -10,7 +10,7 @@ namespace xacc {
 namespace vqe {
 
 std::shared_ptr<Function>
-HWE::generate(std::map<std::string, InstructionParameter> parameters) {
+HWE::generate(std::map<std::string, InstructionParameter> &parameters) {
 
   std::vector<InstructionParameter> params;
   if (!parameters.count("layers")) {
