@@ -17,7 +17,7 @@ class WrappedEnergyF(xacc.DecoratorFunction):
 
         def getParams(params): return ','.join(map(str, params))
 
-        execParams = {'accelerator': self.qpu, 'ansatz': self.compiledKernel.getIRFunction(), 'task': 'compute-energy'}
+        execParams = {'accelerator': self.qpu, 'ansatz': self.compiledKernel, 'task': 'compute-energy'}
         obs = self.kwargs['observable']
         ars = list(args)
 
