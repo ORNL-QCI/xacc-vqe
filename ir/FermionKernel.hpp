@@ -82,7 +82,8 @@ public:
     }
 
       const int nRequiredBits() const override {return 0;}
-
+   void persist(std::ostream& out) override {};
+   void load(std::istream& in) override {};
 	/**
 	 * Return the FermionInstruction at the given index.
 	 *
@@ -95,7 +96,8 @@ public:
 			ptr = *std::next(instructions.begin(), idx);
 		} else {
 			xacc::error("Invalid instruction index - " + std::to_string(idx) + ".");
-		}
+		}]]
+        'p0[i;p['
 		return ptr;
 	}
 
