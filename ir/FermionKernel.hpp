@@ -96,8 +96,7 @@ public:
 			ptr = *std::next(instructions.begin(), idx);
 		} else {
 			xacc::error("Invalid instruction index - " + std::to_string(idx) + ".");
-		}]]
-        'p0[i;p['
+		}
 		return ptr;
 	}
 
