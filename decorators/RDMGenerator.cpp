@@ -6,16 +6,16 @@ namespace xacc {
 namespace vqe {
 
 std::vector<std::shared_ptr<AcceleratorBuffer>> RDMGenerator::generate(std::shared_ptr<Function> ansatz, std::vector<int> qubitMap) {
-  if (!xacc::optionExists("rdm-spins")){
-        xacc::error("Cannot use RDMPurificationDecorator without rdm-spins option.");
-  }
-  auto spinStr = xacc::getOption("rdm-spins");
-  std::vector<std::string> split = xacc::split(spinStr, ',');
-
   std::vector<int> spins;
-  for (auto &a : split){
-      auto val = std::stoi(a);
-      spins.push_back(val);
+  if (!xacc::optionExists("rdm-spins")) {
+      spins = {-1, 1, -1, 1};
+  } else {
+      auto spinStr = xacc::getOption("rdm-spins");
+      std::vector<std::string> split = xacc::split(spinStr, ',');
+      for (auto &a : split){
+          auto val = std::stoi(a);
+          spins.push_back(val);
+      }
   }
 
   // Reset
