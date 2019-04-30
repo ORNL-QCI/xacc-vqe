@@ -70,6 +70,11 @@ public:
    * @return
    */
   const double energy();
+    
+  OptionPairs getOptions() override {
+    OptionPairs desc {{"rdm-spins", ""}};
+    return desc;
+  }
 
 };
 } // namespace vqe

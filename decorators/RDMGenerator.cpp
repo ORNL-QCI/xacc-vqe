@@ -6,6 +6,18 @@ namespace xacc {
 namespace vqe {
 
 std::vector<std::shared_ptr<AcceleratorBuffer>> RDMGenerator::generate(std::shared_ptr<Function> ansatz, std::vector<int> qubitMap) {
+  if (!xacc::optionExists("rdm-spins")){
+        xacc::error("Cannot use RDMPurificationDecorator without rdm-spins option.");
+  }
+  auto spinStr = xacc::getOption("rdm-spins");
+  std::vector<std::string> split = xacc::split(spinStr, ',');
+
+  std::vector<int> spins;
+  for (auto &a : split){
+      auto val = std::stoi(a);
+      spins.push_back(val);
+  }
+
   // Reset
   rho_pq.setZero();
   rho_pqrs.setZero();
@@ -44,40 +56,42 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> RDMGenerator::generate(std::shar
     for (int n = m + 1; n < nQubits; n++) {
       for (int v = m; v < nQubits; v++) {
         for (int w = v + 1; w < nQubits; w++) {
-          // Create the source code XACC kernel and compile it
-          std::stringstream xx;
-          xx << "__qpu__ k(){\n0.5 " << m << " 1 " << n << " 1 " << w << " 0 "
-             << v << " 0\n"
-             << "0.5 " << w << " 1 " << v << " 1 " << m << " 0 " << n
-             << " 0\n}";
-          auto hpqrs_ir = fermionCompiler->compile(xx.str(), qpu);
+            if ((m * spins[0]) + (n * spins[1]) == (v * spins[2]) + (w * spins[3])) {
+              // Create the source code XACC kernel and compile it
+              std::stringstream xx;
+              xx << "__qpu__ k(){\n0.5 " << m << " 1 " << n << " 1 " << w << " 0 "
+                 << v << " 0\n"
+                 << "0.5 " << w << " 1 " << v << " 1 " << m << " 0 " << n
+                 << " 0\n}";
+              auto hpqrs_ir = fermionCompiler->compile(xx.str(), qpu);
 
-          // Loop over the kernels, execute them and compute
-          // the weight * expVal sum
-          double sum_pqrs = 0.0;
-          for (auto &kernel : hpqrs_ir->getKernels()) {
+              // Loop over the kernels, execute them and compute
+              // the weight * expVal sum
+              double sum_pqrs = 0.0;
+              for (auto &kernel : hpqrs_ir->getKernels()) {
 
-            double localExpVal = 1.0;
-            auto t = std::real(kernel->getParameter(0).as<std::complex<double>>());
-            if (kernel->nInstructions() > 0) {
-              kernel->mapBits(qubitMap);
-              for (auto& inst : kernel->getInstructions()) {
-                  if (inst->name() == "Measure") {
-                      InstructionParameter p(inst->bits()[0]);
-                      inst->setParameter(0,p);
+                double localExpVal = 1.0;
+                auto t = std::real(kernel->getParameter(0).as<std::complex<double>>());
+                if (kernel->nInstructions() > 0) {
+                  kernel->mapBits(qubitMap);
+                  for (auto& inst : kernel->getInstructions()) {
+                      if (inst->name() == "Measure") {
+                          InstructionParameter p(inst->bits()[0]);
+                          inst->setParameter(0,p);
+                      }
                   }
+                  kernel->insertInstruction(0, ansatz);
+                  auto name = kernel->name();
+                  if (functions.count(name)) {
+                    functions[name].second.push_back({{m, n, v, w}, t});
+                  } else {
+                    functions.insert({name, {kernel, {{{m, n, v, w}, t}}}});
+                  }
+                } else {
+                  rho_element_2_identity_coeff.insert({{m, n, v, w}, t});
+                }
               }
-              kernel->insertInstruction(0, ansatz);
-              auto name = kernel->name();
-              if (functions.count(name)) {
-                functions[name].second.push_back({{m, n, v, w}, t});
-              } else {
-                functions.insert({name, {kernel, {{{m, n, v, w}, t}}}});
-              }
-            } else {
-              rho_element_2_identity_coeff.insert({{m, n, v, w}, t});
-            }
-          }
+           }
         }
       }
     }
