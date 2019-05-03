@@ -45,7 +45,9 @@ public:
 	std::vector<InstructionParameter> parameters;
 
 public:
-
+   void setBits(const std::vector<int> bits)  override {
+   }
+   
 	/**
 	 * The constructor, takes the (site, creation/annihilation) pairs
 	 * that describe this term. Initializes coefficient to 1.0
@@ -243,10 +245,10 @@ public:
    */
   void setOption(const std::string optName,
                  InstructionParameter option) override {
-      XACCLogger::instance()->error("setOption not implemented for FermionInst."); 
-      return;              
+      XACCLogger::instance()->error("setOption not implemented for FermionInst.");
+      return;
   }
-  
+
   /**
    * Get the value of an option with the given name.
    *
@@ -254,8 +256,8 @@ public:
    * @return option The value of the option.
    */
   InstructionParameter getOption(const std::string optName) override {
-       XACCLogger::instance()->error("getOption not implemented for FermionInst.");  
-       return InstructionParameter(0);             
+       XACCLogger::instance()->error("getOption not implemented for FermionInst.");
+       return InstructionParameter(0);
   }
 
   /**
@@ -264,8 +266,8 @@ public:
    * @return optMap The options map.
    */
   std::map<std::string, InstructionParameter> getOptions() override {
-       XACCLogger::instance()->error("getOptions not implemented for FermionInst."); 
-       return std::map<std::string,InstructionParameter>();              
+       XACCLogger::instance()->error("getOptions not implemented for FermionInst.");
+       return std::map<std::string,InstructionParameter>();
   }
 
 

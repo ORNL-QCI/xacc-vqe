@@ -80,7 +80,8 @@ public:
     std::shared_ptr<Function> enabledView() override {
         xacc::error("FermionKernel::enabledView is not implemented.");
     }
-
+   void setBits(const std::vector<int> bits)  override {
+   }
       const int nRequiredBits() const override {return 0;}
    void persist(std::ostream& out) override {};
    void load(std::istream& in) override {};
