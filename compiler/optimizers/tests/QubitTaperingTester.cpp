@@ -10,14 +10,13 @@
  * Contributors:
  *   Alexander J. McCaskey - initial API and implementation
  *******************************************************************************/
-#include "CNOT.hpp"
+#include "DigitalGates.hpp"
 #include "Compiler.hpp"
 #include "GateFunction.hpp"
 #include "GateIR.hpp"
 #include "InstructionIterator.hpp"
 #include "PauliOperator.hpp"
 #include "QubitTapering.hpp"
-#include "Rz.hpp"
 #include <gtest/gtest.h>
 #include "Eigen/Dense"
 #include "xacc_service.hpp"
