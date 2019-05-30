@@ -96,6 +96,11 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> RDMGenerator::generate(std::shar
   auto buffer = qpu->createBuffer("q", nPhysicalQubits);
   auto buffers = qpu->execute(buffer, fsToExecute);
 
+  bool useROExps = false;
+  if (qpu->name() == "ro-error") {
+    useROExps = true;
+  }
+  
   // Create a mapping of rho_pqrs elements to summed expectation values for
   // each circuit contributing to it
   std::map<std::vector<int>, double> sumMap;
@@ -109,7 +114,12 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> RDMGenerator::generate(std::shar
       std::stringstream s;
       s << elements[0] << "," << elements[1] << "," << elements[2] << "," << elements[3];
       contributingIndices.push_back(s.str());
-      auto value = l.second * buffers[i]->getExpectationValueZ();
+      double value;
+      if (useROExps) {
+        value = l.second * mpark::get<double>(buffers[i]->getInformation("ro-fixed-exp-val-z"));
+      } else {
+        value = l.second * buffers[i]->getExpectationValueZ();
+      }
       contributingCoeffs.push_back(value);
       if (!sumMap.count(elements)) {
         sumMap.insert({elements, value});
