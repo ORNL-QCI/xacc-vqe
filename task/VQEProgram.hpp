@@ -10,7 +10,6 @@
 
 #include "MPIProvider.hpp"
 #include "CountGatesOfTypeVisitor.hpp"
-#include "Measure.hpp"
 
 #include "IRProvider.hpp"
 

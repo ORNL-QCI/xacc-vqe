@@ -1,5 +1,5 @@
 #include "CountGatesOfTypeVisitor.hpp"
-#include "Measure.hpp"
+#include "DigitalGates.hpp"
 #include "VQEProgram.hpp"
 #include "FermionToSpinTransformation.hpp"
 #include "ProfileHamiltonianTask.hpp"

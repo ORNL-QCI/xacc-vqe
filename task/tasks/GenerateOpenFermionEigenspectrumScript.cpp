@@ -1,5 +1,4 @@
 #include "CountGatesOfTypeVisitor.hpp"
-#include "Measure.hpp"
 #include "VQEProgram.hpp"
 #include "FermionToSpinTransformation.hpp"
 #include "GenerateOpenFermionEigenspectrumScript.hpp"
