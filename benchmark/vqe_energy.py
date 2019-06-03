@@ -11,13 +11,12 @@ import os
 from xacc import BenchmarkAlgorithm
 from vqe_base import VQEBase
 
-@ComponentFactory("VQE_energy_algorithm_factory")
-@Provides("benchmark_algorithm_service")
-@Property("_algorithm", "algorithm", "vqe-energy")
+@ComponentFactory("vqe-energy_benchmark_factory")
+@Provides("benchmark_algorithm")
 @Property("_name", "name", "vqe-energy")
-@Requires("_hamiltonian_generator", "hamiltonian_generator_service", aggregate=True)
-@Requires("_ansatz_generator", "ansatz_generator_service", aggregate=True)
-@Instantiate("VQE_energy_algorithm_instance")
+@Requires("_hamiltonian_generators", "hamiltonian_generator", aggregate=True)
+@Requires("_ansatz_generators", "ansatz_generator", aggregate=True)
+@Instantiate("vqe-energy_benchmark")
 class VQEEnergy(VQEBase):
     """
         Algorithm class inherited from VQEBase to execute the 'compute-energy' task of VQE
@@ -25,16 +24,16 @@ class VQEEnergy(VQEBase):
     def __init__(self):
         super().__init__()
 
-    @BindField('_ansatz_generator')
-    @BindField('_hamiltonian_generator')
+    @BindField('_ansatz_generators')
+    @BindField('_hamiltonian_generators')
     def bind_dicts(self, field, service, svc_ref):
         """
             iPOPO method to bind ansatz and hamiltonian generator dependencies for use by the Algorithm bundle
         """
         super().bind_dicts(field, service, svc_ref)
 
-    @UnbindField('_ansatz_generator')
-    @UnbindField('_hamiltonian_generator')
+    @UnbindField('_ansatz_generators')
+    @UnbindField('_hamiltonian_generators')
     def unbind_dicts(self, field, service, svc_ref):
         """
             iPOPO method to unbind ansatz and hamiltonian generator dependencies for use by the Algorithm bundle
