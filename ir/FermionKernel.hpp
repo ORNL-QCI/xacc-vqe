@@ -82,6 +82,9 @@ public:
     }
    void setBits(const std::vector<int> bits)  override {
    }
+   void setBitMap(const std::vector<int> bMap) override {}
+   const std::vector<int> getBitMap() override {return std::vector<int>{};}
+
       const int nRequiredBits() const override {return 0;}
    void persist(std::ostream& out) override {};
    void load(std::istream& in) override {};
