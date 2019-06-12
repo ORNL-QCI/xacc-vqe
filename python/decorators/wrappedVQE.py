@@ -45,21 +45,26 @@ class WrappedVQEF(xacc.DecoratorFunction):
             arStr = getParams(ars)
             execParams['vqe-params'] = arStr
         if 'optimizer' in self.kwargs:
-            optimizer = self.kwargs['optimizer']
+            opt_name = self.kwargs['optimizer']
             optimizer_args = {}
+            optimizer = self.vqe_optimizers[opt_name]
+            if 'options' in self.kwargs:
+                optimizer_args = self.kwargs['options']
+            optimizer.optimize(obs, buffer, optimizer_args, execParams)
+            buffer.addExtraInfo('vqe-energies', optimizer.energies)
             # we want to use scipy
-            if 'scipy-' in optimizer:
-                execParams['task'] = 'compute-energy'
-                # get the scipy-opt optimizer plugin
-                opt_instance = self.vqe_optimizers['scipy-opt']
-                optimizer = optimizer.replace('scipy-', '')
-                # set the scipy-optimizer to the specified method
-                optimizer_args["method"] = optimizer
-                if 'options' in self.kwargs:
-                    optimizer_args['options'] = self.kwargs['options']
-                # call the optimizer-plugin optimize() method
-                # with the optimizer settings and VQE settings
-                opt_instance.optimize(obs, buffer, optimizer_args, execParams)
+            # if 'scipy-' in optimizer:
+            #     execParams['task'] = 'compute-energy'
+            #     # get the scipy-opt optimizer plugin
+            #     opt_instance = self.vqe_optimizers['scipy-opt']
+            #     optimizer = optimizer.replace('scipy-', '')
+            #     # set the scipy-optimizer to the specified method
+            #     optimizer_args["method"] = optimizer
+            #     if 'options' in self.kwargs:
+            #         optimizer_args['options'] = self.kwargs['options']
+            #     # call the optimizer-plugin optimize() method
+            #     # with the optimizer settings and VQE settings
+            #     opt_instance.optimize(obs, buffer, optimizer_args, execParams)
 
                 # now we don't need any of this
 
@@ -90,16 +95,17 @@ class WrappedVQEF(xacc.DecoratorFunction):
                 # print(opt_result)
 
                 # the optimizer has all of the energies now
-                buffer.addExtraInfo('vqe-energies',opt_instance.energies)
-                return
+                # buffer.addExtraInfo('vqe-energies',opt_instance.energies)
+                # return
             # until we have a standard naming for these too
             # use bobyqa instead
-            elif 'bobyqa' or 'BOBYQA' in optimizer:
-                execParams['task'] = 'compute-energy'
-                opt_instance = self.vqe_optimizers['bobyqa-opt']
-                if 'options' in self.kwargs:
-                    optimizer_args = self.kwargs['options']
-                opt_instance.optimize(obs, buffer, optimizer_args, execParams)
+
+            # elif 'bobyqa' or 'BOBYQA' in optimizer:
+            #     execParams['task'] = 'compute-energy'
+            #     opt_instance = self.vqe_optimizers['bobyqa-opt']
+            #     if 'options' in self.kwargs:
+            #         optimizer_args = self.kwargs['options']
+            #     opt_instance.optimize(obs, buffer, optimizer_args, execParams)
 
                 # we dont need any of this anymore
 
@@ -120,11 +126,11 @@ class WrappedVQEF(xacc.DecoratorFunction):
                 # opt_result = pybobyqa.solve(energy, ars)
                 # print(opt_result)
 
-                buffer.addExtraInfo('vqe-energies', opt_instance.energies)
-            else:
-                xacc.setOption('vqe-backend', optimizer)
-                if 'opt_params' in self.kwargs:
-                    for k, v in self.kwargs['opt_params'].items():
-                        xacc.setOption(k, str(v))
-        vqe.execute(obs, buffer, **execParams)
+                # buffer.addExtraInfo('vqe-energies', opt_instance.energies)
+        #     else:
+        #         xacc.setOption('vqe-backend', optimizer)
+        #         if 'opt_params' in self.kwargs:
+        #             for k, v in self.kwargs['opt_params'].items():
+        #                 xacc.setOption(k, str(v))
+        # vqe.execute(obs, buffer, **execParams)
         return

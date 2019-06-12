@@ -16,7 +16,9 @@ class ScipyOpt(VQEOpt):
 
     def optimize(self, observable, buffer, optimizer_args, execParams):
         super().optimize(observable, buffer, optimizer_args, execParams)
-
+        print(optimizer_args)
+        print(self.opt_args)
+        self.opt_args['options'] = {"maxiter": 30}
         if 'vqe-params' in self.execParams:
             init_args = [float(x) for x in self.execParams['vqe-params'].split(',')]
         else:
