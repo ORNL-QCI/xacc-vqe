@@ -21,6 +21,10 @@ class VQEOpt(ABC):
         self.buffer = buffer
         self.execParams['task'] = 'compute-energy'
 
+    # Define the objective function here
+    # This is a default objective function using XACC VQE
+    # that converges on the computed energy, computing the energy
+    # every iteration
     @abstractmethod
     def energy(self, params):
         pStr = ",".join(map(str, params))
