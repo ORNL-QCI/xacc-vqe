@@ -17,6 +17,7 @@ class BOBYQAOpt(VQEOpt):
 
     def optimize(self, observable, buffer, optimizer_args, execParams):
         super().optimize(observable, buffer, optimizer_args, execParams)
+
         if 'vqe-params' in self.execParams:
             init_args = [float(x) for x in self.execParams['vqe-params'].split(',')]
         else:
@@ -26,10 +27,14 @@ class BOBYQAOpt(VQEOpt):
 
         opt_result = pybobyqa.solve(self.energy, init_args, **self.opt_args)
 
+    # For some reason, the Py-BOBYQA module
+    # will not work if using super().energy(params) ( like in ScipyOpt )
+    # so, had to redefine here.
     def energy(self, params):
         pStr = ",".join(map(str, params))
         self.execParams['vqe-params'] = pStr
         e = vqe.execute(self.obs, self.buffer, **self.execParams).energy
+        self.angles.append(self.execParams['vqe-params'])
         self.energies.append(e)
         return e
 
