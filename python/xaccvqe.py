@@ -6,7 +6,33 @@ import sys
 import sysconfig
 import argparse
 import inspect
+from abc import abstractmethod, ABC
 from xacc import PauliOperator
+
+class VQEOpt(ABC):
+
+    @abstractmethod
+    def optimize(self, observable, buffer, optimizer_args, execParams):
+        self.opt_args = optimizer_args
+        self.execParams = execParams
+        self.energies = []
+        self.angles = []
+        self.obs = observable
+        self.buffer = buffer
+        self.execParams['task'] = 'compute-energy'
+
+    # Define the objective function here
+    # This is a default objective function using XACC VQE
+    # that converges on the computed energy, computing the energy
+    # every iteration
+    @abstractmethod
+    def energy(self, params):
+        pStr = ",".join(map(str, params))
+        self.execParams['vqe-params'] = pStr
+        e = execute(self.obs, self.buffer, **self.execParams).energy
+        self.angles.append(self.execParams['vqe-params'])
+        self.energies.append(e)
+        return e
 
 def QubitOperator2XACC(qubit_op):
     """

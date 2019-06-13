@@ -2,8 +2,8 @@ from pelix.ipopo.decorators import (ComponentFactory, Property, Requires,
                                     BindField, UnbindField, Provides, Validate,
                                     Invalidate, Instantiate)
 import xacc
+import xaccvqe as vqe
 import inspect
-from _pyxaccvqe import *
 
 @ComponentFactory("wrapped_energy_factory")
 @Provides("decorator_algorithm_service")
@@ -30,5 +30,5 @@ class WrappedEnergyF(xacc.DecoratorFunction):
         if len(ars) > 0:
             arStr = getParams(ars)
             execParams['vqe-params'] = arStr
-        execute(obs, buffer, **execParams)
+        vqe.execute(obs, buffer, **execParams)
         return
