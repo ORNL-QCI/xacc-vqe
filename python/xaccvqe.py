@@ -6,7 +6,26 @@ import sys
 import sysconfig
 import argparse
 import inspect
+from abc import abstractmethod, ABC
 from xacc import PauliOperator
+
+class VQEOpt(ABC):
+
+    @abstractmethod
+    def optimize(self, observable, buffer, optimizer_args, execParams):
+        self.opt_args = optimizer_args
+        self.execParams = execParams
+        self.energies = []
+        self.obs = observable
+        self.buffer = buffer
+
+    @abstractmethod
+    def energy(self, params):
+        pStr = ",".join(map(str, params))
+        self.execParams['vqe-params'] = pStr
+        e = execute(self.obs, self.buffer, **self.execParams).energy
+        self.energies.append(e)
+        return e
 
 def QubitOperator2XACC(qubit_op):
     """
