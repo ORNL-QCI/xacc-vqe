@@ -47,11 +47,11 @@ class WrappedVQEF(xacc.DecoratorFunction):
             opt_name = self.kwargs['optimizer']
             optimizer_args = {}
             # get optimizer from available vqe_optimization services
-            try:
-                optimizer = self.vqe_optimizers[opt_name]
-            except KeyError as ex:
-                xacc.info("The {} vqe_optimization service is not available.".format(self.kwargs['optimizer']))
+            if opt_name not in self.vqe_optimizers:
+                xacc.info("The {} 'vqe_optimization' service is not available.".format(opt_name))
                 exit(1)
+            else:
+                optimizer = self.vqe_optimizers[opt_name])
             # get all the options to pass to optimizer
             if 'options' in self.kwargs:
                 optimizer_args = self.kwargs['options']
