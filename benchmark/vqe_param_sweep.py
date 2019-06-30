@@ -1,6 +1,4 @@
-from pelix.ipopo.decorators import (ComponentFactory, Property, Requires,
-                                    BindField, UnbindField, Provides, Validate,
-                                    Invalidate, Instantiate)
+from pelix.ipopo.decorators import (ComponentFactory, Property, Instantiate)
 import ast
 import configparser
 import xacc
@@ -11,10 +9,7 @@ from xacc import BenchmarkAlgorithm
 from vqe_base import VQEBase
 
 @ComponentFactory("param-sweep_benchmark_factory")
-@Provides("benchmark_algorithm")
 @Property("_name", "name", "param-sweep")
-@Requires("_hamiltonian_generators", "hamiltonian_generator", aggregate=True)
-@Requires("_ansatz_generators", "ansatz_generator", aggregate=True)
 @Instantiate("param-sweep_benchmark")
 class ParamSweep(VQEBase):
     """
@@ -22,24 +17,6 @@ class ParamSweep(VQEBase):
     """
     def __init__(self):
         super().__init__()
-
-    @BindField('_ansatz_generators')
-    @BindField('_hamiltonian_generators')
-    def bind_dicts(self, field, service, svc_ref):
-        """
-            iPOPO method to bind ansatz and hamiltonian generator dependencies for use by the Algorithm bundle
-        """
-        super().bind_dicts(field, service, svc_ref)
-
-    @UnbindField('_ansatz_generators')
-    @UnbindField('_hamiltonian_generators')
-    def unbind_dicts(self, field, service, svc_ref):
-        """
-            iPOPO method to unbind ansatz and hamiltonian generator dependencies for use by the Algorithm bundle
-
-            Called when the bundle is invalidated
-        """
-        super().unbind_dicts(field, service, svc_ref)
 
     def linspace(self, a, b, n=100):
         if n < 2:
@@ -73,9 +50,24 @@ class ParamSweep(VQEBase):
 
         num_params = ast.literal_eval(inputParams['num-params'])
 
+        self.energies = []
+        self.angles = []
         for param in self.linspace(low_bound, up_bound, num_params):
+            self.angles.append(param)
             self.vqe_options_dict['vqe-params'] = str(param)
-            results = xaccvqe.execute(self.op, self.buffer, **self.vqe_options_dict)
+            energy = xaccvqe.execute(self.op, self.buffer, **self.vqe_options_dict).energy
+
+            if 'rdm-purification' in self.qpu.name():
+                p = self.buffer.getAllUnique('parameters')
+                ind = len(p) - 1
+                children = self.buffer.getChildren('parameters', p[ind])
+                energy = children[1].getInformation('purified-energy')
+
+            self.energies.append(energy)
+
+        self.buffer.addExtraInfo('vqe-energies', self.energies)
+        self.buffer.addExtraInfo('vqe-angles', self.angles)
+        self.buffer.addExtraInfo('vqe-energy', min(self.energies))
         return self.buffer
 
     def analyze(self, buffer, inputParams):

@@ -51,19 +51,12 @@ class WrappedVQEF(xacc.DecoratorFunction):
                 xacc.info("The {} 'vqe_optimization' service is not available.".format(opt_name))
                 exit(1)
             else:
-                optimizer = self.vqe_optimizers[opt_name])
+                optimizer = self.vqe_optimizers[opt_name]
             # get all the options to pass to optimizer
             if 'options' in self.kwargs:
                 optimizer_args = self.kwargs['options']
             # call optimize() method of optimizer
             optimizer.optimize(obs, buffer, optimizer_args, execParams)
-            # add the energies obtained and the angles with which they were obtained
-            # to the AcceleratorBuffer
-            # Also, add the optimal angles to the buffer
-            buffer.addExtraInfo('vqe-energies', optimizer.energies)
-            buffer.addExtraInfo('vqe-parameters', optimizer.angles)
-            vqe_angles = [float(x) for x in optimizer.angles[optimizer.energies.index(min(optimizer.energies))].split(",")]
-            buffer.addExtraInfo('vqe-angles', vqe_angles)
         else:
             vqe.execute(obs, buffer, **execParams)
         return
