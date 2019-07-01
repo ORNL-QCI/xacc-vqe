@@ -14,8 +14,11 @@ class BOBYQAOpt(VQEOpt):
 
     def optimize(self, observable, buffer, optimizer_args, execParams):
         super().optimize(observable, buffer, optimizer_args, execParams)
-
-        opt_result = pybobyqa.solve(self.energy, self.init_args, **self.opt_args)
+        if 'options' in self.opt_args:
+            base_args = self.opt_args['options']
+            opt_result = pybobyqa.solve(self.energy, self.init_args, **base_args)
+        else:
+            opt_result = pybobyqa.solve(self.energy, self.init_args, **self.opt_args)
 
         # Optimizer adds the results to the buffer automatically
         buffer.addExtraInfo('vqe-energies', self.energies)

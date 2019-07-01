@@ -21,8 +21,7 @@ class VQE(VQEBase):
 
             Parameters:
                 inputParams - a dictionary of input parameters obtained from .ini file
-            Adds options:
-            - 'scipy-[METHOD]': uses scipy.optimize instead of default nelder-mead to optimize the parameters
+
         """
         super().execute(inputParams)
         self.vqe_options_dict['task'] = 'vqe'

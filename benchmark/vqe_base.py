@@ -114,6 +114,8 @@ class VQEBase(BenchmarkAlgorithm):
                     self.optimizer_options['method'] = inputParams['method']
                 if 'options' in inputParams:
                     self.optimizer_options['options'] = ast.literal_eval(inputParams['options'])
+                if 'user-params' in inputParams:
+                    self.optimizer_options['options']['user_params'] = ast.literal_eval(inputParams['user-params'])
             else:
                 xacc.setOption('vqe-backend', inputParams['optimizer'])
         else:
