@@ -124,21 +124,17 @@ class VQEBase(BenchmarkAlgorithm):
         self.buffer.addExtraInfo('accelerator', inputParams['accelerator'])
         if 'n-execs' in inputParams:
             xacc.setOption('sampler-n-execs', inputParams['n-execs'])
-            self.buffer.addExtraInfo('accelerator-decorator', 'improved-sampling')
             self.qpu = xacc.getAcceleratorDecorator('improved-sampling', self.qpu)
 
         if 'restart-from-file' in inputParams:
             xacc.setOption('vqe-restart-file', inputParams['restart-from-file'])
-            self.buffer.addExtraInfo('accelerator-decorator', 'vqe-restart')
             self.qpu = xacc.getAcceleratorDecorator('vqe-restart',self.qpu)
             self.qpu.initialize()
 
         if 'readout-error' in inputParams and inputParams['readout-error']:
-            self.buffer.addExtraInfo('accelerator-decorator', 'readout-error')
             self.qpu = xacc.getAcceleratorDecorator('ro-error',self.qpu)
 
         if 'rdm-purification' in inputParams and inputParams['rdm-purification']:
-            self.buffer.addExtraInfo('accelerator-decorator', 'rdm-purification')
             self.qpu = xacc.getAcceleratorDecorator('rdm-purification', self.qpu)
 
         self.vqe_options_dict = {'accelerator': self.qpu, 'ansatz': self.ansatz}
