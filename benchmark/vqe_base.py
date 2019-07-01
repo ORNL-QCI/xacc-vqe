@@ -4,7 +4,7 @@ import xaccvqe
 import ast
 import time
 import os
-
+from pelix.ipopo.decorators import (Provides, Requires, BindField, UnbindField)
 #
 #    VQEBase is an abstract class that implements the VQE algorithm using XACC.
 #    VQE and VQEEnergy are iPOPO bundles that inherit from this class to execute the algorithm and analyze results.
@@ -14,11 +14,16 @@ import os
 #        unbind_dicts - Required for using iPOPO service registry
 #        execute - executes the VQE algorithm according to input configurations
 #        analyze - analyzes the AcceleratorBuffer produced from execute()
+@Provides("benchmark_algorithm")
+@Requires("_ansatz_generators", "ansatz_generator", aggregate=True)
+@Requires("_hamiltonian_generators", "hamiltonian_generator", aggregate=True)
+@Requires("_vqe_optimizers", "vqe_optimization", aggregate=True, optional=True)
 class VQEBase(BenchmarkAlgorithm):
 
     def __init__(self):
         self.hamiltonian_generators = {}
         self.ansatz_generators = {}
+        self.vqe_optimizers = {}
         self.vqe_options_dict = {}
         self.n_qubits = 0
         self.buffer = None
@@ -26,6 +31,9 @@ class VQEBase(BenchmarkAlgorithm):
         self.op = None
         self.qpu = None
 
+    @BindField('_vqe_optimizers')
+    @BindField('_ansatz_generators')
+    @BindField('_hamiltonian_generators')
     def bind_dicts(self, field, service, svc_ref):
         """
         This method is intended to be inherited by iPOPO bundle subclasses.
@@ -34,10 +42,16 @@ class VQEBase(BenchmarkAlgorithm):
         if svc_ref.get_property('hamiltonian_generator'):
             generator = svc_ref.get_property('hamiltonian_generator')
             self.hamiltonian_generators[generator] = service
-        elif svc_ref.get_property('ansatz_generator'):
+        if svc_ref.get_property('ansatz_generator'):
             generator = svc_ref.get_property('ansatz_generator')
             self.ansatz_generators[generator] = service
+        if svc_ref.get_property('vqe_optimizer'):
+            optimizer = svc_ref.get_property('vqe_optimizer')
+            self.vqe_optimizers[optimizer] = service
 
+    @UnbindField("_vqe_optimizers")
+    @UnbindField('_ansatz_generators')
+    @UnbindField('_hamiltonian_generators')
     def unbind_dicts(self, field, service, svc_ref):
         """
             This method is intended to be inherited by iPOPO bundle subclasses.
@@ -46,9 +60,12 @@ class VQEBase(BenchmarkAlgorithm):
         if svc_ref.get_property('hamiltonian_generator'):
             generator = svc_ref.get_property('hamiltonian_generator')
             del self.hamiltonian_generators[generator]
-        elif svc_ref.get_property('ansatz_generator'):
+        if svc_ref.get_property('ansatz_generator'):
             generator = svc_ref.get_property('ansatz_generator')
             del self.ansatz_generators[generator]
+        if svc_ref.get_property('vqe_optimizer'):
+            optimizer = svc_ref.get_property('vqe_optimizer')
+            del self.vqe_optimizers[optimizer]
 
     def execute(self, inputParams):
         """
@@ -81,7 +98,6 @@ class VQEBase(BenchmarkAlgorithm):
                 xaccOp, self.ansatz, qubit_map)
         else:
             n_qubits = xaccOp.nQubits()
-
         self.op = xaccOp
         self.n_qubits = n_qubits
         self.buffer = self.qpu.createBuffer('q', n_qubits)
@@ -89,20 +105,40 @@ class VQEBase(BenchmarkAlgorithm):
         self.buffer.addExtraInfo('ansatz-qasm', self.ansatz.toString('q').replace('\\n', '\\\\n'))
         pycompiler = xacc.getCompiler('xacc-py')
         self.buffer.addExtraInfo('ansatz-qasm-py', '\n'.join(pycompiler.translate('q',self.ansatz).split('\n')[1:]))
+        self.optimizer = None
+        self.optimizer_options = {}
+        if 'optimizer' in inputParams:
+            if inputParams['optimizer'] in self.vqe_optimizers:
+                self.optimizer = self.vqe_optimizers[inputParams['optimizer']]
+                if 'method' in inputParams:
+                    self.optimizer_options['method'] = inputParams['method']
+                if 'options' in inputParams:
+                    self.optimizer_options['options'] = ast.literal_eval(inputParams['options'])
+                if 'user-params' in inputParams:
+                    self.optimizer_options['options']['user_params'] = ast.literal_eval(inputParams['user-params'])
+            else:
+                xacc.setOption('vqe-backend', inputParams['optimizer'])
+        else:
+            xacc.info("No classical optimizer specified. Setting to default XACC optimizer.")
 
+        self.buffer.addExtraInfo('accelerator', inputParams['accelerator'])
         if 'n-execs' in inputParams:
             xacc.setOption('sampler-n-execs', inputParams['n-execs'])
+            self.buffer.addExtraInfo('accelerator-decorator', 'improved-sampling')
             self.qpu = xacc.getAcceleratorDecorator('improved-sampling', self.qpu)
 
         if 'restart-from-file' in inputParams:
             xacc.setOption('vqe-restart-file', inputParams['restart-from-file'])
+            self.buffer.addExtraInfo('accelerator-decorator', 'vqe-restart')
             self.qpu = xacc.getAcceleratorDecorator('vqe-restart',self.qpu)
             self.qpu.initialize()
 
         if 'readout-error' in inputParams and inputParams['readout-error']:
+            self.buffer.addExtraInfo('accelerator-decorator', 'readout-error')
             self.qpu = xacc.getAcceleratorDecorator('ro-error',self.qpu)
 
         if 'rdm-purification' in inputParams and inputParams['rdm-purification']:
+            self.buffer.addExtraInfo('accelerator-decorator', 'rdm-purification')
             self.qpu = xacc.getAcceleratorDecorator('rdm-purification', self.qpu)
 
         self.vqe_options_dict = {'accelerator': self.qpu, 'ansatz': self.ansatz}
