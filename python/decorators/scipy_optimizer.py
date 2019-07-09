@@ -4,7 +4,6 @@ from xaccvqe import VQEOpt
 import xaccvqe as vqe
 import inspect
 from abc import abstractmethod, ABC
-from scipy.optimize import minimize
 
 @ComponentFactory("scipy_opt_factory")
 @Property("_vqe_optimizer", "vqe_optimizer", "scipy-opt")
@@ -13,6 +12,8 @@ class ScipyOpt(VQEOpt):
 
     def optimize(self, observable, buffer, optimizer_args, execParams):
         super().optimize(observable, buffer, optimizer_args, execParams)
+
+        from scipy.optimize import minimize
 
         opt_result = minimize(self.energy, self.init_args, **self.opt_args)
 

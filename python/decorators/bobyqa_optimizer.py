@@ -4,8 +4,7 @@ from xaccvqe import VQEOpt
 import xaccvqe as vqe
 import inspect
 from abc import abstractmethod, ABC
-import pybobyqa
-import numpy as np
+
 
 @ComponentFactory("bobyqa_opt_factory")
 @Property("_vqe_optimizer", "vqe_optimizer", "bobyqa-opt")
@@ -14,6 +13,9 @@ class BOBYQAOpt(VQEOpt):
 
     def optimize(self, observable, buffer, optimizer_args, execParams):
         super().optimize(observable, buffer, optimizer_args, execParams)
+
+        import pybobyqa
+
         if 'options' in self.opt_args:
             base_args = self.opt_args['options']
             opt_result = pybobyqa.solve(self.energy, self.init_args, **base_args)
