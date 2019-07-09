@@ -6,7 +6,38 @@ import sys
 import sysconfig
 import argparse
 import inspect
+from abc import abstractmethod, ABC
 from xacc import PauliOperator
+from pelix.ipopo.decorators import Provides
+
+@Provides("vqe_optimization")
+class VQEOpt(ABC):
+
+    @abstractmethod
+    def optimize(self, observable, buffer, optimizer_args, execParams):
+        self.opt_args = optimizer_args
+        self.execParams = execParams
+        self.energies = []
+        self.angles = []
+        self.obs = observable
+        self.buffer = buffer
+        self.execParams['task'] = 'compute-energy'
+
+        if 'vqe-params' in self.execParams:
+            self.init_args = [float(x) for x in self.execParams['vqe-params'].split(',')]
+        else:
+            import random
+            pi = 3.141592653
+            self.init_args = np.array([random.uniform(-pi, pi) for _ in range(self.execParams['ansatz'].nParameters())])
+    # Define the objective function here
+    # This is a default objective function using XACC VQE
+    # that converges on the computed energy, computing the energy
+    # every iteration
+    @abstractmethod
+    def energy(self, params):
+        xacc.info("The energy() method is meant to be implemented by VQEOpt subclasses!")
+        exit(1)
+        pass
 
 def QubitOperator2XACC(qubit_op):
     """
